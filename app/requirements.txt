@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+openai
+qdrant-client
+sentence-transformers
+httpx
+celery
+redis
+rank-bm25
+llm-guard

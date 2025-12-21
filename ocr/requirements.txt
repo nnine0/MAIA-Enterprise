@@ -1,0 +1,5 @@
+fastapi
+uvicorn
+paddlepaddle-gpu
+paddleocr
+opencv-python

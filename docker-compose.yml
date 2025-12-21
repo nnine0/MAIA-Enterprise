@@ -1,0 +1,155 @@
+version: '3.8'
+
+networks:
+  maia-net:
+    driver: bridge
+
+services:
+  # --- LAYER 1: INFERENCE KERNEL (LoRAX) ---
+  lorax:
+    image: ghcr.io/predibase/lorax:latest
+    container_name: maia-lorax
+    networks:
+      - maia-net
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+    ports:
+      - "8080:80"
+    volumes:
+      - ~/.cache/huggingface:/data
+      - ./adapters:/adapters
+    shm_size: '2gb'
+    command: >
+      --model-id Nanbeige/Nanbeige4-3B-Thinking-2511
+      --max-batch-prefill-tokens 4096
+      --gpu-memory-utilization 0.8
+      --trust-remote-code
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # --- LAYER 2: MEMORY (Qdrant) ---
+  vector-db:
+    image: qdrant/qdrant:latest
+    container_name: maia-qdrant
+    networks:
+      - maia-net
+    ports:
+      - "6333:6333"
+    volumes:
+      - ./qdrant_data:/qdrant/storage
+
+  # --- LAYER 2.5: TASK QUEUE (Redis) ---
+  redis:
+    image: redis:alpine
+    container_name: maia-redis
+    networks:
+      - maia-net
+    ports:
+      - "6379:6379"
+
+   # --- LAYER 3: THE AI CONTROLLER ---
+  maia-app:
+    build: ./app
+    container_name: maia-controller
+    networks:
+      - maia-net
+    depends_on:
+      lorax:
+        condition: service_healthy
+      vector-db:
+        condition: service_started
+      ocr:
+        condition: service_started
+    ports:
+      - "8000:8000"
+    environment:
+      - LORAX_URL=http://lorax:80
+      - QDRANT_URL=http://vector-db:6333
+      - OCR_URL=http://ocr:5000
+      - OPENAI_API_KEY=not-needed
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+   # --- LAYER 4: THE SENSES (OCR) ---
+   ocr:
+     build:
+       context: ./ocr
+     container_name: maia-ocr
+     networks:
+       - maia-net
+     environment:
+       - CUDA_VISIBLE_DEVICES=""  # Pin to CPU to avoid GPU contention
+     ports:
+       - "5000:5000"
+
+   # --- LAYER 4.5: EMBEDDINGS (RAG Support) ---
+   embeddings:
+     build:
+       context: ./embeddings
+     container_name: maia-embeddings
+     networks:
+       - maia-net
+     ports:
+       - "6000:6000"
+
+   # --- LAYER 5: THE EVOLUTION (Training Worker) ---
+  trainer:
+    build:
+      context: ./app
+      dockerfile: Dockerfile.trainer
+    container_name: maia-trainer
+    networks:
+      - maia-net
+    depends_on:
+      - redis
+      - lorax
+    volumes:
+      - ./adapters:/app/adapters
+      - ./data_logs:/app/data_logs
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - LORAX_URL=http://lorax:80
+      - OCR_URL=http://ocr:5000
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  maia-worker:
+    build: ./app
+    container_name: maia-worker
+    networks:
+      - maia-net
+    depends_on:
+      - redis
+      - lorax
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - LORAX_URL=http://lorax:80
+      - OCR_URL=http://ocr:5000
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    command: ["celery", "-A", "tasks", "worker", "--loglevel=info"]
