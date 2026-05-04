@@ -98,11 +98,15 @@ Intra-Inference Telemetry - Neural Flight Recorder
 
 ### 7. Materiality Matrix
 
-| Tier | Triggers | Airlock | Latency |
-|------|----------|---------|---------|
-| 1 - Critical | credit, wire, transfer, loan, sanction | Full audit | ~420ms |
-| 2 - Elevated | risk, limit, approval, policy | Conditional | ~200ms |
-| 3 - Benign | general queries | Bypass | ~50ms |
+Based on GDPval empirical findings (3% catastrophic, 26% bad failure rates), MAIA tiers governance by **Cost of Catastrophic Failure**:
+
+| Tier | Triggers (Risk Materiality) | Governance | Latency | Economic Basis |
+|------|---------------------------|------------|---------|------------------|
+| 1 - Critical | wire, loan>$10M, legal, sanction | Full PVI + DHITL | ~420ms | High-value = mandatory human review |
+| 2 - Elevated | credit, policy, approval, risk | AI Auditor | ~200ms | Moderate-value = automated checkpoint |
+| 3 - Benign | internal queries, scheduling | Bypass | ~50ms | Low-value = max cost savings |
+
+See `GDPVAL.md` for full theoretical foundation.
 
 ---
 
