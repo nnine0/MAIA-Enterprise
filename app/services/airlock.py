@@ -9,7 +9,7 @@ import uuid
 from datetime import datetime
 from typing import Dict, List, Optional
 
-from app.models import MaterialityTier, AirlockVerdict, TrajectoryRecord, SMEVote
+from app.models import MaterialityTier, AirlockVerdict, TrajectoryRecord, SMEVote, SMEVotingSession
 from app import config
 
 
