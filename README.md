@@ -55,7 +55,8 @@ MAIA is an enterprise AI Governance Operating System that turns compliance from 
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
 │              LORAX KERNEL (SGMV Batching)                    │
-│   Base Model: Gemma 4 26B A4B MoE                         │
+│   Base Model: Gemma 4 26B A4B MoE (Local GPU)               │
+│   Hardware: RTX 3090 (24GB) → H100/A100 (Enterprise)        │
 │   Multi-Adapter: Hot-swappable expert adapters             │
 │   VRAM Efficiency: 70% reduction vs monolithic             │
 └─────────────────────────────────────────────────────────────┘
@@ -208,6 +209,12 @@ python3 app/dashboard.py
 
 # Access: http://localhost:3033
 ```
+
+### Hardware Requirements
+
+MAIA runs locally on enterprise GPUs:
+- **Minimum**: NVIDIA RTX 3090 (24GB VRAM)
+- **Recommended**: NVIDIA A100 or H100 (80GB+ VRAM)
 
 ### Dashboard Test Scenarios
 - PASS (Tier 3): Benign queries - bypass audit

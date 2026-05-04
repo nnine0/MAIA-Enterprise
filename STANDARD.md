@@ -30,14 +30,17 @@ Working prototype: https://github.com/nnine0/MAIA-Enterprise
 | RAM (Warm) | CPU | Top 100 active adapters | <20ms |
 | NVMe (Cold) | Disk | Thousands of specialized adapters | On-demand |
 
-### 2. SGMV LoRAX Kernel
+### 2. SGMV LoRAX Kernel (Local GPU Deployment)
 
 MAIA leverages the LoRAX neural kernel to achieve SOTA multi-adapter throughput while reducing VRAM consumption by 70%.
+
+**Hardware Support**: Runs locally on enterprise GPUs ranging from consumer-grade (RTX 3090, 24GB VRAM) to data center (NVIDIA H100, A100).
 
 - Hot-swap specialized expert adapters in real-time
 - SGMV batching for parallel execution
 - Thousands of concurrent adapters supported
 - Not limited by VRAM—only by storage size
+- Dynamic adapter loading from local filesystem or HuggingFace
 
 ### 3. Supervisor LoRA (Hub and Spoke Architecture)
 
