@@ -7,7 +7,8 @@ Access at: http://localhost:3033
 
 import json
 import uuid
-from datetime import datetime
+import random
+from datetime import datetime, timedelta
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 
@@ -177,14 +178,19 @@ SCENARIOS = {
 }
 
 import random
+import time
 def get_random_scenario(scenario_key):
     s = SCENARIOS[scenario_key]
+    # Generate realistic timestamps spread over last 4 hours
+    offset_seconds = random.randint(0, 4*60*60)
+    timestamp = datetime.now() - timedelta(seconds=offset_seconds)
     return {
         "query": random.choice(s["queries"]),
         "tier": s["tier"],
         "status": s["status"],
         "latency_ms": random.randint(*s["latency_ms_range"]),
-        "reason": random.choice(s["reasons"])
+        "reason": random.choice(s["reasons"]),
+        "timestamp": timestamp.isoformat()
     }
 
 HTML = """<!DOCTYPE html>
@@ -332,7 +338,7 @@ class Handler(BaseHTTPRequestHandler):
         elif parsed.path == "/api/simulate":
             scenario = parse_qs(parsed.query).get("scenario", ["pass"])[0]
             s = get_random_scenario(scenario)
-            tx = {"transaction_id": f"maia-{uuid.uuid4().hex[:8]}", "timestamp": datetime.now().isoformat(), "query": s["query"], "domain": "finance", "materiality_tier": s["tier"], "status": s["status"], "latency_ms": s["latency_ms"], "reason": s["reason"], "policy_vetted": "SR 26-02", "latent_hash": uuid.uuid4().hex[:16]}
+            tx = {"transaction_id": f"maia-{uuid.uuid4().hex[:8]}", "timestamp": s["timestamp"], "query": s["query"], "domain": "finance", "materiality_tier": s["tier"], "status": s["status"], "latency_ms": s["latency_ms"], "reason": s["reason"], "policy_vetted": "SR 26-02", "latent_hash": uuid.uuid4().hex[:16]}
             if scenario == "sme_review":
                 tx["dhitl_session_id"] = f"dhitl-{uuid.uuid4().hex[:8]}"
                 tx["sme_votes"] = [{"sme_id": f"sme-00{i+1}", "vote": "APPROVE" if i < 2 else "REJECT", "rationale": "Compliant" if i < 2 else "Needs review"} for i in range(3)]
@@ -352,7 +358,7 @@ class Handler(BaseHTTPRequestHandler):
         if parsed.path == "/api/simulate":
             scenario = parse_qs(parsed.query).get("scenario", ["pass"])[0]
             s = get_random_scenario(scenario)
-            tx = {"transaction_id": f"maia-{uuid.uuid4().hex[:8]}", "timestamp": datetime.now().isoformat(), "query": s["query"], "domain": "finance", "materiality_tier": s["tier"], "status": s["status"], "latency_ms": s["latency_ms"], "reason": s["reason"], "policy_vetted": "SR 26-02", "latent_hash": uuid.uuid4().hex[:16]}
+            tx = {"transaction_id": f"maia-{uuid.uuid4().hex[:8]}", "timestamp": s["timestamp"], "query": s["query"], "domain": "finance", "materiality_tier": s["tier"], "status": s["status"], "latency_ms": s["latency_ms"], "reason": s["reason"], "policy_vetted": "SR 26-02", "latent_hash": uuid.uuid4().hex[:16]}
             if scenario == "sme_review":
                 tx["dhitl_session_id"] = f"dhitl-{uuid.uuid4().hex[:8]}"
                 tx["sme_votes"] = [{"sme_id": f"sme-00{i+1}", "vote": "APPROVE" if i < 2 else "REJECT", "rationale": "Compliant" if i < 2 else "Needs review"} for i in range(3)]
