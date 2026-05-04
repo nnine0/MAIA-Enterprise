@@ -1,144 +1,160 @@
-# MAIA (Multi-Agent Intelligent Assistant)
+# MAIA: The Governance Layer for Business Intelligence
 
-MAIA is an enterprise-grade AI system for domain-specific query handling, retrieval-augmented generation (RAG), and continuous learning. It leverages a base large language model fine-tuned with LoRA adapters for specialized experts across sectors.
+> "If TCP/IP is the stack, AI is the 8th layer, MAIA is the 9th—the Governance layer."
+
+MAIA (Multi-Adapter Inference Architecture) is an enterprise AI Governance Operating System. It solves the existential conflict between rapid AI innovation and strict regulatory constraints—transforming compliance from a bottleneck into a competitive advantage.
+
+## The Layer Thesis
+
+| Layer | Component |
+|-------|-----------|
+| 9 | **MAIA** - Governance Layer |
+| 8 | AI - The new application layer |
+| 7 | TCP/IP Application Layer (historical user domain) |
+
+## SR 26-02 Compliance
+
+MAIA natively satisfies the Federal Reserve's SR 26-02 mandates:
+
+- **Effective Challenge**: PVI Airlock with dual-adapter validation
+- **Materiality Matrix**: Domain-specific expert adapters with Tier 1/2/3 routing
+- **Continuous Monitoring**: STaR self-evolution loop + Latent EKG
+- **Conceptual Soundness**: Forensic proof of reasoning path via latent hashes
 
 ## Architecture
 
-MAIA uses a microservices architecture with the following components:
+MAIA implements a layered governance architecture:
 
-- **LoRAX**: Inference server for the base LLM with dynamic adapter loading
-- **Qdrant**: Vector database for document embeddings and retrieval
-- **Redis**: Task queue for asynchronous processing
-- **MAIA Controller**: Main FastAPI application handling queries, routing, and orchestration
-- **OCR Service**: Image text extraction using PaddleOCR
-- **Embeddings Service**: Embedding generation and reranking using SentenceTransformers
-- **Trainer**: Continuous learning worker for adapter updates
+### Layer 1: Supervisor Router (Hub/Spoke)
+- **Executive LoRA**: Industry identification (Finance, Logistics, Legal)
+- **Manager LoRA**: Sub-domain identification (Commercial Credit, Fraud/AML)
+- **Dispatch Token**: `[EXECUTE: {expert}, AUDIT: {auditor}, TIER: {materiality}]`
 
-## Features
+### Layer 2: Memory Manager (Neural OS Stack)
+| Tier | Location | Contents | Latency |
+|------|----------|----------|---------|
+| VRAM (Live) | GPU | Base LLM + PVI Airlock | 0ms |
+| RAM (Warm) | CPU | Top 100 active adapters | <20ms |
+| NVMe (Cold) | Disk | Thousands of specialized adapters | On-demand |
 
-- **Semantic Routing**: Intelligent query routing to domain-specific experts
-- **Hybrid RAG**: Combination of vector search, BM25, and cross-encoder reranking
-- **Vision Support**: OCR integration for image-based queries
-- **Continuous Learning**: Automated adapter retraining on user feedback
-- **Response Auditing**: Self-correction using general knowledge adapter
-- **GPU Optimization**: Efficient VRAM management across services
+### Layer 3: LoRAX Kernel (SGMV Batching)
+- **Base Model**: Gemma 4 26B A4B MoE (reference)
+- **Multi-Adapter**: Hot-swappable expert adapters
+- **VRAM Efficiency**: 70% reduction vs. monolithic models
 
-## Quick Start
+### Layer 4: PVI Airlock (Effective Challenge)
+Non-Blocking Interceptor pattern:
+1. **Actor** → Expert adapter generates action trajectory
+2. **Interceptor Pause** → 150ms pause before execution
+3. **Auditor** → SR 26-02 adapter validates trajectory
+4. **Circuit Breaker** → Blocks non-compliant trajectories
 
-### Prerequisites
+### Layer 5: Latent Telemetry (Neural EKG)
+- **Activation Hooks**: Tap Residual Stream at each layer
+- **Decision Nodes**: Latent hashing at critical points
+- **Audit Log**: Fed-auditable trajectory proof
 
-- Docker and Docker Compose
-- NVIDIA GPU (optional, for GPU acceleration)
-- OpenAI API key (for data augmentation)
+### Layer 6: DAG Orchestrator (Async Workflow)
+- **Parallel Streams**: Identity + Financials run concurrently
+- **Convergence Points**: Wait for dependencies
+- **Speculative Execution**: Draft while waiting
+- **GPU Never Blocked**: Yield and park workflows
 
-### Installation
+## Module Reference
 
-1. Clone the repository:
-   ```bash
-   git clone <repository-url>
-   cd maia
-   ```
+| Module | Location | Purpose |
+|--------|----------|---------|
+| Airlock | `app/airlock.py` | PVI Non-Blocking Interceptor |
+| Supervisor | `app/supervisor_router.py` | Hub/Spoke hierarchical routing |
+| Memory | `app/memory_manager.py` | VRAM/RAM/NVMe hot-swapping |
+| Telemetry | `app/latent_telemetry.py` | Neural EKG + latent hashing |
+| Orchestrator | `app/dag_orchestrator.py` | Async DAG workflow |
+| Controller | `app/main.py` | FastAPI integration |
 
-2. Create environment file:
-   ```bash
-   cp .env.example .env
-   # Edit .env with your API keys and configurations
-   ```
+## Materiality Matrix
 
-3. Build and start services:
-   ```bash
-   docker compose up --build
-   ```
-
-4. The API will be available at `http://localhost:8000`
-
-### Configuration
-
-Key environment variables:
-
-- `MAIA_API_KEY`: API key for authentication
-- `LORAX_URL`: LoRAX service URL
-- `QDRANT_URL`: Qdrant database URL
-- `OPENAI_API_KEY`: OpenAI API key for training data generation
+| Tier | Triggers | Airlock | Latency |
+|------|----------|---------|---------|
+| 1 - Critical | credit, wire, transfer, loan, sanction | Full audit | ~420ms |
+| 2 - Elevated | risk, limit, approval, policy | Conditional | ~200ms |
+| 3 - Benign | general queries | Bypass | ~50ms |
 
 ## API Usage
 
-### Text Query
-
+### Governance Query (with PVI Airlock)
 ```bash
 curl -X POST "http://localhost:8000/query" \
   -H "Content-Type: application/json" \
   -H "x-maia-key: your-api-key" \
-  -d '{"query": "What are the legal implications of factory fires?"}'
+  -d '{"query": "Increase credit limit for client 992 by 20%"}'
 ```
 
-### Image Query
-
+### Batch Query (parallel execution)
 ```bash
-curl -X POST "http://localhost:8000/query_image" \
-  -H "x-maia-key: your-api-key" \
-  -F "file=@document.jpg"
-```
-
-### Thumbs Up Feedback
-
-```bash
-curl -X POST "http://localhost:8000/thumbs_up" \
+curl -X POST "http://localhost:8000/query_batch" \
   -H "Content-Type: application/json" \
   -H "x-maia-key: your-api-key" \
-  -d '{
-    "query": "Legal question",
-    "response": "AI response",
-    "context": "Retrieved context",
-    "sector": "professional_services"
-  }'
+  -d '{"queries": ["query1", "query2"]}'
 ```
 
-## Development
-
-### Running Tests
-
+### Workflow (DAG orchestration)
 ```bash
-pytest
+curl -X POST "http://localhost:8000/workflow" \
+  -H "Content-Type: application/json" \
+  -H "x-maia-key: your-api-key" \
+  -d '{"workflow_type": "credit", "initial_data": {...}}'
 ```
 
-### Code Quality
-
+### Telemetry (Audit Log)
 ```bash
-pre-commit run --all-files
+curl -X GET "http://localhost:8000/telemetry/{session_id}" \
+  -H "x-maia-key: your-api-key"
 ```
 
-### Training Adapters
+### Memory Status
+```bash
+curl -X GET "http://localhost:8000/memory" \
+  -H "x-maia-key: your-api-key"
+```
+
+## Prerequisites
+
+- Docker and Docker Compose
+- NVIDIA GPU (24GB VRAM recommended)
+- LoRAX inference server
+
+## Quick Start
 
 ```bash
-python train_expert.py --adapter law --dataset path/to/dataset
+# Clone and configure
+git clone https://github.com/nnine0/MAIA-Enterprise.git
+cd MAIA-Enterprise
+
+# Start services
+docker compose up --build
+
+# API available at http://localhost:8000
 ```
 
 ## Security
 
 - API key authentication
 - Prompt injection detection via LLM-Guard
-- Input sanitization and validation
-- Secure dependency management
+- Latent telemetry for forensic audit trails
+- PVI Airlock circuit breaker
 
-## Monitoring
+## The VRAM/Compliance Paradox Solved
 
-- Structured logging with configurable levels
-- Health checks for all services
-- Performance metrics via API endpoints
+MAIA resolves the fundamental enterprise tension:
+- **Deploy AI** = risk regulatory violation
+- **Restrict AI** = lose competitive advantage
 
-## Contributing
+Through:
+1. Memory hierarchy (VRAM reserved for Airlock)
+2. SGMV batching (multiple adapters per GPU pass)
+3. Materiality-based routing (only high-risk triggers audit)
 
-1. Fork the repository
-2. Create a feature branch
-3. Make changes with tests
-4. Run CI checks
-5. Submit a pull request
+## Links
 
-## License
-
-[License information]
-
-## Support
-
-For issues and questions, please open a GitHub issue or contact the development team.
+- **Technical Standard**: See `STANDARD.md` for complete architecture
+- **Implementation**: https://github.com/nnine0/MAIA-Enterprise
