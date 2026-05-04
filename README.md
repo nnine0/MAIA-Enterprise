@@ -9,7 +9,7 @@ MAIA (Multi-Adapter Inference Architecture) is an enterprise AI Governance Opera
 | Layer | Component |
 |-------|-----------|
 | 9 | **MAIA** - Governance Layer |
-| 8 | AI - The new application layer |
+| 8 | AI - The Agentic Layer |
 | 7 | TCP/IP Application Layer (historical user domain) |
 
 ## SR 26-02 Compliance

@@ -13,7 +13,7 @@ Working prototype: https://github.com/nnine0/MAIA-Enterprise
 | Layer | Component |
 |-------|-----------|
 | 9 | **MAIA** - Governance Layer |
-| 8 | AI - The new application layer |
+| 8 | AI - The Agentic Layer |
 | 7 | TCP/IP Application Layer (historical user domain) |
 
 > "If TCP/IP is the stack, AI is the 8th layer, MAIA is the 9th—the Governance layer. The model can think whatever it wants, but it can only act within very specific action trajectories."
