@@ -23,7 +23,7 @@ MAIA tiers governance based on the **Cost of Catastrophic Failure**:
 
 ### Tier 1: High Risk / High Value (SR 26-02 Covered)
 
-**GDPval Basis**: Tasks with dollar values from $10K-$32K where catastrophic failure = regulatory violation, legal liability, or physical harm.
+**GDPval Basis**: Tasks with dollar values exceeding wire transfer limits ($10K+) where catastrophic failure = regulatory violation, legal liability, or physical harm.
 
 **MAIA Implementation**:
 - Trigger: Wire transfers, loans >$10M, legal filings, sanctions compliance
