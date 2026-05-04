@@ -121,7 +121,7 @@ HTML = """<!DOCTYPE html>
 </head>
 <body>
     <div class="header">
-        <h1>🛡️ MAIA PVI Airlock Dashboard <span class="badge">SR 26-02 COMPLIANT</span></h1>
+        <h1>MAIA PVI Airlock Dashboard <span class="badge">SR 26-02 COMPLIANT</span></h1>
     </div>
     <div class="container">
         <div class="compliance-banner">Federal Reserve SR 26-02 Compliance Validation Layer</div>
@@ -136,19 +136,19 @@ HTML = """<!DOCTYPE html>
             <div class="chart-card"><div class="chart-title">Domain Distribution</div><div class="bar-chart" id="domain-chart"></div></div>
         </div>
         <div class="controls-card">
-            <div class="controls-title">⚡ Test Scenarios</div>
+            <div class="controls-title">Test Scenarios</div>
             <div class="button-group">
-                <button class="btn btn-pass" onclick="runScenario('pass')">✅ PASS (Tier 3)</button>
-                <button class="btn btn-pass" onclick="runScenario('elevated_pass')">✅ PASS (Tier 2)</button>
-                <button class="btn btn-fail" onclick="runScenario('fail')">🚫 FAIL (Tier 1)</button>
-                <button class="btn btn-fail" onclick="runScenario('elevated_fail')">🚫 FAIL (Tier 2)</button>
-                <button class="btn btn-sme" onclick="runScenario('sme_review')">👥 SME Review (Tier 1)</button>
-                <button class="btn btn-clear" onclick="clearMetrics()">🗑️ Clear All</button>
+                <button class="btn btn-pass" onclick="runScenario('pass')">PASS (Tier 3)</button>
+                <button class="btn btn-pass" onclick="runScenario('elevated_pass')">PASS (Tier 2)</button>
+                <button class="btn btn-fail" onclick="runScenario('fail')">FAIL (Tier 1)</button>
+                <button class="btn btn-fail" onclick="runScenario('elevated_fail')">FAIL (Tier 2)</button>
+                <button class="btn btn-sme" onclick="runScenario('sme_review')">SME Review (Tier 1)</button>
+                <button class="btn btn-clear" onclick="clearMetrics()">Clear All</button>
             </div>
             <div class="last-updated" id="last-updated">Last updated: --</div>
         </div>
         <div class="table-card">
-            <div class="table-title">📋 Transaction Log</div>
+            <div class="table-title">Transaction Log</div>
             <table>
                 <thead><tr><th>Timestamp</th><th>Transaction ID</th><th>Query</th><th>Tier</th><th>Status</th><th>Latency</th><th>Reason</th></tr></thead>
                 <tbody id="transactions-body"></tbody>
