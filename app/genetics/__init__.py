@@ -9,15 +9,17 @@ from app.genetics.extractor import (
     TargetSystem,
     ValueMagnitude,
     RiskDomain,
-    GenomeVariant
+    GenomeVariant,
+    create_extractor,
 )
 
 __all__ = [
     "TrajectoryGeneticsExtractor",
     "TrajectoryFingerprint",
     "IntentClass",
-    "TargetSystem", 
+    "TargetSystem",
     "ValueMagnitude",
     "RiskDomain",
-    "GenomeVariant"
+    "GenomeVariant",
+    "create_extractor",
 ]
