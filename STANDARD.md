@@ -113,6 +113,56 @@ MAIA doesn't slow down the tensor math. It pauses the **Action Trajectory** betw
 
 ---
 
+---
+
+## The Future-Proof Kernel
+
+### Standardization of Target Modules
+
+The core Transformer projection modules (q_proj, k_proj, v_proj, gate_proj) remain consistent across model generations. These "engine components" rarely change names, even as models evolve (Llama 3, DeepSeek, etc.).
+
+**MAIA Advantage:** Point the LoRAX Kernel at new weights—no rewrite required. Support for a new model in under 1 hour.
+
+---
+
+### Adapting "Thinking" Models (DeepSeek-R1 / Llama-3-Think)
+
+Reasoning/Thinking models use Reinforcement Learning to show their work.
+
+**Capability:** Train a LoRA adapter to "steer" the thinking process of a reasoning model.
+
+**MAIA Synergy:** Perfect for the Self-Evolving CoT Loop. Take a model that already knows how to reason, then fine-tune a LoRA to teach it how to reason specifically about enterprise infrastructure, compliance, or risk.
+
+---
+
+### MoE (Mixture of Experts) Integration
+
+Models like Mixtral and DeepSeek are already monolithic MoEs.
+
+**LoRAX Secret Sauce:** Apply adapters to the "Shared Backbone" of an MoE model—creating "Experts on top of Experts."
+
+**MAIA Impact:** Materiality Matrix scales further. A base model good at math + a LoRA = "Federal Reserve Audit Expert."
+
+---
+
+### Vision and Multi-Modal Adapters
+
+Models like Llama 3.2 and Pixtral handle images and text.
+
+**Capability:** LoRAX supports Multi-Modal LoRAs. Train adapters for both Vision Encoder and Language Model simultaneously.
+
+**MAIA Impact:** Visual Compliance. The PVI Airlock audits not just what an agent says, but what it sees on a screen or logistics manifest.
+
+---
+
+## Strategic Positioning
+
+> *"MAIA is a Model-Agnostic Governance Layer. Because we've instrumented the LoRAX kernel to target standard Transformer projection modules (q, k, v, o), our architecture is forward-compatible with virtually every frontier model on the horizon.*
+>
+> *Whether we're running Llama 3.1 today or DeepSeek-R1 tomorrow, the PVI Airlock and Materiality Router remain the same. We have decoupled the Rate of Intelligence (the models) from the Standard of Trust (MAIA). As the models get smarter, our 'Compliance-as-Code' simply becomes more powerful without requiring a refactor."*
+
+---
+
 ## Links
 
 - **Implementation**: https://github.com/nnine0/MAIA-Enterprise
