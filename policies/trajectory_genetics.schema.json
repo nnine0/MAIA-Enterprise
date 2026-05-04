@@ -1,0 +1,96 @@
+{
+  "schema_version": "1.0.0",
+  "name": "Action Trajectory Genetics Standard (ATGS)",
+  "description": "Standardized DNA schema for every agentic action. Enables deterministic verification without heavy neural inference.",
+  "chromosomes": [
+    {
+      "name": "Intent_Class",
+      "type": "enum",
+      "required": true,
+      "values": [
+        "QUERY", "READ", "WRITE", "TRANSFER", "EXECUTE", "CONFIGURE", "DELETE", "APPROVE", "REJECT", "ESCALATE"
+      ],
+      "description": "Primary action type being performed"
+    },
+    {
+      "name": "Target_System",
+      "type": "enum",
+      "required": true,
+      "values": [
+        "INTERNAL_DB", "EXTERNAL_API", "FILESYSTEM", "USER_INTERFACE", 
+        "PAYMENT_GATEWAY", "COMMUNICATION", "AUTH_SERVICE", "ANALYTICS", "NONE"
+      ],
+      "description": "System being interacted with"
+    },
+    {
+      "name": "Value_Magnitude",
+      "type": "enum",
+      "required": true,
+      "values": ["TIER_1_CRITICAL", "TIER_2_ELEVATED", "TIER_3_BENIGN"],
+      "description": "Materiality tier based on financial or risk impact"
+    },
+    {
+      "name": "Risk_Domain",
+      "type": "enum",
+      "required": true,
+      "values": [
+        "FINANCE", "LEGAL", "HEALTHCARE", "OPERATIONS", "HR", 
+        "IT_SECURITY", "COMPLIANCE", "MARKETING", "GENERAL"
+      ],
+      "description": "Regulatory domain classification"
+    },
+    {
+      "name": "Context_Hash",
+      "type": "string",
+      "required": true,
+      "pattern": "^[a-f0-9]{16}$",
+      "description": "SHA-256 hash (first 16 chars) of full context for uniqueness"
+    }
+  ],
+  "genome_variants": {
+    "WILD_TYPE": {
+      "description": "Known, pre-approved structural pathway",
+      "requires_symbolic_only": false,
+      "latency_overhead_ms": 0,
+      "automatic_approval": true
+    },
+    "MUTATED": {
+      "description": "Novel, unmapped action requiring evaluation",
+      "requires_symbolic_only": false,
+      "latency_overhead_ms": 5,
+      "automatic_approval": false
+    },
+    "ANOMALY": {
+      "description": "Detected anomaly requiring neural or human evaluation",
+      "requires_symbolic_only": false,
+      "latency_overhead_ms": 150,
+      "automatic_approval": false
+    }
+  },
+  "validation_rules": [
+    {
+      "rule_id": "R001",
+      "condition": "Intent == TRANSFER AND Value_Magnitude == TIER_1_CRITICAL",
+      "action": "REQUIRE_DHITL",
+      "fallback": "BLOCK"
+    },
+    {
+      "rule_id": "R002",
+      "condition": "Risk_Domain == HEALTHCARE",
+      "action": "REQUIRE_SME_ESCALATION",
+      "fallback": "BLOCK"
+    },
+    {
+      "rule_id": "R003",
+      "condition": "Intent == DELETE AND Target_System == INTERNAL_DB",
+      "action": "REQUIRE_AUDIT_LOG",
+      "fallback": "WARN"
+    },
+    {
+      "rule_id": "R004",
+      "condition": "Intent == EXECUTE AND Target_System == PAYMENT_GATEWAY",
+      "action": "REQUIRE_DHITL",
+      "fallback": "BLOCK"
+    }
+  ]
+}
