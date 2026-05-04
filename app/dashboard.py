@@ -154,6 +154,17 @@ class Handler(BaseHTTPRequestHandler):
                 "summary": metrics.get_summary(),
                 "transactions": metrics.get_transactions(50)
             }).encode())
+        elif self.path.startswith("/api/simulate"):
+            scenario = parse_qs(urlparse(self.path).query).get("scenario", ["pass"])[0]
+            tx = create_transaction(scenario)
+            if scenario == "sme_review":
+                tx["dhitl_session_id"] = f"dhitl-{tx['transaction_id'].split('-')[1]}"
+                tx["sme_votes"] = [{"sme_id": f"sme-00{i+1}", "vote": "APPROVE" if i<2 else "REJECT"} for i in range(3)]
+            metrics.add(tx)
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"status": "simulated"}).encode())
         else:
             self.send_response(404)
             self.end_headers()
