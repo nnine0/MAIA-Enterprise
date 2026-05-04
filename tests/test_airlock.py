@@ -25,7 +25,14 @@ from app.airlock import (
     AirlockVerdict,
     TrajectoryRecord,
     execute_vetted_transaction,
-    batch_vetted_transactions
+    batch_vetted_transactions,
+    SMEVote,
+    SMEPool,
+    RLHFTrainingData,
+    submit_sme_vote,
+    get_dhitl_session,
+    get_rlhf_training_data,
+    export_dpo_data
 )
 from app.supervisor_router import SupervisorRouter, DispatchToken, IndustryLevel, SubDomainLevel
 from app.latent_telemetry import LatentTelemetry, TrajectoryNode
@@ -377,6 +384,245 @@ class TestEndToEndCompliance:
         full_audit = telemetry.get_audit_log(session_id)
         assert full_audit["trajectory_length"] > 0
         assert full_audit["trajectory_hash"] is not None
+
+
+class TestSMEPool:
+    """Test SME Pool - Human Supreme Court for trajectory validation"""
+
+    def test_sme_pool_initialization(self):
+        """SME Pool has certified SMEs by domain"""
+        pool = SMEPool()
+        
+        assert "finance" in pool.smes_by_domain
+        assert "compliance" in pool.smes_by_domain
+        assert len(pool.smes_by_domain["finance"]) >= 3
+
+    def test_create_voting_session(self):
+        """Create DHITL voting session for Tier 1 trajectory"""
+        pool = SMEPool()
+        
+        session = pool.create_voting_session(
+            transaction_id="test-001",
+            trajectory="Approve $50M loan for client 887",
+            domain="finance"
+        )
+        
+        assert session.transaction_id == "test-001"
+        assert session.domain == "finance"
+        assert session.status == "pending"
+        assert session.required_votes == 3
+        assert session.session_id.startswith("dhitl-")
+
+    def test_submit_sme_vote(self):
+        """SME votes are recorded in session"""
+        pool = SMEPool()
+        
+        session = pool.create_voting_session("test-001", "Trajectory", "finance")
+        
+        # Submit votes
+        pool.submit_vote(session.session_id, "sme-001", SMEVote.APPROVE, "Aligned with SR 26-02")
+        pool.submit_vote(session.session_id, "sme-002", SMEVote.APPROVE, "Risk acceptable")
+        pool.submit_vote(session.session_id, "sme-003", SMEVote.APPROVE, "Compliant")
+        
+        result = pool.get_session(session.session_id)
+        
+        assert result["consensus"] == "APPROVED"
+        assert result["status"] == "completed"
+        assert len(result["votes"]) == 3
+
+    def test_sme_rejection_consensus(self):
+        """SME rejection creates negative RLHF signal"""
+        pool = SMEPool()
+        
+        session = pool.create_voting_session("test-002", "Trajectory", "finance")
+        
+        # Submit rejection votes
+        pool.submit_vote(session.session_id, "sme-001", SMEVote.REJECT, "Violates capital reserve")
+        pool.submit_vote(session.session_id, "sme-002", SMEVote.REJECT, "Non-compliant")
+        pool.submit_vote(session.session_id, "sme-003", SMEVote.REJECT, "Risk too high")
+        
+        result = pool.get_session(session.session_id)
+        
+        assert result["consensus"] == "REJECTED"
+        assert result["status"] == "completed"
+
+    def test_tie_breaker_required(self):
+        """Tie votes require human tie-breaker"""
+        pool = SMEPool()
+        
+        session = pool.create_voting_session("test-003", "Trajectory", "finance")
+        
+        # Submit mixed votes (2 approve, 1 reject)
+        pool.submit_vote(session.session_id, "sme-001", SMEVote.APPROVE, "OK")
+        pool.submit_vote(session.session_id, "sme-002", SMEVote.REJECT, "Not OK")
+        pool.submit_vote(session.session_id, "sme-003", SMEVote.APPROVE, "Approved")
+        
+        result = pool.get_session(session.session_id)
+        
+        assert result["consensus"] == "APPROVED"  # 2 > 1
+
+    def test_get_pending_smes(self):
+        """Can get available SMEs for domain"""
+        pool = SMEPool()
+        
+        smes = pool.get_pending_smes("finance")
+        
+        assert len(smes) >= 3
+        assert all("sme_id" in sme for sme in smes)
+
+
+class TestRLHFTrainingData:
+    """Test RLHF Training Data - Generated from SME votes"""
+
+    def test_rlhf_data_initialization(self):
+        """RLHF data collector initializes empty"""
+        rlhf = RLHFTrainingData()
+        
+        assert len(rlhf.training_data) == 0
+
+    def test_add_voting_result_approved(self):
+        """Approved trajectory becomes positive reward"""
+        rlhf = RLHFTrainingData()
+        
+        rlhf.add_voting_result(
+            transaction_id="test-001",
+            domain="finance",
+            trajectories=["Approved trajectory"],
+            consensus="APPROVED",
+            votes=[{"vote": "APPROVE"}, {"vote": "APPROVE"}, {"vote": "APPROVE"}]
+        )
+        
+        data = rlhf.get_training_batch()
+        
+        assert len(data) == 1
+        assert data[0]["is_positive_reward"] is True
+        assert data[0]["is_negative_reward"] is False
+
+    def test_add_voting_result_rejected(self):
+        """Rejected trajectory becomes negative reward"""
+        rlhf = RLHFTrainingData()
+        
+        rlhf.add_voting_result(
+            transaction_id="test-002",
+            domain="finance",
+            trajectories=["Rejected trajectory"],
+            consensus="REJECTED",
+            votes=[{"vote": "REJECT"}, {"vote": "REJECT"}, {"vote": "REJECT"}]
+        )
+        
+        data = rlhf.get_training_batch()
+        
+        assert len(data) == 1
+        assert data[0]["is_positive_reward"] is False
+        assert data[0]["is_negative_reward"] is True
+
+    def test_dpo_export(self):
+        """DPO export format for LoRA fine-tuning"""
+        rlhf = RLHFTrainingData()
+        
+        rlhf.add_voting_result(
+            transaction_id="test-001",
+            domain="finance",
+            trajectories=["Winner trajectory"],
+            consensus="APPROVED",
+            votes=[{"vote": "APPROVE"}, {"vote": "APPROVE"}, {"vote": "APPROVE"}]
+        )
+        
+        dpo_data = rlhf.export_for_dpo()
+        
+        assert len(dpo_data) == 1
+        assert "prompt" in dpo_data[0]
+        assert "chosen" in dpo_data[0]
+        assert "rejected" in dpo_data[0]
+
+
+@pytest.mark.asyncio
+class TestDHITLIntegration:
+    """Test DHITL integration with PVI Airlock"""
+
+    async def test_tier1_escalates_to_sme_review(self, airlock):
+        """Tier 1 trajectory escalates to DHITL SME review"""
+        user_query = "Approve $50M commercial loan"
+        
+        with patch.object(airlock.client, 'chat') as mock_chat:
+            mock_chat.completions.create = AsyncMock(return_value=MockActorResponse(
+                "Recommending approval of $50M loan for client 887"
+            ))
+            
+            record = await airlock.execute_vetted_transaction(
+                user_query, "finance", "test-001", require_sme_review=True
+            )
+            
+            assert record.status == "PENDING_SME_REVIEW"
+            assert record.dhitl_session_id is not None
+            assert record.dhitl_session_id.startswith("dhitl-")
+
+    async def test_sme_vote_creates_rlhf_data(self, airlock):
+        """SME vote generates RLHF training data"""
+        # First create a pending session
+        user_query = "Wire transfer $1M to account 12345"
+        
+        with patch.object(airlock.client, 'chat') as mock_chat:
+            mock_chat.completions.create = AsyncMock(return_value=MockActorResponse(
+                "Processing wire transfer"
+            ))
+            
+            record = await airlock.execute_vetted_transaction(
+                user_query, "finance", "test-002", require_sme_review=True
+            )
+            
+            session_id = record.dhitl_session_id
+            
+            # Submit votes to complete session
+            airlock.submit_sme_vote(session_id, "sme-001", SMEVote.APPROVE, "Valid transfer")
+            airlock.submit_sme_vote(session_id, "sme-002", SMEVote.APPROVE, "Authorized")
+            airlock.submit_sme_vote(session_id, "sme-003", SMEVote.APPROVE, "Compliant")
+            
+            # Check RLHF data was created
+            rlhf_data = get_rlhf_training_data()
+            
+            # Filter for our transaction
+            our_data = [d for d in rlhf_data if d["transaction_id"] == "test-002"]
+            assert len(our_data) >= 1
+            assert our_data[0]["is_positive_reward"] is True
+
+    def test_dhitl_session_tracking(self, airlock):
+        """DHITL session can be queried"""
+        # Create session directly
+        session = airlock.sme_pool.create_voting_session(
+            "test-003", "Test trajectory", "finance"
+        )
+        
+        session_data = get_dhitl_session(session.session_id)
+        
+        assert session_data is not None
+        assert session_data["transaction_id"] == "test-003"
+        assert session_data["status"] == "pending"
+
+
+class TestAuditLogWithDHITL:
+    """Test audit log includes DHITL data"""
+
+    def test_audit_log_includes_dhitl_fields(self, airlock):
+        """Audit log includes SME voting information"""
+        record = TrajectoryRecord(
+            transaction_id="test-001",
+            timestamp="2026-05-04T10:42:00",
+            materiality_tier=1,
+            policy_vetted="SR 26-02 + DHITL",
+            actor_adapter="finance-expert",
+            auditor_adapter="sr26-auditor",
+            status="PENDING_SME_REVIEW",
+            dhitl_session_id="dhitl-abc123",
+            sme_votes=[],
+            sme_consensus=None
+        )
+        
+        audit_log = airlock.to_audit_log(record)
+        
+        assert "dhitl_session_id" in audit_log
+        assert "sme_votes" in audit_log
+        assert "sme_consensus" in audit_log
 
 
 if __name__ == "__main__":
