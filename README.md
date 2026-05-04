@@ -170,13 +170,6 @@ MAIA is an enterprise AI Governance Operating System that turns compliance from 
 | Prompt-level governance | Weight-level policy enforcement |
 | Black box decisions | Glass box audit trails |
 
-### The Microsoft Moment
-
-MAIA represents the **AI Operating System** moment:
-- TCP/IP enabled networked computing
-- MAIA enables governed AI at enterprise scale
-- The 9th Layer of the technology stack
-
 ---
 
 ## SR 26-02 Compliance Mapping
