@@ -6,7 +6,7 @@
 
 ## Purpose
 
-MAIA (Multi-Adapter Inference Architecture) solves the fundamental crisis facing the Global 2000: **how to deploy AI at scale while satisfying increasingly strict regulatory requirements**.
+MAIA (Multi-Adapter Inference Architecture) is an enterprise AI Governance Operating System. It solves the fundamental crisis facing the Global 2000: **how to deploy AI at scale while satisfying increasingly strict regulatory requirements**.
 
 The Federal Reserve's SR 26-02 mandate (released April 17th) requires banks to implement:
 - **Effective Challenge** - Independent review of AI decisions
