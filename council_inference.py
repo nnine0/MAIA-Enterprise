@@ -28,6 +28,7 @@ class TrajectoryRecord:
     materiality_tier: MaterialityTier
     latent_hash: Optional[str] = None
     reasoning: Optional[str] = None
+    classification_audit_hash: Optional[str] = None
 
 
 class PVIAirlock:
@@ -37,27 +38,48 @@ class PVIAirlock:
     Implements the Actor/Auditor pattern per SR 26-02:
     - Actor: Expert adapter generates action trajectory
     - Auditor: Independent SR 26-02 adapter provides Effective Challenge
-    - Circuit Breaker: Blocks non-compliant trajectories
+    - Circuit Breaker: blocks non-compliant trajectories
     - DHITL: Escalates Tier 1 to human SME review
+    
+    Uses governed Materiality Matrix Registry for risk classification.
     """
     
-    CRITICAL_KEYWORDS = [
-        "investment", "legal", "medical", "diagnosis", "prescription",
-        "contract", " lawsuit", "merger", "acquisition", "regulation",
-        "compliance", "audit", "financial", "patient", "treatment"
-    ]
-    
-    def __init__(self, model, tokenizer, device: str = "cuda"):
+    def __init__(self, model, tokenizer, device: str = "cuda", materiality_path: str = "policies/materiality_registry.json"):
         self.model = model
         self.tokenizer = tokenizer
         self.device = device
         self._auditor_adapter_loaded = False
+        self._init_materiality_matrix(materiality_path)
+    
+    def _init_materiality_matrix(self, path: str):
+        try:
+            from app.materiality_matrix import MaterialityMatrix, MaterialityTier as MT
+            self._matrix = MaterialityMatrix(path)
+            self._use_governed_matrix = True
+        except Exception as e:
+            print(f"Warning: Could not load governed Materiality Matrix: {e}")
+            self._matrix = None
+            self._use_governed_matrix = False
     
     def _classify_materiality(self, query: str) -> MaterialityTier:
+        if self._use_governed_matrix and self._matrix:
+            tier, _ = self._matrix.classify(query)
+            return tier
+        
         query_lower = query.lower()
-        if any(kw in query_lower for kw in self.CRITICAL_KEYWORDS):
+        critical_keywords = [
+            "investment", "legal", "medical", "diagnosis", "prescription",
+            "contract", "merger", "acquisition", "regulation", "compliance"
+        ]
+        if any(kw in query_lower for kw in critical_keywords):
             return MaterialityTier.TIER_1_CRITICAL
         return MaterialityTier.TIER_2_ELEVATED
+    
+    def _get_classification_audit_hash(self, query: str, tier: MaterialityTier) -> str:
+        if self._use_governed_matrix and self._matrix:
+            return self._matrix.get_audit_hash(query, tier)
+        import hashlib
+        return hashlib.sha256(f"{query}:{tier.value}".encode()).hexdigest()[:16]
     
     def _compute_latent_hash(self, hidden_states: torch.Tensor) -> str:
         import hashlib
@@ -130,7 +152,8 @@ Actor Response: {actor_response}
             auditor_response=auditor_reasoning,
             verdict=verdict,
             materiality_tier=materiality,
-            latent_hash=hashlib.sha256(f"{query}:{actor_response}".encode()).hexdigest()[:16]
+            latent_hash=hashlib.sha256(f"{query}:{actor_response}".encode()).hexdigest()[:16],
+            classification_audit_hash=self._get_classification_audit_hash(query, materiality)
         )
         
         return actor_response, verdict, record
