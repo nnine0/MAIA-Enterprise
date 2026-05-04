@@ -1,0 +1,45 @@
+{
+  "adapter_id": "bio",
+  "name": "Biomedical Expert Adapter",
+  "version": "1.0.0",
+  "sr26_tier": 1,
+  "domain": "healthcare",
+  "sub_domain": "Medical Advisory",
+  "base_model": "Nanbeige/Nanbeige4-3B-Thinking-2511",
+  "created_date": "2026-05-04",
+  "conceptual_soundness": {
+    "version": "1.0.0",
+    "auditor_weight_hash": "d4e5f6a7b8c9",
+    "logic_tunnel_boundaries": [
+      "Medical literature analysis",
+      "Biological mechanism explanation",
+      "Healthcare compliance checking",
+      "Patient education materials"
+    ],
+    "limitations": [
+      "Cannot diagnose or treat patients",
+      "Cannot replace licensed medical professionals",
+      "May not reflect latest medical research"
+    ],
+    "governance_controls": [
+      "PVI Airlock with healthcare-specific rules",
+      "HIPAA audit logging",
+      "DHITL required for all medical queries"
+    ]
+  },
+  "risk_assessment": {
+    "level": "CRITICAL",
+    "factors": ["Patient safety", "HIPAA compliance", "Medical liability"],
+    "mitigations": ["Strict Tier 1 enforcement", "No diagnostic capabilities", "Always recommend professional consultation"]
+  },
+  "performance_metrics": {
+    "accuracy": 0.91,
+    "medical_accuracy": 0.89,
+    "citation_quality": 0.87
+  },
+  "governance": {
+    "requires_dhitl": true,
+    "requires_audit_trail": true,
+    "fallback_behavior": "Route to licensed healthcare professional for all patient-related queries"
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "adapter_id": "law",
+  "name": "Legal Expert Adapter",
+  "version": "1.0.0",
+  "sr26_tier": 1,
+  "domain": "legal",
+  "sub_domain": "Legal Advisory",
+  "base_model": "Nanbeige/Nanbeige4-3B-Thinking-2511",
+  "created_date": "2026-05-04",
+  "conceptual_soundness": {
+    "version": "1.0.0",
+    "auditor_weight_hash": "a1b2c3d4e5f6",
+    "logic_tunnel_boundaries": [
+      "Contract review and analysis",
+      "Legal research assistance",
+      "Regulatory compliance checking",
+      "Case precedent analysis"
+    ],
+    "limitations": [
+      "Cannot provide legal advice in unauthorized jurisdictions",
+      "May not reflect most recent case law",
+      "Cannot represent clients in court"
+    ],
+    "governance_controls": [
+      "PVI Airlock enforcement",
+      "Client confidentiality monitoring",
+      "DHITL voting for critical contracts"
+    ]
+  },
+  "risk_assessment": {
+    "level": "HIGH",
+    "factors": ["Legal liability", "Unauthorized practice of law", "Confidentiality"],
+    "mitigations": ["DHITL required for Tier 1", "Disclaimer required", "Escalation to licensed attorneys"]
+  },
+  "performance_metrics": {
+    "accuracy": 0.92,
+    "legal_reasoning_score": 0.90,
+    "citation_accuracy": 0.88
+  },
+  "governance": {
+    "requires_dhitl": true,
+    "requires_audit_trail": true,
+    "fallback_behavior": "Route to licensed attorney for Tier 1 queries"
+  }
+}
