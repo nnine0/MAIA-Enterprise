@@ -63,12 +63,129 @@ class MetricsStore:
 metrics = MetricsStore()
 
 SCENARIOS = {
-    "pass": {"query": "Summarize the IT outage log from 3 AM", "tier": 3, "status": "PASS (BYPASS)", "latency_ms": 45, "reason": "Low materiality - bypassed audit"},
-    "fail": {"query": "Approve $50M commercial loan without stress test buffer", "tier": 1, "status": "BLOCKED", "latency_ms": 420, "reason": "SR 26-02 violation: Missing capital reserve"},
-    "sme_review": {"query": "Wire transfer $10M to sanctioned jurisdiction", "tier": 1, "status": "PENDING_SME_REVIEW", "latency_ms": 180, "reason": "Tier 1 requires human SME review"},
-    "elevated_pass": {"query": "Update risk policy for credit department", "tier": 2, "status": "PASS", "latency_ms": 200, "reason": "AI audit passed - compliant"},
-    "elevated_fail": {"query": "Increase credit limit without verifying income", "tier": 2, "status": "BLOCKED", "latency_ms": 210, "reason": "AI audit failed - income verification required"}
+    "pass": {
+        "queries": [
+            "List all meeting rooms on floor 5",
+            "What is the weather forecast for today?",
+            "Schedule a 30min meeting with the team",
+            "Update my contact information",
+            "Show the company holiday calendar",
+            "What time does the cafeteria close?",
+            "Find the nearest parking garage",
+            "Reset my password",
+            "Check my PTO balance",
+            "Submit an expense report for $45"
+        ],
+        "tier": 3, "status": "PASS (BYPASS)", "latency_ms_range": (35, 65), 
+        "reasons": [
+            "Low materiality - bypassed audit",
+            "Benign query - no compliance risk",
+            "Administrative task - auto-approved",
+            "Standard lookup - no policy concerns"
+        ]
+    },
+    "elevated_pass": {
+        "queries": [
+            "Update credit policy for small business loans",
+            "Review quarterly risk assessment report",
+            "Approve vendor contract for IT services",
+            "Renew insurance policy for commercial property",
+            "Generate compliance report for regulators",
+            "Process payroll for 500 employees",
+            "Approve budget variance over $50K",
+            "Review audit findings from Q3",
+            "Update anti-money laundering procedures",
+            "Approve new hedging strategy"
+        ],
+        "tier": 2, "status": "PASS", "latency_ms_range": (150, 280),
+        "reasons": [
+            "AI audit passed - compliant with SR 26-02",
+            "All policy checks validated successfully",
+            "Risk controls verified - proceeding",
+            "Materiality within acceptable thresholds",
+            "Dual-control approval completed"
+        ]
+    },
+    "fail": {
+        "queries": [
+            "Approve $75M loan without stress test buffer",
+            "Wire $25M to sanctioned entity in Iran",
+            "Execute derivative trade exceeding limit",
+            "Approve credit for flagged PEP customer",
+            "Settle transaction in unapproved jurisdiction",
+            "Process wire to country under sanctions",
+            "Approve loan missing KYC completion",
+            "Execute trade without margin requirement",
+            "Approve credit line exceeding authority",
+            "Transfer funds to blocked list entity"
+        ],
+        "tier": 1, "status": "BLOCKED", "latency_ms_range": (380, 520),
+        "reasons": [
+            "SR 26-02 violation: Missing 2026 capital reserve calculation",
+            "Sanctions compliance check failed - entity blocked",
+            "Credit authority exceeded - requires board approval",
+            "KYC verification incomplete - transaction held",
+            "Stress test buffer below regulatory threshold",
+            "AML flags triggered - transaction frozen",
+            "Regulatory limit breach - immediate block",
+            "Missing required documentation for approval"
+        ]
+    },
+    "elevated_fail": {
+        "queries": [
+            "Increase credit limit without income verification",
+            "Approve loan with incomplete credit check",
+            "Waive late fees for flagged account",
+            "Override risk score for high-risk client",
+            "Approve transaction below minimum threshold",
+            "Modify loan terms without authorization",
+            "Skip required due diligence for expedited approval",
+            "Approve trade with incomplete margin verification"
+        ],
+        "tier": 2, "status": "BLOCKED", "latency_ms_range": (190, 290),
+        "reasons": [
+            "AI audit failed - income verification required",
+            "Credit check incomplete - transaction blocked",
+            "Risk override requires senior approval",
+            "Missing required documentation for processing",
+            "Compliance verification failed - manual review needed",
+            "Policy violation - automated block"
+        ]
+    },
+    "sme_review": {
+        "queries": [
+            "Wire $10M to new international correspondent bank",
+            "Approve acquisition of competitor in regulated market",
+            "Issue stand-by letter of credit for $50M",
+            "Process restructure for troubled commercial loan",
+            "Approve derivatives exposure increase above limit",
+            "Execute trade with new counterparty group",
+            "Settle complex multi-currency transaction",
+            "Approve credit facility for politically exposed person",
+            "Process merger with pending regulatory approval",
+            "Authorize exposure to new asset class"
+        ],
+        "tier": 1, "status": "PENDING_SME_REVIEW", "latency_ms_range": (160, 240),
+        "reasons": [
+            "Tier 1 requires human SME review - high materiality",
+            "New counterparty requires manual approval",
+            "Regulatory submission requires sign-off",
+            "Complex transaction needs committee review",
+            " Politically exposed person - enhanced due diligence"
+        ]
+    }
 }
+
+import random
+def get_random_scenario(scenario_key):
+    s = SCENARIOS[scenario_key]
+    return {
+        "query": random.choice(s["queries"]),
+        "tier": s["tier"],
+        "status": s["status"],
+        "latency_ms": random.randint(*s["latency_ms_range"]),
+        "reason": random.choice(s["reasons"])
+    }
 
 HTML = """<!DOCTYPE html>
 <html>
@@ -214,7 +331,7 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps({"summary": metrics.get_summary(), "transactions": metrics.get_transactions(50), "sme_votes": len(metrics.sme_votes)}).encode())
         elif parsed.path == "/api/simulate":
             scenario = parse_qs(parsed.query).get("scenario", ["pass"])[0]
-            s = SCENARIOS.get(scenario, SCENARIOS["pass"])
+            s = get_random_scenario(scenario)
             tx = {"transaction_id": f"maia-{uuid.uuid4().hex[:8]}", "timestamp": datetime.now().isoformat(), "query": s["query"], "domain": "finance", "materiality_tier": s["tier"], "status": s["status"], "latency_ms": s["latency_ms"], "reason": s["reason"], "policy_vetted": "SR 26-02", "latent_hash": uuid.uuid4().hex[:16]}
             if scenario == "sme_review":
                 tx["dhitl_session_id"] = f"dhitl-{uuid.uuid4().hex[:8]}"
@@ -234,7 +351,7 @@ class Handler(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         if parsed.path == "/api/simulate":
             scenario = parse_qs(parsed.query).get("scenario", ["pass"])[0]
-            s = SCENARIOS.get(scenario, SCENARIOS["pass"])
+            s = get_random_scenario(scenario)
             tx = {"transaction_id": f"maia-{uuid.uuid4().hex[:8]}", "timestamp": datetime.now().isoformat(), "query": s["query"], "domain": "finance", "materiality_tier": s["tier"], "status": s["status"], "latency_ms": s["latency_ms"], "reason": s["reason"], "policy_vetted": "SR 26-02", "latent_hash": uuid.uuid4().hex[:16]}
             if scenario == "sme_review":
                 tx["dhitl_session_id"] = f"dhitl-{uuid.uuid4().hex[:8]}"
