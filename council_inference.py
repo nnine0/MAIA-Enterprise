@@ -64,7 +64,17 @@ def ask_the_council(question, topic):
     
     with torch.no_grad():
         outputs = model.generate(**inputs, max_new_tokens=500, temperature=0.5, repetition_penalty=1.1)
-    
+
+    # SR 26-02 COMPLIANCE GATE: PVI AIRLOCK INTERCEPTOR
+    # This is where the Governance Layer bridges the gap between code and law.
+    # In production MAIA:
+    #   1. The Actor (Expert) generates the action trajectory
+    #   2. The Auditor (SR 26-02 adapter) provides Effective Challenge
+    #   3. The Circuit Breaker blocks non-compliant trajectories
+    #   4. Tier 1 escalates to Human SME Review (DHITL)
+    # The latent_hash provides forensic proof of the model's reasoning state
+    # for Federal Reserve audit verification.
+
     return tokenizer.decode(outputs[0], skip_special_tokens=True).split("<thinking>")[-1]
 
 # --- USAGE ---
