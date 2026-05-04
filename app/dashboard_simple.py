@@ -209,6 +209,20 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header("Content-type", "application/json")
             self.end_headers()
             self.wfile.write(json.dumps({"summary": metrics.get_summary(), "transactions": metrics.get_transactions(50), "sme_votes": len(metrics.sme_votes)}).encode())
+        elif parsed.path == "/api/simulate":
+            scenario = parse_qs(parsed.query).get("scenario", ["pass"])[0]
+            s = SCENARIOS.get(scenario, SCENARIOS["pass"])
+            tx = {"transaction_id": f"maia-{uuid.uuid4().hex[:8]}", "timestamp": datetime.now().isoformat(), "query": s["query"], "domain": "finance", "materiality_tier": s["tier"], "status": s["status"], "latency_ms": s["latency_ms"], "reason": s["reason"], "policy_vetted": "SR 26-02", "latent_hash": uuid.uuid4().hex[:16]}
+            if scenario == "sme_review":
+                tx["dhitl_session_id"] = f"dhitl-{uuid.uuid4().hex[:8]}"
+                tx["sme_votes"] = [{"sme_id": f"sme-00{i+1}", "vote": "APPROVE" if i < 2 else "REJECT", "rationale": "Compliant" if i < 2 else "Needs review"} for i in range(3)]
+                tx["sme_consensus"] = "APPROVED"
+                metrics.sme_votes.extend(tx["sme_votes"])
+            metrics.add_transaction(tx)
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"status": "simulated", "transaction": tx}).encode())
         else:
             self.send_response(404)
             self.end_headers()
