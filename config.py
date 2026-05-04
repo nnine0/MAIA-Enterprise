@@ -52,5 +52,5 @@ DATA_LOGS_DIR = "/data_logs"
 METADATA_FILE = "/adapters/adapter_metadata.json"
 
 # Other
-MAX_CONTEXT_LENGTH = 2000  # For summarization
+MAX_CONTEXT_LENGTH = 8192  # Increased for enterprise document RAG (was 2000)
 PAD_TOKEN = "<|pad|>"  # Pad token for tokenizer
