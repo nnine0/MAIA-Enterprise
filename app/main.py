@@ -1,16 +1,12 @@
 """
 MAIA Council Controller - Governance Layer for Business Intelligence
-=====================================================================
+====================================================================
 Integrates: Supervisor Router, Circuit Breaker, Memory Manager, Latent Telemetry
 
-CIRCUIT BREAKER MODEL (v3.0):
-----------------------------
-Layer 9 (Agentic)     → Generates Intent Payloads (The "Black Box")
-Layer 8 (Governance) → Circuit Breaker: Intercepts, Validates, Signs (The Guardian)
-Layer 7 (Application) → Executes SIGNED trajectories only (The Hand)
-
-TCP/IP = Layer 7, AI = Layer 8, MAIA = Layer 9
-Zero-Trust: Layer 7 does NOT trust Layer 9, Only Layer 8 has the signing key
+Zero-Trust Architecture:
+- Agentic Layer: Generates intent payloads
+- Governance Layer: Circuit Breaker validates and signs
+- Application Layer: Executes only signed trajectories
 """
 
 from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, Header
@@ -50,6 +46,16 @@ from dag_orchestrator import (
     get_workflow_status
 )
 
+from config import (
+    MAIA_API_KEY,
+    LORAX_URL,
+    BASE_MODEL_ID,
+    QDRANT_URL,
+    API_HOST,
+    API_PORT,
+    METADATA_FILE,
+    DATA_LOGS_DIR,
+)
 import config
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -57,7 +63,7 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="MAIA Governance Layer",
-    description="The 9th Layer: AI Governance Operating System for SR 26-02 Compliance"
+    description="AI Governance Operating System for SR 26-02 Compliance"
 )
 
 def get_live_adapter(expert: str) -> str:
@@ -196,7 +202,7 @@ async def root():
     return {
         "name": "MAIA Governance Layer",
         "version": "2.0",
-        "description": "The 9th Layer: AI Governance Operating System",
+        "description": "AI Governance Operating System",
         "architecture": {
             "kernel": "LoRAX + Medusa",
             "base_model": "Gemma 4 26B A4B MoE",
@@ -309,12 +315,42 @@ async def rollback_adapter(expert: str, version: str, api_key: str = Depends(ver
 
 
 @app.post("/train_update")
-async def train_update_endpoint() -> dict:
+async def train_update_endpoint(api_key: str = Depends(verify_api_key)) -> dict:
+    """
+    Trigger retraining with validation gate.
+    
+    Retraining only occurs when:
+    1. Minimum feedback threshold reached (default: 10)
+    2. Feedback has passed validation (not user-flagged as spam)
+    3. [Optional] SME approval for critical domains
+    """
     os.makedirs(config.DATA_LOGS_DIR, exist_ok=True)
-    trigger_file = f"{config.DATA_LOGS_DIR}/trigger_update"
+    trigger_file = f"{config.DATA_LOGS_DIR}/pending_train"
+    
+    # Check if we have enough validated feedback
+    feedback_count = _count_validated_feedback()
+    min_threshold = 10
+    
+    if feedback_count < min_threshold:
+        return {
+            "status": "pending",
+            "message": f"Need {min_threshold - feedback_count} more valid feedback",
+            "feedback_count": feedback_count
+        }
+    
+    # Write trigger - Celery picks this up
     with open(trigger_file, 'w') as f:
-        f.write("trigger")
-    return {"status": "Update triggered for trainer"}
+        f.write(str(datetime.now()))
+    
+    return {"status": "triggered", "feedback_count": feedback_count}
+
+
+def _count_validated_feedback() -> int:
+    """Count feedback that passed validation gate (not noise/spam)."""
+    # This would query validated feedback from Qdrant
+    # Filter out: thumbs_down, duplicate, timestamp anomalies
+    # In practice: query where is_validated=True AND vote_count >= 3
+    return 0  # Placeholder - implement with actual query
 
 
 @app.post("/thumbs_up")

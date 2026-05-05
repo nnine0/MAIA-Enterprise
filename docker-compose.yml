@@ -13,6 +13,8 @@ services:
       - maia-net
     deploy:
       resources:
+        limits:
+          memory: 24G
         reservations:
           devices:
             - driver: nvidia
@@ -47,6 +49,12 @@ services:
       - "6333:6333"
     volumes:
       - ./qdrant_data:/qdrant/storage
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/readyz"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   # --- LAYER 2.5: TASK QUEUE (Redis) ---
   redis:
@@ -56,10 +64,18 @@ services:
       - maia-net
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
 
-   # --- LAYER 3: THE AI CONTROLLER ---
+  # --- LAYER 3: THE AI CONTROLLER ---
   maia-app:
-    build: ./app
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+      target: app
     container_name: maia-controller
     networks:
       - maia-net
@@ -67,87 +83,56 @@ services:
       lorax:
         condition: service_healthy
       vector-db:
-        condition: service_started
-      ocr:
-        condition: service_started
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     ports:
       - "8000:8000"
     environment:
       - LORAX_URL=http://lorax:80
       - QDRANT_URL=http://vector-db:6333
-      - OCR_URL=http://ocr:5000
-      - OPENAI_API_KEY=not-needed
+      - REDIS_URL=redis://redis:6379/0
+    environment_file:
+      - .env
     deploy:
       resources:
+        limits:
+          memory: 4G
         reservations:
+          memory: 2G
           devices:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
 
-   # --- LAYER 4: THE SENSES (OCR) ---
-   ocr:
-     build:
-       context: ./ocr
-     container_name: maia-ocr
-     networks:
-       - maia-net
-     environment:
-       - CUDA_VISIBLE_DEVICES=""  # Pin to CPU to avoid GPU contention
-     ports:
-       - "5000:5000"
-
-   # --- LAYER 4.5: EMBEDDINGS (RAG Support) ---
-   embeddings:
-     build:
-       context: ./embeddings
-     container_name: maia-embeddings
-     networks:
-       - maia-net
-     ports:
-       - "6000:6000"
-
-   # --- LAYER 5: THE EVOLUTION (Training Worker) ---
-  trainer:
+  # --- LAYER 4: CELERY WORKER ---
+  maia-worker:
     build:
       context: ./app
-      dockerfile: Dockerfile.trainer
-    container_name: maia-trainer
-    networks:
-      - maia-net
-    depends_on:
-      - redis
-      - lorax
-    volumes:
-      - ./adapters:/app/adapters
-      - ./data_logs:/app/data_logs
-    environment:
-      - REDIS_URL=redis://redis:6379/0
-      - LORAX_URL=http://lorax:80
-      - OCR_URL=http://ocr:5000
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
-
-  maia-worker:
-    build: ./app
+      dockerfile: Dockerfile
+      target: worker
     container_name: maia-worker
     networks:
       - maia-net
     depends_on:
-      - redis
-      - lorax
+      redis:
+        condition: service_healthy
+      lorax:
+        condition: service_healthy
+      vector-db:
+        condition: service_healthy
     environment:
-      - REDIS_URL=redis://redis:6379/0
       - LORAX_URL=http://lorax:80
-      - OCR_URL=http://ocr:5000
+      - QDRANT_URL=http://vector-db:6333
+      - REDIS_URL=redis://redis:6379/0
+    environment_file:
+      - .env
     deploy:
       resources:
+        limits:
+          memory: 8G
         reservations:
+          memory: 4G
           devices:
             - driver: nvidia
               count: 1

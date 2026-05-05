@@ -1,10 +1,25 @@
-# MAIA: The Governance Layer for Business Intelligence
+# MAIA: Enterprise AI Governance
 
-> "If TCP/IP is the stack, AI is the 8th layer, MAIA is the 9th—the Governance layer."
+> Enterprise AI Governance Operating System for SR 26-02 Compliance
+
+## License
+
+**PROPRIETARY - NO COMMERCIAL USE**
+
+This software is proprietary to MAIA Enterprise. See [LICENSE](./LICENSE) for full restrictions.
 
 ---
 
 ## Purpose
+
+MAIA (Multi-Adapter Inference Architecture) is an enterprise AI Governance Operating System that implements:
+
+- **Effective Challenge** - Independent review of AI decisions
+- **Materiality Matrix** - Risk-tiered validation based on transaction significance  
+- **Continuous Monitoring** - Real-time audit trails
+- **Conceptual Soundness** - Forensic proof of reasoning
+
+The Federal Reserve's SR 26-02 mandate requires banks to implement governance controls for AI deployments. MAIA provides the governance layer between AI reasoning and execution.
 
 MAIA (Multi-Adapter Inference Architecture) is an enterprise AI Governance Operating System. It solves the fundamental crisis facing the Global 2000: **how to deploy AI at scale while satisfying increasingly strict regulatory requirements**.
 

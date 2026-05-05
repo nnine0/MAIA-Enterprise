@@ -5,10 +5,16 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "maia"
 version = "0.1.0"
-description = "Multi-Agent Intelligent Assistant"
+description = "Multi-Agent Intelligent Assistant - PROPRIETARY"
 authors = [{name = "MAIA Team"}]
 readme = "README.md"
 requires-python = ">=3.11"
+license = {text = "PROPRIETARY - NO COMMERCIAL USE"}
+classifiers = [
+    "License :: Other",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3.11",
+]
 dependencies = [
     "fastapi",
     "uvicorn",

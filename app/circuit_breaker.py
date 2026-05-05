@@ -1,18 +1,12 @@
 """
-MAIA Circuit Breaker (Layer 8: Governance)
-==========================================
+MAIA Circuit Breaker - Governance Layer
+==============================
 Implements the active containment pattern for SR 26-02 compliance.
 
-CIRCUIT BREAKER MODEL (v3.0):
-----------------------------
-Layer 9 (Agentic)     → Generates Intent Payloads (The "Black Box")
-Layer 8 (Governance) → Circuit Breaker: Intercepts, Validates, Signs (The Guardian)
-Layer 7 (Application) → Executes SIGNED trajectories only (The Hand)
-
 Zero-Trust Architecture:
-- Layer 7 does NOT trust Layer 9
-- Only Layer 8 has the signing key
-- All trajectories MUST be validated before execution
+- Agentic Layer: Generates intent payloads
+- Governance Layer: Intercepts, validates, signs trajectories  
+- Application Layer: Executes only signed trajectories
 """
 
 import asyncio
@@ -24,7 +18,7 @@ from typing import Optional, Dict, Any, List
 from dataclasses import dataclass, field
 from enum import Enum
 from openai import AsyncOpenAI
-from config import LORAX_URL
+import config
 
 
 class MaterialityTier(Enum):
@@ -52,9 +46,9 @@ class SignedTrajectory:
     """Layer 8: Signed intent payload from Circuit Breaker"""
     transaction_id: str
     timestamp: str
-    intent_payload: str  # Layer 9: Agentic output
+    intent_payload: str
     materiality_tier: int
-    circuit_breaker_signature: str  # Layer 8: Governance signature
+    circuit_breaker_signature: str
     status: str
     block_reason: Optional[str] = None
     latent_hash: Optional[str] = None
@@ -66,33 +60,26 @@ class SignedTrajectory:
 
 class CircuitBreaker:
     """
-    Layer 8: The Circuit Breaker (Governance)
-    ======================================
-    Acts as the active containment layer between Layer 9 (Agentic) and Layer 7 (Application).
+    Circuit Breaker - Governance Layer
+    ========================
+    Acts as the active containment layer between Agentic and Application.
     
     Responsibilities:
-    1. Intercept intent payloads from Layer 9
+    1. Intercept intent payloads
     2. Validate against SR 26-02 policy
-    3. Sign validated trajectories (Layer 8 signature)
+    3. Sign validated trajectories
     4. Block non-compliant paths
     5. Escalate Tier 1 to DHITL (Human SME Review)
     
-    Zero-Trust: Layer 7 NEVER executes unsigned trajectories
+    Zero-Trust: Application NEVER executes unsigned trajectories
     """
     
-    def __init__(self, lorax_url: str = LORAX_URL):
-        self.client = AsyncOpenAI(base_url=f"{lorax_url}/v1", api_key="not-needed")
-        self.signing_key = uuid.uuid4().hex[:16]  # Layer 8 signing key
+    def __init__(self, lorax_url: str = None):
+        self.client = AsyncOpenAI(base_url=f"{lorax_url or config.LORAX_URL}/v1", api_key="not-needed")
+        self.signing_key = uuid.uuid4().hex[:16]
         
-        self.critical_keywords = {
-            "credit", "wire", "transfer", "contract", "legal", "loan",
-            "mortgage", "sanction", "compliance", "fraud", "aml", "kyc",
-            "collateral", "escrow", "settlement", "derivative", "exposure"
-        }
-        self.elevated_keywords = {
-            "risk", "limit", "approval", "policy", "audit", "report",
-            "client", "account", "exposure", "margin", "guarantee"
-        }
+        self.critical_keywords = config.CRITICAL_KEYWORDS
+        self.elevated_keywords = config.ELEVATED_KEYWORDS
         
         self.agentic_adapters: Dict[str, str] = {}
         self.validator_adapters: Dict[str, str] = {}
@@ -101,12 +88,10 @@ class CircuitBreaker:
         return hashlib.sha256(reasoning.encode()).hexdigest()[:16]
     
     def _sign_trajectory(self, intent_payload: str) -> str:
-        """Layer 8: Sign validated trajectory"""
         signature_data = f"{intent_payload}:{self.signing_key}"
         return hashlib.sha256(signature_data.encode()).hexdigest()[:16]
     
     def get_materiality_tier(self, user_query: str) -> MaterialityTier:
-        """Determine risk tier before GPU"""
         query_lower = user_query.lower()
         
         if any(word in query_lower for word in self.critical_keywords):
@@ -122,16 +107,6 @@ class CircuitBreaker:
         transaction_id: Optional[str] = None,
         require_sme_review: bool = True
     ) -> SignedTrajectory:
-        """
-        Layer 8: Intercept → Validate → Sign → Execute
-        =============================================
-        1. Receive intent payload from Layer 9 (Agentic)
-        2. Apply materiality tiering
-        3. Validate against SR 26-02
-        4. Sign (Gatekeeper signature) if compliant
-        5. Block if non-compliant
-        6. DHITL escalation for Tier 1
-        """
         if transaction_id is None:
             transaction_id = f"{domain}-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
         
@@ -147,10 +122,10 @@ class CircuitBreaker:
         
         print(f"[{datetime.now()}] [{transaction_id}] LAYER 9: Intent captured")
         
+        validation_result = None
+        
         if tier in [MaterialityTier.TIER_1_CRITICAL, MaterialityTier.TIER_2_ELEVATED]:
-            validation_result = await self._validate_intent(
-                intent_payload, validator_adapter
-            )
+            validation_result = await self._validate_intent(intent_payload, validator_adapter)
             print(f"[{datetime.now()}] [{transaction_id}] LAYER 8: Validation: {validation_result[0]}")
         
         if tier == MaterialityTier.TIER_1_CRITICAL:
@@ -209,10 +184,9 @@ class CircuitBreaker:
         )
     
     async def _generate_intent(self, user_query: str, adapter_id: str) -> str:
-        """Layer 9: Generate intent payload (The Black Box)"""
         try:
             completion = await self.client.chat.completions.create(
-                model="google/gemma-4-26b-a4b-moe",
+                model=config.BASE_MODEL_ID,
                 messages=[
                     {"role": "system", "content": "Generate reasoning and proposed intent for the request."},
                     {"role": "user", "content": user_query}
@@ -234,14 +208,11 @@ class CircuitBreaker:
         intent_payload: str,
         validator_adapter: str
     ) -> tuple[CircuitBreakerVerdict, str]:
-        """Layer 8: Validate intent against SR 26-02"""
-        validation_prompt = f"""Audit for SR 26-02 compliance.
-        Check: capital reserves, liquidity, stress tests.
-        Verdict:"""
+        validation_prompt = f"Audit for SR 26-02 compliance. Check: capital reserves, liquidity, stress tests. Verdict:"
         
         try:
             completion = await self.client.chat.completions.create(
-                model="google/gemma-4-26b-a4b-moe",
+                model=config.BASE_MODEL_ID,
                 messages=[{"role": "user", "content": validation_prompt}],
                 extra_body={
                     "adapter_id": f"/adapters/{validator_adapter}",
@@ -260,7 +231,6 @@ class CircuitBreaker:
             return (CircuitBreakerVerdict.PASS, f"Validation error: {str(e)}")
     
     def to_signed_record(self, trajectory: SignedTrajectory) -> Dict[str, Any]:
-        """Convert to audit record"""
         return {
             "transaction_id": trajectory.transaction_id,
             "materiality_tier": trajectory.materiality_tier,
@@ -284,7 +254,6 @@ async def intercept_and_validate(
     transaction_id: Optional[str] = None,
     require_sme_review: bool = True
 ) -> Dict[str, Any]:
-    """Layer 8: Public API for Circuit Breaker"""
     trajectory = await circuit_breaker.intercept_and_validate(
         user_query, domain, transaction_id, require_sme_review
     )

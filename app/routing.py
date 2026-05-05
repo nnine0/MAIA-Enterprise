@@ -2,60 +2,86 @@
 Routing module for expert selection.
 """
 
-import os
+import logging
 from typing import Optional
+from dataclasses import dataclass
 from openai import AsyncOpenAI
-from config import LORAX_URL, EXPERT_LIST
+import config
 
-client = AsyncOpenAI(base_url=f"{LORAX_URL}/v1", api_key="not-needed")
+logger = logging.getLogger(__name__)
 
-def route_to_expert_keyword(user_query: str) -> str:
+client = AsyncOpenAI(base_url=f"{config.LORAX_URL}/v1", api_key="not-needed")
+
+
+@dataclass
+class RouteResult:
+    expert: str
+    confidence: float = 1.0
+    method: str = "keyword"
+
+
+def route_to_expert_keyword(user_query: str) -> RouteResult:
     """
-    Simple keyword-based routing to experts.
+    Keyword-based fallback routing.
     """
     query_lower = user_query.lower()
-    if "real estate" in query_lower or "leasing" in query_lower or "property" in query_lower:
-        return "real_estate_leasing"
-    if "manufacturing" in query_lower or "engineering" in query_lower or "factory" in query_lower:
-        return "manufacturing"
-    if "law" in query_lower or "legal" in query_lower or "professional" in query_lower or "accounting" in query_lower:
-        return "professional_services"
-    if "government" in query_lower or "public" in query_lower or "policy" in query_lower:
-        return "government"
-    if "health" in query_lower or "medical" in query_lower or "care" in query_lower:
-        return "health_care"
-    if "finance" in query_lower or "insurance" in query_lower or "money" in query_lower:
-        return "finance_insurance"
-    if "retail" in query_lower or "trade" in query_lower or "sales" in query_lower:
-        return "retail_trade"
-    if "wholesale" in query_lower or "distribution" in query_lower:
-        return "wholesale_trade"
-    if "information" in query_lower or "media" in query_lower or "tech" in query_lower:
-        return "information"
-    return "trivium"
+    
+    keywords_map = {
+        "real_estate_leasing": ["real estate", "leasing", "property", "mortgage"],
+        "manufacturing": ["manufacturing", "engineering", "factory", "production"],
+        "professional_services": ["law", "legal", "accounting", "consulting"],
+        "government": ["government", "public policy", "regulatory"],
+        "health_care": ["health", "medical", "care", "hospital"],
+        "finance_insurance": ["finance", "insurance", "investment", "banking"],
+        "retail_trade": ["retail", "sales", "commerce", "store"],
+        "wholesale_trade": ["wholesale", "distribution", "supply chain"],
+        "information": ["information", "media", "tech", "software"],
+    }
+    
+    for expert, keywords in keywords_map.items():
+        if any(kw in query_lower for kw in keywords):
+            return RouteResult(expert=expert, confidence=0.7, method="keyword")
+    
+    return RouteResult(expert="general", confidence=0.5, method="keyword")
 
-async def route_to_expert_semantic(user_query: str) -> str:
+
+async def route_to_expert_semantic(user_query: str) -> RouteResult:
     """
-    Semantic routing using the base model.
+    Semantic routing using the base model with error handling.
     """
-    classification_prompt = f"""<|system|>
-Classify this query into one category: {', '.join(EXPERT_LIST)}. Respond ONLY with the category name.
-<|user|>
-{user_query}
-<|assistant|>"""
+    classification_prompt = f"""Classify this query into one category: {', '.join(config.EXPERT_LIST)}. Respond ONLY with the category name.
+Query: {user_query}
+Category:"""
 
     try:
         response = await client.completions.create(
-            model="Nanbeige/Nanbeige4-3B-Thinking-2511",
-            prompt=classification_prompt,
-            max_tokens=10,
-            temperature=0.1
+            model=config.BASE_MODEL_ID,
+            messages=[{"role": "user", "content": classification_prompt}],
+            max_tokens=20,
+            temperature=0.1,
         )
-        category = response.choices[0].text.strip().lower()
-        for expert in EXPERT_LIST:
-            if expert in category:
-                return expert
-        return "trivium"
+        
+        category = response.choices[0].message.content.strip().lower()
+        
+        for expert in config.EXPERT_LIST:
+            if expert.lower() in category:
+                return RouteResult(expert=expert, confidence=0.9, method="semantic")
+        
+        logger.warning(f"Semantic routing fell through, category: {category}")
+        return RouteResult(expert="general", confidence=0.3, method="semantic")
+        
     except Exception as e:
-        print(f"Routing Error: {e}")
-        return "trivium"
+        logger.error(f"Semantic routing failed: {e}")
+        return RouteResult(expert="general", confidence=0.1, method="error")
+
+
+async def route_query(user_query: str, use_semantic: bool = True) -> RouteResult:
+    """
+    Unified routing: semantic with keyword fallback.
+    """
+    if use_semantic:
+        result = await route_to_expert_semantic(user_query)
+        if result.confidence >= 0.5:
+            return result
+    
+    return route_to_expert_keyword(user_query)

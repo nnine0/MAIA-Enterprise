@@ -1,56 +1,85 @@
 """
-Configuration module for MAIA project.
-Centralizes constants, URLs, and settings.
+MAIA Configuration Settings
+==========================
+Central configuration for Circuit Breaker governance system.
 """
 
 import os
-from typing import List
 
-# Model and Inference
-BASE_MODEL_ID = "Nanbeige/Nanbeige4-3B-Thinking-2511"
-LORAX_URL = os.getenv("LORAX_URL", "http://lorax:80")
-EMBEDDINGS_URL = os.getenv("EMBEDDINGS_URL", "http://embeddings:6000")
-OCR_URL = os.getenv("OCR_URL", "http://ocr:5000")
-QDRANT_URL = os.getenv("QDRANT_URL", "http://vector-db:6333")
-REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
+API_HOST = os.getenv("API_HOST", "0.0.0.0")
+API_PORT = int(os.getenv("API_PORT", "8000"))
+DASHBOARD_PORT = int(os.getenv("DASHBOARD_PORT", "3033"))
 
-# API Keys
-MAIA_API_KEY = os.getenv("MAIA_API_KEY", "default-key")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+LORAX_URL = os.getenv("LORAX_URL", "http://127.0.0.1:8080")
+BASE_MODEL_ID = os.getenv("BASE_MODEL_ID", "google/gemma-4-26b-a4b-moe")
 
-# Experts and Sectors
-EXPERT_LIST: List[str] = [
+MAIA_API_KEY = os.getenv("MAIA_API_KEY")
+if MAIA_API_KEY is None:
+    raise ValueError("MAIA_API_KEY environment variable must be set")
+QDRANT_URL = os.getenv("QDRANT_URL", "http://127.0.0.1:6333")
+REDIS_URL = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0")
+
+VRAM_TOTAL_MB = int(os.getenv("VRAM_TOTAL_MB", "24576"))
+MAX_RAM_ADAPTERS = int(os.getenv("MAX_RAM_ADAPTERS", "100"))
+
+DEFAULT_AUDITOR = os.getenv("DEFAULT_AUDITOR", "citi/pvi-airlock-sr2602")
+SME_VOTES_REQUIRED = int(os.getenv("SME_VOTES_REQUIRED", "3"))
+
+DATA_LOGS_DIR = os.getenv("DATA_LOGS_DIR", "/tmp/maia_logs")
+METADATA_FILE = os.getenv("METADATA_FILE", "/tmp/adapter_metadata.json")
+
+MAX_CONTEXT_LENGTH = int(os.getenv("MAX_CONTEXT_LENGTH", "8192"))
+
+EXPERT_LIST = [
     "real_estate_leasing", "manufacturing", "professional_services",
     "government", "health_care", "finance_insurance", "retail_trade",
     "wholesale_trade", "information", "general", "trivium"
 ]
 
-# Training Configs
-DEFAULT_ADAPTER_NAME = "adapter_math"
-DEFAULT_DATASET_PATH = "gsm8k"
-DEFAULT_EXPERT_DATA_PATH = "maiadeen_law.json"
-DEFAULT_OVERSAMPLE_FACTOR = 20
-DEFAULT_OUTPUT_DIR = "./council"
+EMBEDDINGS_URL = os.getenv("EMBEDDINGS_URL", "http://127.0.0.1:6000")
+MAX_CONTEXT_LENGTH = int(os.getenv("MAX_CONTEXT_LENGTH", "8192"))
 
-# LoRA Config
-LORA_R = 32
-LORA_ALPHA = 64
-LORA_DROPOUT = 0.05
+DOMAIN_ADAPTERS = {
+    "finance": {
+        "agentic": "citi/finance-expert-v4",
+        "validator": "citi/pvi-airlock-sr2602"
+    },
+    "credit": {
+        "agentic": "citi/credit-expert-v4", 
+        "validator": "citi/pvi-airlock-sr2602"
+    },
+    "compliance": {
+        "agentic": "citi/compliance-expert-v4",
+        "validator": "citi/pvi-airlock-sr2602"
+    },
+    "fraud": {
+        "agentic": "citi/fraud-aml-expert-v4",
+        "validator": "citi/pvi-airlock-sr2602"
+    },
+    "logistics": {
+        "agentic": "logistics/terminal-expert-v4",
+        "validator": "logistics/safety-auditor-v4"
+    }
+}
 
-# Training Args
-NUM_TRAIN_EPOCHS = 1
-PER_DEVICE_TRAIN_BATCH_SIZE = 1
-GRADIENT_ACCUMULATION_STEPS = 16
-LEARNING_RATE = 2e-4
+CRITICAL_KEYWORDS = {
+    "credit", "wire", "transfer", "contract", "legal", "loan",
+    "mortgage", "sanction", "compliance", "fraud", "aml", "kyc",
+    "collateral", "escrow", "settlement", "derivative", "exposure"
+}
 
-# Evaluation
-EVALUATION_THRESHOLD = 7  # Average score threshold
+ELEVATED_KEYWORDS = {
+    "risk", "limit", "approval", "policy", "audit", "report",
+    "client", "account", "exposure", "margin", "guarantee"
+}
 
-# Paths
-ADAPTERS_DIR = "/adapters"
-DATA_LOGS_DIR = "/data_logs"
-METADATA_FILE = "/adapters/adapter_metadata.json"
+DEFAULT_TEMPERATURE = float(os.getenv("DEFAULT_TEMPERATURE", "0.4"))
+ROUTING_TEMPERATURE = float(os.getenv("ROUTING_TEMPERATURE", "0.1"))
+VALIDATION_TEMPERATURE = float(os.getenv("VALIDATION_TEMPERATURE", "0.1"))
 
-# Other
-MAX_CONTEXT_LENGTH = 8192  # Increased for enterprise document RAG (was 2000)
-PAD_TOKEN = "<|pad|>"  # Pad token for tokenizer
+ADAPTER_TEMPERATURES = {
+    "default": 0.4,
+    "creative": 0.7,
+    "precise": 0.1,
+    "routing": 0.1,
+}

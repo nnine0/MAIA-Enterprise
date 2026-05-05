@@ -1,14 +1,42 @@
-Copyright (c) 2026 MAIA Enterprise. All rights reserved.
+# MAIA Enterprise License
+# Copyright (c) 2026 MAIA Enterprise. All rights reserved.
+
+## NO COMMERCIAL USE - PROPRIETARY SOFTWARE
 
 This software and associated documentation files (the "Software") are 
 proprietary to MAIA Enterprise.
 
-UNAUTHORIZED COPYING, MODIFICATION, DISTRIBUTION, OR USE OF THIS 
-SOFTWARE IS STRICTLY PROHIBITED.
+**RESTRICTIONS:**
+1. This is NOT open source software.
+2. Commercial use is PROHIBITED without explicit written license.
+3. Redistribution is PROHIBITED.
+4. Modification is PROHIBITED for non-licensed users.
+5. Reverse engineering is PROHIBITED.
 
-The Software is provided for evaluation and demonstration purposes only.
-No license is granted to use, modify, or distribute this software
-for any commercial or production purposes without explicit written
-permission from MAIA Enterprise.
+## AUTHORIZED USE
 
-For licensing inquiries, contact: [Contact information reserved]
+This Software may be used without a license for:
+- Evaluation and demonstration purposes only
+- Academic research and educational purposes
+- Personal non-commercial projects
+
+**For Commercial Licensing:**
+Contact: chgbsh1@gmail.com
+
+## DISCLAIMER
+
+THIS SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND.
+MAIA ENTERPRISE SHALL NOT BE LIABLE FOR ANY DAMAGES ARISING FROM
+USE OR INABILITY TO USE THIS SOFTWARE.
+
+## THIRD-PARTY COMPONENTS
+
+This Software includes third-party components under their respective licenses:
+- LoRAX (Apache 2.0)
+- Qdrant (Apache 2.0)
+- PyTorch (BSD)
+- Transformers (Apache 2.0)
+
+---
+
+Copyright 2026 MAIA Enterprise. All rights reserved.
