@@ -50,6 +50,10 @@ HTML = """<!DOCTYPE html>
         .bar-value { width: 40px; text-align: right; font-size: 14px; }
         .controls-card { background: #12121a; border: 1px solid #2a2a4a; border-radius: 12px; padding: 20px; margin-bottom: 30px; }
         .controls-title { color: #00d4ff; font-size: 16px; margin-bottom: 15px; }
+        .controls-row { display: flex; gap: 40px; flex-wrap: wrap; margin-bottom: 20px; }
+        .control-group { display: flex; flex-direction: column; gap: 8px; }
+        .control-label { color: #888; font-size: 12px; text-transform: uppercase; }
+        .select-input { background: #1a1a2e; color: #fff; border: 1px solid #2a2a4a; padding: 10px 16px; border-radius: 8px; font-size: 14px; }
         .button-group { display: flex; gap: 15px; flex-wrap: wrap; }
         .btn { padding: 12px 24px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 14px; }
         .btn-pass { background: #00ff88; color: #000; }
@@ -84,20 +88,32 @@ HTML = """<!DOCTYPE html>
             <div class="chart-card"><div class="chart-title">Domain Distribution</div><div id="domain-chart"></div></div>
         </div>
         <div class="controls-card">
-            <div class="controls-title">Test Scenarios</div>
-            <div class="button-group">
-                <button class="btn btn-pass" onclick="run('pass')">PASS (Tier 3)</button>
-                <button class="btn btn-pass" onclick="run('elevated_pass')">PASS (Tier 2)</button>
-                <button class="btn btn-fail" onclick="run('fail')">FAIL (Tier 1)</button>
-                <button class="btn btn-fail" onclick="run('elevated_fail')">FAIL (Tier 2)</button>
-                <button class="btn btn-sme" onclick="run('sme_review')">SME Review (Tier 1)</button>
-                <button class="btn btn-clear" onclick="clear()">Clear All</button>
+            <div class="controls-title">Controls</div>
+            <div class="controls-row">
+                <div class="control-group">
+                    <div class="control-label">Routing Method</div>
+                    <select class="select-input" id="routing-method">
+                        <option value="llm">LLM (default)</option>
+                        <option value="keyword">Keyword Only</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <div class="control-label">Test Scenarios</div>
+                    <div class="button-group">
+                        <button class="btn btn-pass" onclick="run('pass')">PASS (Tier 3)</button>
+                        <button class="btn btn-pass" onclick="run('elevated_pass')">PASS (Tier 2)</button>
+                        <button class="btn btn-fail" onclick="run('fail')">FAIL (Tier 1)</button>
+                        <button class="btn btn-fail" onclick="run('elevated_fail')">FAIL (Tier 2)</button>
+                        <button class="btn btn-sme" onclick="run('sme_review')">SME Review (Tier 1)</button>
+                        <button class="btn btn-clear" onclick="clear()">Clear All</button>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="table-card">
             <div class="table-title">Transaction Log</div>
             <table>
-                <thead><tr><th>Time</th><th>ID</th><th>Query</th><th>Tier</th><th>Status</th><th>Latency</th><th>Reason</th></tr></thead>
+                <thead><tr><th>Time</th><th>ID</th><th>Query</th><th>Tier</th><th>Status</th><th>Routing</th><th>Latency</th><th>Reason</th></tr></thead>
                 <tbody id="tbody"></tbody>
             </table>
         </div>
@@ -126,11 +142,15 @@ HTML = """<!DOCTYPE html>
             html = '';
             for (const tx of d.transactions.slice(0, 20)) {
                 let cls = tx.status=='BLOCKED'?'status-blocked':tx.status=='PENDING_SME_REVIEW'?'status-pending':'status-pass';
-                html += '<tr><td>'+tx.timestamp.split('T')[1].split('.')[0]+'</td><td style="color:#00d4ff">'+tx.transaction_id+'</td><td style="max-width:200px;overflow:hidden">'+tx.query+'</td><td style="color:'+tierColors[tx.materiality_tier]+'">Tier '+tx.materiality_tier+'</td><td><span class="status-badge '+cls+'">'+tx.status+'</span></td><td>'+tx.latency_ms+'ms</td><td style="max-width:150px;overflow:hidden">'+(tx.reason||'-')+'</td></tr>';
+                html += '<tr><td>'+tx.timestamp.split('T')[1].split('.')[0]+'</td><td style="color:#00d4ff">'+tx.transaction_id+'</td><td style="max-width:200px;overflow:hidden">'+tx.query+'</td><td style="color:'+tierColors[tx.materiality_tier]+'">Tier '+tx.materiality_tier+'</td><td><span class="status-badge '+cls+'">'+tx.status+'</span></td><td>'+(tx.routing_method||'-')+'</td><td>'+tx.latency_ms+'ms</td><td style="max-width:150px;overflow:hidden">'+(tx.reason||'-')+'</td></tr>';
             }
             document.getElementById('tbody').innerHTML = html;
         }
-        async function run(s) { await fetch('/api/simulate?scenario='+s); load(); }
+        async function run(s) { 
+            const routing = document.getElementById('routing-method').value;
+            await fetch('/api/simulate?scenario='+s+'&routing='+routing); 
+            load(); 
+        }
         async function clear() { await fetch('/api/clear',{method:'POST'}); load(); }
         setInterval(load, 2000);
         load();
@@ -155,8 +175,11 @@ class Handler(BaseHTTPRequestHandler):
                 "transactions": metrics.get_transactions(50)
             }).encode())
         elif self.path.startswith("/api/simulate"):
-            scenario = parse_qs(urlparse(self.path).query).get("scenario", ["pass"])[0]
+            params = parse_qs(urlparse(self.path).query)
+            scenario = params.get("scenario", ["pass"])[0]
+            routing = params.get("routing", ["llm"])[0]
             tx = create_transaction(scenario)
+            tx["routing_method"] = routing
             if scenario == "sme_review":
                 tx["dhitl_session_id"] = f"dhitl-{tx['transaction_id'].split('-')[1]}"
                 tx["sme_votes"] = [{"sme_id": f"sme-00{i+1}", "vote": "APPROVE" if i<2 else "REJECT"} for i in range(3)]
