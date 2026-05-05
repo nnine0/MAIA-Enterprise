@@ -17,11 +17,14 @@ MAIA (Multi-Adapter Inference Architecture) is an enterprise AI Governance Opera
 The Federal Reserve's SR 26-02 mandate requires banks to implement governance controls for AI deployments. MAIA provides the governance layer between AI reasoning and execution:
 
 - **Effective Challenge** - Independent review of AI decisions
-- **Materiality Matrix** - Risk-tiered validation based on transaction significance  
+- **Materiality Matrix** - GDP-aligned risk tiering (9 sectors, 44 occupations)
 - **Continuous Monitoring** - Real-time audit trails
 - **Conceptual Soundness** - Forensic proof of reasoning
+- **Unified Speculative Stack** - MTP + DFlash + SSD for zero-latency governance
 
-MAIA pauses the **Action Trajectory** between reasoning and execution, validating intent against corporate policy before any action is taken—turning compliance from a bottleneck into a competitive advantage.
+MAIA's **Circuit Breaker** pauses the **Action Trajectory** between Layer 9 (Agentic) and Layer 7 (Execution), validating intent against corporate policy before any action is taken. The **Latency Erasure** property means governance overhead happens in speculative cycles—no time-tax for safety.
+
+**The Innovation**: Using MTP (Multi-Token Prediction) for internal lookahead and SSD (Saguaro) for async audit, MAIA achieves "Hidden Compliance"—the bank gets zero-latency governance while the model generates.
 
 ---
 
