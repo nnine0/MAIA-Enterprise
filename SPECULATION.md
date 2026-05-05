@@ -171,11 +171,21 @@ command: --model-id google/gemma-4-26b-a4b-it --enable-mtp
 
 | Mode | VRAM Required | Notes |
 |------|---------------|-------|
-| Gemma 4 26B Base | 52GB | A100/H100 |
-| MTP Drafter | +0GB | Shared KV cache |
-| DFlash | +2GB | Adapter |
-| Saguaro | +4GB | Hypotheses |
-| **Combined** | **54GB max** | Solves VRAM/Compliance paradox |
+| **FIXED VRAM RENT** | **17.8 GB** | Base + Airlock + KV Cache |
+| Gemma 4 26B Base (4-bit) | 14.5 GB | Quantized |
+| PVI Airlock (E2B) | 1.8 GB | Governance |
+| Kernel/Shared KV | 1.5 GB | MTP shared |
+| MTP Drafter | +0.1 GB | Near-zero (shared KV) |
+| DFlash Adapter | +2.0 GB | Optional |
+| Saguaro Hypotheses | +4.0 GB | Optional |
+| **Full Stack Max** | **~24 GB** | Fits on RTX 3090 |
+
+### Hardware Substrate Specs
+
+| GPU | VRAM | Bandwidth | FP32 TFLOPS | Can Run MAIA? |
+|-----|-----|----------|------------|--------------|
+| RTX 3090 | 24 GB | 936 GB/s | 35.6 | ✅ Full stack |
+| H100 SXM5 | 80 GB | 3,350 GB/s | 67 / 2000* | ✅ Oversized |
 
 ---
 
