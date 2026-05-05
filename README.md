@@ -225,12 +225,25 @@ MAIA is an enterprise AI Governance Operating System that turns compliance from 
 ## Quick Start
 
 ```bash
+# Copy and configure environment
+cp .env.example .env
+# Edit .env and set MAIA_API_KEY
+
 # Start the PVI Airlock Dashboard
 cd MAIA-Enterprise
 python3 app/dashboard.py
 
 # Access: http://localhost:3033
 ```
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `.env.example` | Environment template |
+| `.github/workflows/ci.yml` | CI/CD pipeline |
+| `LICENSE` | Proprietary license |
+| `pyproject.toml` | Python package config |
 
 ### Hardware Requirements
 
