@@ -12,36 +12,28 @@ This software is proprietary to MAIA Enterprise. See [LICENSE](./LICENSE) for fu
 
 ## Purpose
 
-MAIA (Multi-Adapter Inference Architecture) is an enterprise AI Governance Operating System that implements:
+MAIA (Multi-Adapter Inference Architecture) is an enterprise AI Governance Operating System that solves the fundamental problem facing the Global 2000: **how to deploy AI at scale while satisfying increasingly strict regulatory requirements**.
+
+The Federal Reserve's SR 26-02 mandate requires banks to implement governance controls for AI deployments. MAIA provides the governance layer between AI reasoning and execution:
 
 - **Effective Challenge** - Independent review of AI decisions
 - **Materiality Matrix** - Risk-tiered validation based on transaction significance  
 - **Continuous Monitoring** - Real-time audit trails
 - **Conceptual Soundness** - Forensic proof of reasoning
 
-The Federal Reserve's SR 26-02 mandate requires banks to implement governance controls for AI deployments. MAIA provides the governance layer between AI reasoning and execution.
-
-MAIA (Multi-Adapter Inference Architecture) is an enterprise AI Governance Operating System. It solves the fundamental crisis facing the Global 2000: **how to deploy AI at scale while satisfying increasingly strict regulatory requirements**.
-
-The Federal Reserve's SR 26-02 mandate (released April 17th) requires banks to implement:
-- **Effective Challenge** - Independent review of AI decisions
-- **Materiality Matrix** - Risk-tiered validation based on transaction significance  
-- **Continuous Monitoring** - Real-time audit trails
-- **Conceptual Soundness** - Forensic proof of reasoning
-
-MAIA is an enterprise AI Governance Operating System that turns compliance from a bottleneck into a competitive advantage. It doesn't slow down the AI—it pauses the **Action Trajectory** between reasoning and execution, validating intent against corporate policy before the bank's Business Operating Domain is touched.
+MAIA pauses the **Action Trajectory** between reasoning and execution, validating intent against corporate policy before any action is taken—turning compliance from a bottleneck into a competitive advantage.
 
 ---
 
-## The Layer Thesis (Circuit Breaker Model v3.0)
+## Architecture
 
-| Layer | Component | Description |
-|-------|-----------|-------------|
-| **9** | **AGENTIC** | Intent Generation - DFlash/Saguaro drafts, "Black Box" reasoning |
-| **8** | **GOVERNANCE** | Circuit Breaker - Intercepts, Validates, Signs (The Guardian) |
-| **7** | **APPLICATION** | Execution - Only executes SIGNED trajectories (The Hand) |
+| Component | Role |
+|------------|------|
+| **Agentic** | Intent generation - drafts AI reasoning |
+| **Governance** | Validates, signs, blocks trajectories |
+| **Application** | Executes only signed trajectories |
 
-**Zero-Trust Architecture**: Layer 7 does NOT trust Layer 9. Only Layer 8 has the signing key.
+**Zero-Trust**: Application never trusts Agentic directly. Only Governance has the signing key.
 
 ---
 
