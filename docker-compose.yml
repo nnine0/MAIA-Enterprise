@@ -37,8 +37,8 @@ services:
       - maia-adapters:/adapters
     shm_size: '2gb'
     command: >
-      --model-id Nanbeige/Nanbeige4-3B-Thinking-2511
-      --max-batch-prefill-tokens 4096
+      --model-id google/gemma-4-26b-a4b-moe
+      --max-batch-prefill-tokens 8192
       --gpu-memory-utilization 0.8
       --trust-remote-code
     healthcheck:
