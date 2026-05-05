@@ -79,7 +79,7 @@ class SaguaroScheduler:
         self.temperature = temperature
         
         self.client = None
-        self.model_name = "google/gemma-4-26b-a4b-moe"
+        self.model_name = "google/gemma-4-26b-a4b-it"
     
     def set_client(self, client):
         """Set async OpenAI client for generation"""

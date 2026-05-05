@@ -159,7 +159,7 @@ class SpeculationKernel:
     ) -> Dict:
         """Tier 3: Direct execution (bypass)"""
         completion = await self.client.chat.completions.create(
-            model="google/gemma-4-26b-a4b-moe",
+            model="google/gemma-4-26b-a4b-it",
             messages=[{"role": "user", "content": prompt}],
             max_new_tokens=256,
             temperature=0.4,

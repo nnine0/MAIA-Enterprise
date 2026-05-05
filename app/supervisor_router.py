@@ -167,7 +167,7 @@ Query: {query}"""
         
         try:
             response = await self.client.completions.create(
-                model="google/gemma-4-26b-a4b-moe",
+                model="google/gemma-4-26b-a4b-it",
                 prompt=prompt,
                 max_tokens=20,
                 temperature=0.1,
@@ -201,7 +201,7 @@ Query: {query}"""
         
         try:
             response = await self.client.completions.create(
-                model="google/gemma-4-26b-a4b-moe",
+                model="google/gemma-4-26b-a4b-it",
                 prompt=prompt,
                 max_tokens=30,
                 temperature=0.1,

@@ -55,7 +55,7 @@ async def get_rag_context(user_query: str) -> str:
     if len(context.split()) > MAX_CONTEXT_LENGTH:
         summary_prompt = f"Summarize the following information into a concise briefing note for an expert, retaining key facts and details:\n\n{context}"
         summary_response = await client.chat.completions.create(
-            model="Nanbeige/Nanbeige4-3B-Thinking-2511",
+            model="google/gemma-4-26b-a4b-it",
             messages=[{"role": "user", "content": summary_prompt}],
             max_tokens=1000
         )

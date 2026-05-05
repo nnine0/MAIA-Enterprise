@@ -37,8 +37,9 @@ services:
       - maia-adapters:/adapters
     shm_size: '2gb'
     command: >
-      --model-id google/gemma-4-26b-a4b-moe
+      --model-id google/gemma-4-26b-a4b-it
       --max-batch-prefill-tokens 8192
+      --max-total-tokens 32768
       --gpu-memory-utilization 0.8
       --trust-remote-code
     healthcheck:

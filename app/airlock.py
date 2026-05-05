@@ -475,7 +475,7 @@ class PVIAirlock:
         """Generate action trajectory from Actor (Expert) adapter"""
         try:
             completion = await self.client.chat.completions.create(
-                model="google/gemma-4-26b-a4b-moe",
+                model="google/gemma-4-26b-a4b-it",
                 messages=[
                     {"role": "system", "content": "Generate reasoning and proposed action trajectory for the following request."},
                     {"role": "user", "content": user_query}
@@ -509,7 +509,7 @@ class PVIAirlock:
         
         try:
             completion = await self.client.chat.completions.create(
-                model="google/gemma-4-26b-a4b-moe",
+                model="google/gemma-4-26b-a4b-it",
                 messages=[{"role": "user", "content": audit_prompt}],
                 extra_body={
                     "adapter_id": f"/adapters/{auditor_adapter}",

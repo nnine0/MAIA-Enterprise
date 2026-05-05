@@ -64,7 +64,7 @@ MAIA pauses the **Action Trajectory** between reasoning and execution, validatin
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
 │              LORAX KERNEL (SGMV Batching)                    │
-│   Base Model: Gemma 4 26B A4B MoE (Local GPU)               │
+│   Base Model: Gemma 4 26B A4B It (Local GPU)               │
 │   Hardware: RTX 3090 (24GB) → H100/A100 (Enterprise)        │
 │   Multi-Adapter: Hot-swappable expert adapters             │
 │   VRAM Efficiency: 70% reduction vs monolithic             │

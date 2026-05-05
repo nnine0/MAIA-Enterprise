@@ -49,7 +49,7 @@ class MemoryManager:
     
     # VRAM pinned components (never move)
     PINNED_COMPONENTS = [
-        "base-model-gemma-4-26b-a4b-moe",
+        "base-model-gemma-4-26b-a4b-it",
         "pvi-airlock-auditor",
         "governance-hub"
     ]

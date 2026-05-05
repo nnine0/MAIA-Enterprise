@@ -15,7 +15,7 @@ LORAX_URL = os.getenv("LORAX_URL", "http://127.0.0.1:8080")
 # Base model - uses LoRAX API which handles chat templates automatically
 # No manual prompt templates needed - the API applies model-specific templates
 # To change: update this and redeploy the lorax service
-BASE_MODEL_ID = os.getenv("BASE_MODEL_ID", "google/gemma-4-26b-a4b-moe")
+BASE_MODEL_ID = os.getenv("BASE_MODEL_ID", "google/gemma-4-26b-a4b-it")
 
 MAIA_API_KEY = os.getenv("MAIA_API_KEY")
 if MAIA_API_KEY is None:
@@ -36,7 +36,7 @@ SME_VOTES_REQUIRED = int(os.getenv("SME_VOTES_REQUIRED", "3"))
 DATA_LOGS_DIR = os.getenv("DATA_LOGS_DIR", "/tmp/maia_logs")
 METADATA_FILE = os.getenv("METADATA_FILE", "/tmp/adapter_metadata.json")
 
-MAX_CONTEXT_LENGTH = int(os.getenv("MAX_CONTEXT_LENGTH", "8192"))
+MAX_CONTEXT_LENGTH = int(os.getenv("MAX_CONTEXT_LENGTH", "32768"))
 
 EXPERT_LIST = [
     "real_estate_leasing", "manufacturing", "professional_services",
@@ -45,7 +45,7 @@ EXPERT_LIST = [
 ]
 
 EMBEDDINGS_URL = os.getenv("EMBEDDINGS_URL", "http://127.0.0.1:6000")
-MAX_CONTEXT_LENGTH = int(os.getenv("MAX_CONTEXT_LENGTH", "8192"))
+MAX_CONTEXT_LENGTH = int(os.getenv("MAX_CONTEXT_LENGTH", "32768"))
 
 DOMAIN_ADAPTERS = {
     "finance": {

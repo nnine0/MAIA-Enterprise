@@ -273,7 +273,7 @@ class TestMemoryManager:
     def test_adapter_tier_assignment(self, memory):
         """Adapters are assigned to correct tiers"""
         # VRAM pinned components
-        assert memory.is_pinned("base-model-gemma-4-26b-a4b-moe")
+        assert memory.is_pinned("base-model-gemma-4-26b-a4b-it")
         assert memory.is_pinned("pvi-airlock-auditor")
         
         # Non-pinned adapter

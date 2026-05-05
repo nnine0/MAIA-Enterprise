@@ -205,7 +205,7 @@ async def root():
         "description": "AI Governance Operating System",
         "architecture": {
             "kernel": "LoRAX + Medusa",
-            "base_model": "Gemma 4 26B A4B MoE",
+            "base_model": "Gemma 4 26B A4B It",
             "orchestration": "Supervisor LoRA (Hub/Spoke)",
             "governance": "PVI Airlock",
             "telemetry": "Latent State Observability"

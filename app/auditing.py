@@ -23,7 +23,7 @@ async def audit_response(draft_response: str, general_adapter: str) -> str:
     audit_prompt = f"Review this response for logical inconsistencies or formatting errors. If valid, repeat it. If invalid, correct it.\n\nResponse: {draft_response}"
 
     audit_completion = await client.chat.completions.create(
-        model="Nanbeige/Nanbeige4-3B-Thinking-2511",
+        model="google/gemma-4-26b-a4b-it",
         messages=[{"role": "user", "content": audit_prompt}],
         extra_body={"adapter_id": f"/adapters/{general_adapter}", "adapter_source": "local", "fallback_to_base": True}
     )
