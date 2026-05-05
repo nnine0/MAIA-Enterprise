@@ -1,21 +1,26 @@
 version: '3.8'
 
+# MAIA Enterprise - Compliance Appliance
+# Single command deployment with data persistence
+
 networks:
   maia-net:
     driver: bridge
 
-# GPU Allocation:
-# - lorax: GPU 0 (inference) - 80% VRAM
-# - Other services: CPU only (call lorax via HTTP)
-# Note: Only 1 GPU per machine - lorax is the inference engine
+volumes:
+  maia-data:
+    driver: local
+  maia-adapters:
+    driver: local
 
 services:
-  # --- INFERENCE KERNEL (LoRAX) ---
+  # === INFERENCE ENGINE (LoRAX) ===
   lorax:
     image: ghcr.io/predibase/lorax:latest
     container_name: maia-lorax
     networks:
       - maia-net
+    restart: unless-stopped
     deploy:
       resources:
         limits:
@@ -27,11 +32,9 @@ services:
               capabilities: [gpu]
     environment:
       - CUDA_VISIBLE_DEVICES=0
-    ports:
-      - "8080:80"
     volumes:
-      - ~/.cache/huggingface:/data
-      - ./adapters:/adapters
+      - maia-data:/data
+      - maia-adapters:/adapters
     shm_size: '2gb'
     command: >
       --model-id Nanbeige/Nanbeige4-3B-Thinking-2511
@@ -43,39 +46,45 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+    ports:
+      - "8080:80"
 
-  # --- MEMORY (Qdrant) ---
+  # === VECTOR DATABASE (Qdrant) ===
   vector-db:
     image: qdrant/qdrant:latest
     container_name: maia-qdrant
     networks:
       - maia-net
-    ports:
-      - "6333:6333"
+    restart: unless-stopped
     volumes:
-      - ./qdrant_data:/qdrant/storage
+      - maia-data:/qdrant/storage
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:6333/readyz"]
       interval: 15s
       timeout: 5s
       retries: 3
       start_period: 10s
+    ports:
+      - "6333:6333"
 
-  # --- TASK QUEUE (Redis) ---
+  # === TASK QUEUE (Redis) ===
   redis:
     image: redis:alpine
     container_name: maia-redis
     networks:
       - maia-net
-    ports:
-      - "6379:6379"
+    restart: unless-stopped
+    volumes:
+      - maia-data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 3s
       retries: 3
+    ports:
+      - "6379:6379"
 
-  # --- CONTROLLER (CPU only - governance, calls lorax) ---
+  # === GOVERNANCE CONTROLLER ===
   maia-app:
     build:
       context: ./app
@@ -84,6 +93,7 @@ services:
     container_name: maia-controller
     networks:
       - maia-net
+    restart: unless-stopped
     depends_on:
       lorax:
         condition: service_healthy
@@ -91,21 +101,25 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    ports:
-      - "8000:8000"
     environment:
       - LORAX_URL=http://lorax:80
       - QDRANT_URL=http://vector-db:6333
       - REDIS_URL=redis://redis:6379/0
-      - CUDA_VISIBLE_DEVICES=  # Empty = CPU only
-    environment_file:
+      - CUDA_VISIBLE_DEVICES=
+    env_file:
       - .env
-    deploy:
-      resources:
-        limits:
-          memory: 2G
+    volumes:
+      - maia-data:/data_logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    ports:
+      - "8000:8000"
+      - "3033:3033"
 
-  # --- CELERY WORKER (CPU only - background tasks) ---
+  # === BACKGROUND WORKER ===
   maia-worker:
     build:
       context: ./app
@@ -114,6 +128,7 @@ services:
     container_name: maia-worker
     networks:
       - maia-net
+    restart: unless-stopped
     depends_on:
       redis:
         condition: service_healthy
@@ -125,11 +140,10 @@ services:
       - LORAX_URL=http://lorax:80
       - QDRANT_URL=http://vector-db:6333
       - REDIS_URL=redis://redis:6379/0
-      - CUDA_VISIBLE_DEVICES=  # Empty = CPU only
-    environment_file:
+      - CUDA_VISIBLE_DEVICES=
+    env_file:
       - .env
-    deploy:
-      resources:
-        limits:
-          memory: 4G
+    volumes:
+      - maia-data:/data_logs
+      - maia-adapters:/adapters
     command: ["celery", "-A", "tasks", "worker", "--loglevel=info"]
