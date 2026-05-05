@@ -4,8 +4,13 @@ networks:
   maia-net:
     driver: bridge
 
+# GPU Allocation:
+# - lorax: GPU 0 (inference) - 80% VRAM
+# - Other services: CPU only (call lorax via HTTP)
+# Note: Only 1 GPU per machine - lorax is the inference engine
+
 services:
-  # --- LAYER 1: INFERENCE KERNEL (LoRAX) ---
+  # --- INFERENCE KERNEL (LoRAX) ---
   lorax:
     image: ghcr.io/predibase/lorax:latest
     container_name: maia-lorax
@@ -39,7 +44,7 @@ services:
       timeout: 10s
       retries: 5
 
-  # --- LAYER 2: MEMORY (Qdrant) ---
+  # --- MEMORY (Qdrant) ---
   vector-db:
     image: qdrant/qdrant:latest
     container_name: maia-qdrant
@@ -56,7 +61,7 @@ services:
       retries: 3
       start_period: 10s
 
-  # --- LAYER 2.5: TASK QUEUE (Redis) ---
+  # --- TASK QUEUE (Redis) ---
   redis:
     image: redis:alpine
     container_name: maia-redis
@@ -70,7 +75,7 @@ services:
       timeout: 3s
       retries: 3
 
-  # --- LAYER 3: THE AI CONTROLLER ---
+  # --- CONTROLLER (CPU only - governance, calls lorax) ---
   maia-app:
     build:
       context: ./app
@@ -92,20 +97,15 @@ services:
       - LORAX_URL=http://lorax:80
       - QDRANT_URL=http://vector-db:6333
       - REDIS_URL=redis://redis:6379/0
+      - CUDA_VISIBLE_DEVICES=  # Empty = CPU only
     environment_file:
       - .env
     deploy:
       resources:
         limits:
-          memory: 4G
-        reservations:
           memory: 2G
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
 
-  # --- LAYER 4: CELERY WORKER ---
+  # --- CELERY WORKER (CPU only - background tasks) ---
   maia-worker:
     build:
       context: ./app
@@ -125,16 +125,11 @@ services:
       - LORAX_URL=http://lorax:80
       - QDRANT_URL=http://vector-db:6333
       - REDIS_URL=redis://redis:6379/0
+      - CUDA_VISIBLE_DEVICES=  # Empty = CPU only
     environment_file:
       - .env
     deploy:
       resources:
         limits:
-          memory: 8G
-        reservations:
           memory: 4G
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
     command: ["celery", "-A", "tasks", "worker", "--loglevel=info"]
