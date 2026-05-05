@@ -201,13 +201,15 @@ async def execute_maia_protocol(user_query: str, session_id: str = None) -> dict
 async def root():
     return {
         "name": "MAIA Governance Layer",
-        "version": "2.0",
+        "version": "3.0",
         "description": "AI Governance Operating System",
         "architecture": {
-            "kernel": "LoRAX + Medusa",
+            "kernel": "LoRAX + Unified Speculative Stack",
+            "speculation": "MTP + DFlash + Saguaro",
             "base_model": "Gemma 4 26B A4B It",
+            "mtp_drafter": "native (shared KV cache)",
             "orchestration": "Supervisor LoRA (Hub/Spoke)",
-            "governance": "PVI Airlock",
+            "governance": "Circuit Breaker + PVI Airlock",
             "telemetry": "Latent State Observability"
         }
     }

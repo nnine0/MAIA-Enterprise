@@ -63,17 +63,25 @@ MAIA pauses the **Action Trajectory** between reasoning and execution, validatin
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│              LORAX KERNEL (SGMV Batching)                    │
-│   Base Model: Gemma 4 26B A4B It (Local GPU)               │
-│   Hardware: RTX 3090 (24GB) → H100/A100 (Enterprise)        │
+│              LORAX KERNEL (Unified Speculative Stack)        │
+│   Base Model: Gemma 4 26B A4B It + MTP Drafter           │
+│   Hardware: RTX 3090 (24GB) → Blackwell (Enterprise)      │
 │   Multi-Adapter: Hot-swappable expert adapters             │
-│   VRAM Efficiency: 70% reduction vs monolithic             │
+│   VRAM Efficiency: Near-zero (Shared KV Cache)          │
+│   ┌───────────────────────────────────────────────┐     │
+│   │ MTP (4 tokens) → DFlash (16 blocks) → SSD   │     │
+│   │ Layer 9: Agentic Engine                    │     │
+│   └───────────────────────────────────────────────┘     │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│              LAYER 8: CIRCUIT BREAKER (Governance)              │
-│   # SR 26-02 COMPLIANCE GATE: Active Containment              │
+│              LAYER 8: CIRCUIT BREAKER (Governance)          │
+│   # SR 26-02 COMPLIANCE GATE: Active Containment          │
+│   ┌───────────────────────────────────────────────┐       │
+│   │ SSD/Saguaro Async Audit (while GPU verifies) │       │
+│   │ Layer 8: Governance + Latency Erasure     │       │
+│   └───────────────────────────────────────────────┘       │
 │   1. Layer 9 Agentic generates intent payload              │
 │   2. Circuit Breaker intercepts                           │
 │   3. Validates against SR 26-02 policy                   │

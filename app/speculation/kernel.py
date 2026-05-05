@@ -1,13 +1,13 @@
 """
 MAIA Speculation Kernel (Unified Orchestration)
-========================================
+=========================================
 Layer 9 → Layer 8 → Layer 7: Agentic → Governance → Application
 
-Coordinates DFlash, Saguaro, and Circuit Breaker for unified speculative decoding.
+Coordinates MTP, DFlash, Saguaro, and Circuit Breaker for unified speculative decoding.
 
 CIRCUIT BREAKER MODEL:
 ------------------
-Layer 9 (Agentic)     → DFlash generates fast drafts / Saguaro hypotheses
+Layer 9 (Agentic)     → MTP Heads (internal lookahead) + DFlash/Saguaro
 Layer 8 (Governance)   → Circuit Breaker validates + signs all trajectories
 Layer 7 (Application) → Executes only SIGNED trajectories
 """

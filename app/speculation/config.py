@@ -1,12 +1,12 @@
 """
 MAIA Speculation Configuration
 ===============================
-Configuration for speculative decoding (DFlash, Saguaro/SSD).
+Configuration for Unified Speculative Stack (MTP + DFlash + Saguaro/SSD).
 
 CIRCUIT BREAKER MODEL (v3.0):
 ----------------------------
-Layer 9 (Agentic)     → DFlash Block Diffusion (Fast Draft Generation)
-Layer 8 (Governance)   → Circuit Breaker Validates + Signs
+Layer 9 (Agentic)     → MTP Heads (internal lookahead) + DFlash Block Diffusion
+Layer 8 (Governance)   → SSD/Saguaro Async Audit + Circuit Breaker Validates + Signs
 Layer 7 (Application) → Executes SIGNED trajectories only
 """
 
@@ -17,6 +17,9 @@ import os
 
 @dataclass
 class SpeculationConfig:
+    enable_mtp: bool = True
+    mtp_draft_tokens: int = 4
+    
     enable_dflash: bool = True
     enable_saguaro: bool = False
     
@@ -34,6 +37,8 @@ class SpeculationConfig:
     @classmethod
     def from_env(cls) -> "SpeculationConfig":
         return cls(
+            enable_mtp=os.getenv("MTP_ENABLED", "true").lower() == "true",
+            mtp_draft_tokens=int(os.getenv("MTP_DRAFT_TOKENS", "4")),
             enable_dflash=os.getenv("DFLASH_ENABLED", "true").lower() == "true",
             enable_saguaro=os.getenv("SAGUARO_ENABLED", "false").lower() == "true",
             dflash_model=os.getenv("DFLASH_MODEL", "z-lab/Qwen3.5-27B-DFlash"),
