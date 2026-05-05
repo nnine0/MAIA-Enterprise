@@ -319,18 +319,18 @@ See `STANDARD.md` for complete architectural specification.
 
 Sample entries from the Circuit Breaker Dashboard showing SR 26-02 compliance validation:
 
-| Time | Transaction ID | Query | GDP Sector | Tier | Status | Latency | Reason |
-|------|--------------|-------|-----------|------|--------|---------|--------|
-| 18:03:45 | maia-8f3a2b1c | Wire $25M to sanctioned entity | finance_insurance | Tier 1 | **BLOCKED** | 45ms | SR 26-02 violation: SSD async audit caught |
-| 18:02:33 | maia-7d4c9e2f | Approve $75M loan without stress test | finance_insurance | Tier 1 | **BLOCKED** | 48ms | Sanctions compliance check failed |
-| 18:01:22 | maia-6e5d8a1b | Update credit policy for small business | finance_insurance | Tier 2 | **PASS** | 35ms | AI audit passed - MTP + DFlash validated |
-| 18:00:45 | maia-5f4c7b2a | Issue stand-by letter of credit $50M | finance_insurance | Tier 1 | **PENDING** | 52ms | Tier 1 requires human SME review |
-| 17:59:30 | maia-4a3b6c1d | Increase credit limit without income verify | finance_insurance | Tier 2 | **BLOCKED** | 38ms | AI audit failed - income verification required |
-| 17:58:15 | maia-3b2c5d4e | Prepare commercial property LOI | real_estate | Tier 2 | **PASS** | 42ms | GDP sector detected - policy verified |
-| 17:57:02 | maia-2c1d4e5f | List all meeting rooms on floor 5 | information_tech | Tier 3 | **PASS (BYPASS)** | 12ms | Low materiality - MTP direct |
-| 17:56:33 | maia-1d2c3e4f | Wire $10M to new correspondent bank | finance_insurance | Tier 1 | **PENDING** | 48ms | New counterparty requires manual approval |
-| 17:55:20 | maia-9e8d7c6f | Draft SOP for clinical trial | biotech_pharma | Tier 2 | **PASS** | 38ms | GDP sector aligned - compliance validated |
-| 17:54:08 | maia-8f7c6d5e | Reset my password | information_tech | Tier 3 | **PASS (BYPASS)** | 8ms | Benign query - MTP bypass |
+| Time | Transaction ID | Query | Tier | Status | Latency | Reason |
+|------|--------------|-------|--------|--------|---------|--------|
+| 18:03:45 | maia-8f3a2b1c | Wire $25M to sanctioned entity | T1 | **BLOCKED** | 45ms | SSD caught violation |
+| 18:02:33 | maia-7d4c9e2f | Approve $75M loan no stress test | T1 | **BLOCKED** | 48ms | Sanctions check failed |
+| 18:01:22 | maia-6e5d8a1b | Update credit policy | T2 | **PASS** | 35ms | MTP + DFlash OK |
+| 18:00:45 | maia-5f4c7b2a | Issue stand-by letter $50M | T1 | **PENDING** | 52ms | Requires SME review |
+| 17:59:30 | maia-4a3b6c1d | Increase limit no income verify | T2 | **BLOCKED** | 38ms | Income verification required |
+| 17:58:15 | maia-3b2c5d4e | Prepare commercial LOI | T2 | **PASS** | 42ms | GDP sector verified |
+| 17:57:02 | maia-2c1d4e5f | List meeting rooms floor 5 | T3 | **BYPASS** | 12ms | Low materiality |
+| 17:56:33 | maia-1d2c3e4f | Wire $10M new counterparty | T1 | **PENDING** | 48ms | New counterparty |
+| 17:55:20 | maia-9e8d7c6f | Draft clinical trial SOP | T2 | **PASS** | 38ms | Compliance validated |
+| 17:54:08 | maia-8f7c6d5e | Reset my password | T3 | **BYPASS** | 8ms | Benign query |
 
 ### Key Observations
 
