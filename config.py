@@ -11,6 +11,10 @@ API_PORT = int(os.getenv("API_PORT", "8000"))
 DASHBOARD_PORT = int(os.getenv("DASHBOARD_PORT", "3033"))
 
 LORAX_URL = os.getenv("LORAX_URL", "http://127.0.0.1:8080")
+
+# Base model - uses LoRAX API which handles chat templates automatically
+# No manual prompt templates needed - the API applies model-specific templates
+# To change: update this and redeploy the lorax service
 BASE_MODEL_ID = os.getenv("BASE_MODEL_ID", "google/gemma-4-26b-a4b-moe")
 
 MAIA_API_KEY = os.getenv("MAIA_API_KEY")
