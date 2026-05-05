@@ -19,7 +19,11 @@ BASE_MODEL_ID = os.getenv("BASE_MODEL_ID", "google/gemma-4-26b-a4b-moe")
 
 MAIA_API_KEY = os.getenv("MAIA_API_KEY")
 if MAIA_API_KEY is None:
-    raise ValueError("MAIA_API_KEY environment variable must be set")
+    raise ValueError("MAIA_API_KEY environment variable must be set. Copy .env.example to .env and configure.")
+
+# Validate key format (minimum entropy check)
+if len(MAIA_API_KEY) < 16:
+    raise ValueError("MAIA_API_KEY must be at least 16 characters for adequate entropy")
 QDRANT_URL = os.getenv("QDRANT_URL", "http://127.0.0.1:6333")
 REDIS_URL = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0")
 

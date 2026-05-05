@@ -227,13 +227,41 @@ MAIA is an enterprise AI Governance Operating System that turns compliance from 
 ```bash
 # Copy and configure environment
 cp .env.example .env
-# Edit .env and set MAIA_API_KEY
+# Edit .env and set MAIA_API_KEY (required, min 16 chars)
 
 # Start the PVI Airlock Dashboard
 cd MAIA-Enterprise
 python3 app/dashboard.py
 
 # Access: http://localhost:3033
+```
+
+### Deployment (Docker Compose)
+
+```bash
+# Single command deployment
+./deploy.sh
+
+# Or manually:
+cp .env.example .env
+# Edit .env with your MAIA_API_KEY
+docker compose up -d
+
+# Services
+# - Dashboard: http://localhost:3033
+# - API:      http://localhost:8000
+# - LoRAX:   http://localhost:8080
+# - Qdrant:  http://localhost:6333
+```
+
+### Running Tests
+
+```bash
+# Install dependencies
+pip install pytest pytest-asyncio
+
+# Run test suite
+MAIA_API_KEY=test-key pytest tests/ -v
 ```
 
 ### Files
