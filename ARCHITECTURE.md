@@ -2,10 +2,56 @@
 
 ## The Governance Layer for Business Intelligence
 
+## Circuit Breaker Model (v3.0) - Zero-Trust Architecture
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              USER REQUEST                                      │
+│                              USER REQUEST                                         │
 └─────────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                        MATERIALITY ROUTER                                         │
+│  ┌─────────────────────────────────────────────────────────────────────────┐   │
+│  │  Tier 1: credit, wire, transfer, loan, sanction, fraud, AML, KYC          │   │
+│  │  Tier 2: risk, limit, approval, policy, audit                             │   │
+│  │  Tier 3: general queries                                                 │   │
+│  └─────────────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────────────┘
+                                      │
+              ┌───────────────────────┼───────────────────────┐
+              │                       │                       │
+              ▼                       ▼                       ▼
+        Tier 1 (Critical)      Tier 2 (Elevated)      Tier 3 (Benign)
+              │                       │                       │
+              ▼                       ▼                       ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                    LAYER 9: AGENTIC (Intent Generation)                       │
+│  ┌─────────────────────────────────────────────────────────────────────────┐   │
+│  │  - DFlash (Block Diffusion): Fast draft generation                     │   │
+│  │  - Saguaro/SSD: Multiple hypothesis generation                           │   │
+│  │  - "Black Box" reasoning - produces Intent Payload                   │   │
+│  └─────────────────────────────────────────────────────────────────────────┘   │
+│                                │                                                │
+│                                ▼                                                │
+│  ┌─────────────────────────────────────────────────────────────────────────┐   │
+│  │                    LAYER 8: GOVERNANCE (Circuit Breaker)                │   │
+│  │  # SR 26-02 COMPLIANCE GATE - Active Containment                         │   │
+│  │  - Intercepts intent payload from Layer 9                               │   │
+│  │  - Validates against SR 26-02 policy                                   │   │
+│  │  - Signs validated trajectories (Layer 8 signature)                    │   │
+│  │  - Blocks non-compliant paths                                          │   │
+│  │  - Tier 1: Escalates to Human SME Review (DHITL)                      │   │
+│  └─────────────────────────────────────────────────────────────────────────┘   │
+│                                │                                                │
+│                                ▼                                                │
+│  ┌─────────────────────────────────────────────────────────────────────────┐   │
+│  │                 LAYER 7: APPLICATION (Execution)                       │   │
+│  │  - Executes ONLY SIGNED trajectories (Zero-Trust)                     │   │
+│  │  - Never executes unsigned payloads from Layer 9                       │   │
+│  └─────────────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
                                       │
                                       ▼
 ┌─────────────────────────────────────────────────────────────────────────────────┐

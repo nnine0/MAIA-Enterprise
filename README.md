@@ -18,13 +18,15 @@ MAIA is an enterprise AI Governance Operating System that turns compliance from 
 
 ---
 
-## The Layer Thesis
+## The Layer Thesis (Circuit Breaker Model v3.0)
 
 | Layer | Component | Description |
 |-------|-----------|-------------|
-| **9** | **MAIA** | Governance Layer - Policy validation, audit trails, circuit breakers |
-| **8** | **AI** | Agentic Layer - Multi-adapter reasoning, task execution |
-| **7** | **TCP/IP** | Application Layer - Historical enterprise software domain |
+| **9** | **AGENTIC** | Intent Generation - DFlash/Saguaro drafts, "Black Box" reasoning |
+| **8** | **GOVERNANCE** | Circuit Breaker - Intercepts, Validates, Signs (The Guardian) |
+| **7** | **APPLICATION** | Execution - Only executes SIGNED trajectories (The Hand) |
+
+**Zero-Trust Architecture**: Layer 7 does NOT trust Layer 9. Only Layer 8 has the signing key.
 
 ---
 
@@ -63,13 +65,14 @@ MAIA is an enterprise AI Governance Operating System that turns compliance from 
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                    PVI AIRLOCK                                │
-│   # SR 26-02 COMPLIANCE GATE: PVI INTERCEPTOR               │
-│   1. Actor (Expert) generates action trajectory            │
-│   2. 150ms Interceptor pause                                 │
-│   3. Auditor validates for SR 26-02 compliance               │
-│   4. Circuit breaker blocks non-compliant trajectories      │
-│   5. [DHITL] Tier 1 escalates to Human SME Review          │
+│              LAYER 8: CIRCUIT BREAKER (Governance)              │
+│   # SR 26-02 COMPLIANCE GATE: Active Containment              │
+│   1. Layer 9 Agentic generates intent payload              │
+│   2. Circuit Breaker intercepts                           │
+│   3. Validates against SR 26-02 policy                   │
+│   4. Signs validated trajectories (Layer 8 signature)         │
+│   5. Blocks non-compliant paths                           │
+│   6. [DHITL] Tier 1 escalates to Human SME Review       │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -190,13 +193,17 @@ MAIA is an enterprise AI Governance Operating System that turns compliance from 
 
 | Module | Purpose |
 |--------|---------|
-| `app/services/airlock.py` | PVI Airlock, SMEPool, RLHFTrainingData |
-| `app/services/metrics.py` | Real-time metrics, scenario definitions |
+| `app/circuit_breaker.py` | Layer 8: Governance (Circuit Breaker) |
+| `app/airlock.py` | Layer 7: PVI Airlock (Legacy) |
 | `app/supervisor_router.py` | Hub/Spoke hierarchical routing |
 | `app/memory_manager.py` | VRAM/RAM/NVMe hot-swapping |
 | `app/latent_telemetry.py` | Neural EKG + latent hashing |
 | `app/dag_orchestrator.py` | Async DAG workflow |
-| `app/dashboard.py` | PVI Airlock Dashboard (port 3033) |
+| `app/speculation/config.py` | DFlash/Saguaro configuration |
+| `app/speculation/dflash_engine.py` | Layer 9: Block diffusion drafting |
+| `app/speculation/saguaro_scheduler.py` | Layer 8: Async SSD |
+| `app/speculation/kernel.py` | Unified L9→L8→L7 orchestration |
+| `app/dashboard.py` | Circuit Breaker Dashboard (port 3033) |
 
 ---
 

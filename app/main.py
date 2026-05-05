@@ -1,9 +1,16 @@
 """
 MAIA Council Controller - Governance Layer for Business Intelligence
-Integrates: Supervisor Router, PVI Airlock, Memory Manager, Latent Telemetry, DAG Orchestrator
+=====================================================================
+Integrates: Supervisor Router, Circuit Breaker, Memory Manager, Latent Telemetry
 
-The 9th Layer: AI Governance Operating System
+CIRCUIT BREAKER MODEL (v3.0):
+----------------------------
+Layer 9 (Agentic)     → Generates Intent Payloads (The "Black Box")
+Layer 8 (Governance) → Circuit Breaker: Intercepts, Validates, Signs (The Guardian)
+Layer 7 (Application) → Executes SIGNED trajectories only (The Hand)
+
 TCP/IP = Layer 7, AI = Layer 8, MAIA = Layer 9
+Zero-Trust: Layer 7 does NOT trust Layer 9, Only Layer 8 has the signing key
 """
 
 from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, Header
@@ -26,6 +33,7 @@ from rag import get_rag_context
 from auditing import audit_response, extract_response
 
 from airlock import execute_vetted_transaction, batch_vetted_transactions, AirlockVerdict
+from circuit_breaker import intercept_and_validate
 from supervisor_router import route_query, supervisor_router
 from memory_manager import get_memory_status, load_adapter
 from latent_telemetry import (
