@@ -317,26 +317,27 @@ See `STANDARD.md` for complete architectural specification.
 
 ## Example Transaction Log
 
-Sample entries from the PVI Airlock Dashboard showing SR 26-02 compliance validation:
+Sample entries from the Circuit Breaker Dashboard showing SR 26-02 compliance validation:
 
-| Time | Transaction ID | Query | Tier | Status | Latency | Reason |
-|------|----------------|-------|------|--------|---------|---------|
-| 18:03:45 | maia-8f3a2b1c | Wire $25M to sanctioned entity | Tier 1 | **BLOCKED** | 412ms | SR 26-02 violation: Missing capital reserve |
-| 18:02:33 | maia-7d4c9e2f | Approve $75M loan without stress test | Tier 1 | **BLOCKED** | 398ms | Sanctions compliance check failed |
-| 18:01:22 | maia-6e5d8a1b | Update credit policy for small business | Tier 2 | **PASS** | 187ms | AI audit passed - compliant with SR 26-02 |
-| 18:00:45 | maia-5f4c7b2a | Issue stand-by letter of credit $50M | Tier 1 | **PENDING** | 215ms | Tier 1 requires human SME review |
-| 17:59:30 | maia-4a3b6c1d | Increase credit limit without income verify | Tier 2 | **BLOCKED** | 234ms | AI audit failed - income verification required |
-| 17:58:15 | maia-3b2c5d4e | Process payroll for 500 employees | Tier 2 | **PASS** | 195ms | Risk controls verified - proceeding |
-| 17:57:02 | maia-2c1d4e5f | List all meeting rooms on floor 5 | Tier 3 | **PASS (BYPASS)** | 48ms | Low materiality - bypassed audit |
-| 17:56:33 | maia-1d2c3e4f | Wire $10M to new correspondent bank | Tier 1 | **PENDING** | 198ms | New counterparty requires manual approval |
-| 17:55:20 | maia-9e8d7c6f | Approve vendor contract for IT services | Tier 2 | **PASS** | 176ms | All policy checks validated |
-| 17:54:08 | maia-8f7c6d5e | Reset my password | Tier 3 | **PASS (BYPASS)** | 42ms | Benign query - no compliance risk |
+| Time | Transaction ID | Query | GDP Sector | Tier | Status | Latency | Reason |
+|------|--------------|-------|-----------|------|--------|---------|--------|
+| 18:03:45 | maia-8f3a2b1c | Wire $25M to sanctioned entity | finance_insurance | Tier 1 | **BLOCKED** | 45ms | SR 26-02 violation: SSD async audit caught |
+| 18:02:33 | maia-7d4c9e2f | Approve $75M loan without stress test | finance_insurance | Tier 1 | **BLOCKED** | 48ms | Sanctions compliance check failed |
+| 18:01:22 | maia-6e5d8a1b | Update credit policy for small business | finance_insurance | Tier 2 | **PASS** | 35ms | AI audit passed - MTP + DFlash validated |
+| 18:00:45 | maia-5f4c7b2a | Issue stand-by letter of credit $50M | finance_insurance | Tier 1 | **PENDING** | 52ms | Tier 1 requires human SME review |
+| 17:59:30 | maia-4a3b6c1d | Increase credit limit without income verify | finance_insurance | Tier 2 | **BLOCKED** | 38ms | AI audit failed - income verification required |
+| 17:58:15 | maia-3b2c5d4e | Prepare commercial property LOI | real_estate | Tier 2 | **PASS** | 42ms | GDP sector detected - policy verified |
+| 17:57:02 | maia-2c1d4e5f | List all meeting rooms on floor 5 | information_tech | Tier 3 | **PASS (BYPASS)** | 12ms | Low materiality - MTP direct |
+| 17:56:33 | maia-1d2c3e4f | Wire $10M to new correspondent bank | finance_insurance | Tier 1 | **PENDING** | 48ms | New counterparty requires manual approval |
+| 17:55:20 | maia-9e8d7c6f | Draft SOP for clinical trial | biotech_pharma | Tier 2 | **PASS** | 38ms | GDP sector aligned - compliance validated |
+| 17:54:08 | maia-8f7c6d5e | Reset my password | information_tech | Tier 3 | **PASS (BYPASS)** | 8ms | Benign query - MTP bypass |
 
 ### Key Observations
 
-1. **Tier 1 (Critical)** - Transactions involving wire transfers, large loans, sanctions require full PVI Airlock review or SME consensus
-2. **Tier 2 (Elevated)** - Policy/approval decisions are validated by AI auditor before passing
-3. **Tier 3 (Benign)** - Low-risk administrative queries bypass the Airlock for speed
+1. **Tier 1 (Critical)** - Finance/real estate transactions over $10K require full Circuit Breaker + DHITL SME review
+2. **Tier 2 (Elevated)** - GDP sector-aligned queries validated by MTP + DFlash + SSD async audit
+3. **Tier 3 (Benign)** - Low-risk queries use MTP direct (no speculation overhead)
+4. **Latency Erasure** - Governance happens in speculative cycles (45ms vs 400ms+ traditional)
 
 ### Latent Hash Example
 
@@ -345,6 +346,9 @@ Each transaction includes a forensic latent hash for audit trail:
 ```
 transaction_id: maia-8f3a2b1c
 latent_hash: 0x7b2f9a4c3d1e8f5a
+mtp_seed_tokens: 4
+dflash_blocks_expanded: 16
+ssd_hypotheses_audited: 3
 ```
 
 This hash represents the model's internal reasoning state at the moment of decision—providing mathematical proof of Conceptual Soundness for Federal Reserve auditors.
