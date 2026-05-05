@@ -45,9 +45,11 @@ def route_to_expert_keyword(user_query: str) -> RouteResult:
     return RouteResult(expert="general", confidence=0.5, method="keyword")
 
 
-async def route_to_expert_semantic(user_query: str) -> RouteResult:
+async def route_to_expert_llm(user_query: str) -> RouteResult:
     """
-    Semantic routing using the base model with error handling.
+    LLM-based classification routing.
+    Uses the base model's natural language understanding - not embeddings.
+    More flexible than keyword matching but requires GPU.
     """
     classification_prompt = f"""Classify this query into one category: {', '.join(config.EXPERT_LIST)}. Respond ONLY with the category name.
 Query: {user_query}
@@ -65,22 +67,26 @@ Category:"""
         
         for expert in config.EXPERT_LIST:
             if expert.lower() in category:
-                return RouteResult(expert=expert, confidence=0.9, method="semantic")
+                return RouteResult(expert=expert, confidence=0.9, method="llm")
         
-        logger.warning(f"Semantic routing fell through, category: {category}")
-        return RouteResult(expert="general", confidence=0.3, method="semantic")
+        logger.warning(f"LLM routing fell through, category: {category}")
+        return RouteResult(expert="general", confidence=0.3, method="llm")
         
     except Exception as e:
-        logger.error(f"Semantic routing failed: {e}")
+        logger.error(f"LLM routing failed: {e}")
         return RouteResult(expert="general", confidence=0.1, method="error")
 
 
-async def route_query(user_query: str, use_semantic: bool = True) -> RouteResult:
+async def route_query(user_query: str, use_llm: bool = True) -> RouteResult:
     """
-    Unified routing: semantic with keyword fallback.
+    Unified routing: LLM with keyword fallback.
+    
+    Flow:
+    1. Try LLM classification (higher accuracy, requires GPU)
+    2. Fall back to keyword matching if LLM fails or confidence low
     """
-    if use_semantic:
-        result = await route_to_expert_semantic(user_query)
+    if use_llm:
+        result = await route_to_expert_llm(user_query)
         if result.confidence >= 0.5:
             return result
     
