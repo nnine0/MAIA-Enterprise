@@ -1,22 +1,57 @@
 {
-  "tiers": {
-    "1": {
-      "category": "critical",
+  "version": "1.0",
+  "description": "Materiality Matrix Registry",
+  "tiers": [
+    {
+      "tier_id": "1",
+      "name": "CRITICAL",
+      "level": 1,
       "description": "Critical risk - requires human SME review",
-      "patterns": ["wire transfer", "sanction", "credit approval", "derivatives"],
-      "requires_escalation": true
+      "criteria": {
+        "domains": ["finance", "credit", "compliance"],
+        "keywords": ["wire", "transfer", "sanction", "fraud", "aml"],
+        "financial_threshold": 10000,
+        "requires_dhitl": true,
+        "requires_audit_trail": true,
+        "latent_hash_logging": true
+      },
+      "escalation_path": "dhitl",
+      "vote_threshold": 3,
+      "timeout_minutes": 30
     },
-    "2": {
-      "category": "elevated", 
+    {
+      "tier_id": "2",
+      "name": "ELEVATED",
+      "level": 2,
       "description": "Elevated risk - requires AI audit",
-      "patterns": ["policy change", "limit increase", "approval"],
-      "requires_escalation": false
+      "criteria": {
+        "domains": ["finance", "compliance"],
+        "keywords": ["policy", "limit", "approval"],
+        "financial_threshold": 1000,
+        "requires_dhitl": false,
+        "requires_audit_trail": true,
+        "latent_hash_logging": false
+      },
+      "escalation_path": "auto",
+      "vote_threshold": null,
+      "timeout_minutes": 5
     },
-    "3": {
-      "category": "benign",
+    {
+      "tier_id": "3",
+      "name": "BENIGN",
+      "level": 3,
       "description": "Benign - auto-approved",
-      "patterns": ["query", "status", "report"],
-      "requires_escalation": false
+      "criteria": {
+        "domains": ["general"],
+        "keywords": ["query", "status", "report", "info"],
+        "financial_threshold": 0,
+        "requires_dhitl": false,
+        "requires_audit_trail": false,
+        "latent_hash_logging": false
+      },
+      "escalation_path": "none",
+      "vote_threshold": null,
+      "timeout_minutes": 1
     }
-  }
+  ]
 }
