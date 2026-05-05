@@ -1,144 +1,107 @@
-# GDPval Framework: MAIA's Empirical Foundation
+# GDPVal Integration: Economic Task Valuation
 
-## The Economic Imperative
+## Overview
 
-The GDPval research (May 2026) provides the empirical foundation for MAIA's architecture. It quantifies the "Capability vs. Risk" dilemma facing the Global 2000:
+The GDPVal benchmark provides MAIA's empirical foundation for economic task classification. It tests AI model capability on real-world tasks from **44 occupations** spanning **9 GDP sectors**, constructed from professionals with an average of **14 years experience**.
 
-| Metric | Finding | MAIA Implication |
-|--------|---------|------------------|
-| **Cost Efficiency** | Models achieve parity with human experts at 1/10th the cost | Massive economic upside available |
-| **Catastrophic Failures** | ~3% of outputs are harmful/dangerously wrong | Unacceptable in regulated industries |
-| **Bad Failures** | ~26% are subpar but recoverable | Operational drag |
-| **Failure Types** | Format errors, hallucinations most common (Figure 8) | Automated checkpoint targets |
+| Benchmark | Score |
+|-----------|-------|
+| GPT 5.2 Thinking | 70.9% win rate vs professionals |
+| Claude Opus 4.1 | 47.6% win rate |
 
-**The Core Problem**: In unregulated industries, 3% catastrophic failure is acceptable. In banking/healthcare, it means billions in fines, SR 26-02 violations, and lost licenses.
-
-**MAIA's Solution**: Capture the economic upside while mathematically suppressing catastrophic risk to zero.
+**MAIA's Position**: Suppress catastrophic failures to zero while capturing economic efficiency gains.
 
 ---
 
-## Materiality Matrix: Derived from GDPval Economics
+## GDP Sectors: Materiality Matrix Alignment
 
-MAIA tiers governance based on the **Cost of Catastrophic Failure**:
+MAIA integrates 9 GDP sectors for task classification:
 
-### Tier 1: High Risk / High Value (SR 26-02 Covered)
-
-**GDPval Basis**: Tasks with dollar values exceeding wire transfer limits ($10K+) where catastrophic failure = regulatory violation, legal liability, or physical harm.
-
-**MAIA Implementation**:
-- Trigger: Wire transfers, loans >$10M, legal filings, sanctions compliance
-- Governance: Full PVI Airlock + DHITL Human SME Review
-- Adapter: Domain-specific expert (Finance/Legal/Compliance) + SR 26-02 Auditor
-- Latency: ~420ms (includes human review cycle)
-
-**Economic Logic**: The cost of a single catastrophic failure ($millions in fines) far exceeds the operational cost of governance ($thousands).
-
-### Tier 2: Moderate Risk / Moderate Value
-
-**GDPval Basis**: Tasks with dollar values from $500-$10K where "Bad" outcomes cause operational drag but aren't catastrophic.
-
-**MAIA Implementation**:
-- Trigger: Credit decisions, policy updates, compliance reports, contract reviews
-- Governance: PVI Airlock with AI Auditor (no human-in-the-loop unless flagged)
-- Adapter: Domain expert + formatting/validation auditor
-- Latency: ~200ms
-
-**Economic Logic**: Automated AI audit catches formatting errors and hallucinations (most common failures) at 1/10th the cost of human review.
-
-### Tier 3: Low Risk / Low Value
-
-**GDPval Basis**: Tasks with dollar values <$500 where "Bad" outcomes have negligible cost.
-
-**MAIA Implementation**:
-- Trigger: Internal summaries, scheduling, administrative queries
-- Governance: Bypass PVI Airlock (PASS BYPASS)
-- Adapter: Base model only (no expert adapter needed)
-- Latency: ~50ms
-
-**Economic Logic**: Matches GDPval's "Naive ratio" - maximum cost savings by skipping governance overhead.
+| GDP Sector | Sample Occupations | Critical Keywords |
+|-----------|----------------|-----------------|
+| `finance_insurance` | Financial Analysts, Underwriters | wire, transfer, derivative, claim |
+| `real_estate` | Property Managers, Leasing Agents | property, lease, tenant, zoning |
+| `government_public` | Compliance Officers, Regulators | policy, regulation, permit |
+| `biotech_pharma` | Clinical Researchers, QA | clinical, trial, SOP, patent |
+| `information_tech` | Software Engineers, DevOps | API, database, cybersecurity |
+| `retail_trade` | Merchandisers, Buyers | inventory, POS, sales |
+| `manufacturing` | Production Managers, QC | assembly, production, supply chain |
+| `logistics_supply` | Logisticians, Freight | shipping, warehouse, distribution |
+| `professional_services` | Lawyers, Accountants, Consultants | legal, audit, LOI, proposal |
 
 ---
 
-## Adapter Configuration: Productizing O*NET Task Specialization
+## Task Valuation: Risk-Based Routing
 
-### The O*NET Connection
+### Tier 1: CRITICAL (GDPVal Domain Expert Task)
 
-GDPval breaks the US economy into **44 distinct occupations** (Accountants, Lawyers, Compliance Officers, Financial Analysts, etc.). MAIA maps this to LoRA adapters:
+**Triggers**: Finance, Legal, Regulatory, Clinical, Real Estate transactions
+**GDPval Basis**: Dollar value >$10K where catastrophic failure = regulatory violation
+**MAIA Governance**: Full Circuit Breaker + DHITL SME Review
+**Execution**: Adapter hot-swap + 3-vote consensus
 
-| O*NET Occupation | MAIA Adapter | Primary Function |
-|-----------------|--------------|-------------------|
-| Financial Analysts | `finance-expert-v4` | Valuation, risk modeling |
-| Accountants | `accounting-expert-v4` | Audit, reconciliation |
-| Lawyers | `legal-expert-v4` | Contract review, compliance |
-| Compliance Officers | `compliance-auditor-v4` | SR 26-02 validation |
-| HR Specialists | `hr-expert-v4` | Policy, payroll |
-| Logisticians | `logistics-expert-v4` | Supply chain, routing |
+### Tier 2: ELEVATED (GDPVal Skilled Task)
 
-### Hot-Swap Architecture
+**Triggers**: Policy updates, compliance reports, evaluations, proposals
+**GDPval Basis**: Dollar value $500-$10K "Bad" outcomes cause operational drag
+**MAIA Governance**: Circuit Breaker + AI Auditor
+**Execution**: Automated validation
 
-When a task enters MAIA:
+### Tier 3: BENIGN (GDPVal Routine Task)
 
-1. **Supervisor Router** identifies the O*NET occupation category
-2. **LoRAX** hot-swaps the corresponding expert adapter into VRAM
-3. **PVI Airlock** evaluates based on task materiality
-4. **STaR Loop** uses rejection feedback to retrain specific adapter
-
-This mirrors GDPval's finding that specialized models outperform generalized ones—the adapter for "Financial Analysts" outperforms a general-purpose model on financial tasks.
+**Triggers**: Administrative queries, scheduling, info requests
+**GDPval Basis**: Dollar value <$500, negligible failure cost
+**MAIA Governance**: Bypass
+**Execution**: Direct LLM response
 
 ---
 
-## DHITL: Productizing GDPval's Grading Protocol
+## Integration Points
 
-### The GDPval Reference
+### 1. MaterialityMatrix Auto-Detection
 
-GDPval's grading setup uses "pairwise comparisons" with industry professionals (avg 14 years experience) taking ~109 minutes to review outputs.
+```python
+from app.materiality_matrix import create_materiality_matrix
 
-### MAIA's Implementation
+matrix = create_materiality_matrix()
+result = matrix.validate_query("Prepare LOI for commercial property")
 
-MAIA automates this exact workflow for Tier 1 events:
-
-| GDPval Grading | MAIA Production |
-|----------------|-----------------|
-| Industry professionals | SME Pool (Certified Airlock Admins) |
-| 14 years avg experience | Domain-specific certifications |
-| 109 min review time | Real-time consensus (<30 sec) |
-| Pairwise comparison | 3-vote consensus (2 of 3) |
-| Win-rate calculation | RLHF training data generation |
-
-**The Loop**:
-1. AI outputs action trajectory
-2. SME votes APPROVE/REJECT with rationale
-3. Winning trajectory becomes "Positive Reward" for adapter retraining
-4. Losing trajectories become "Negative Reward"
-5. STaR loop triggers automated retraining
-
----
-
-## Solving "Under-Contextualized" Tasks
-
-GDPval (Appendix A.2.7) notes models fail on ambiguous tasks lacking necessary context.
-
-**MAIA Solution**: The PVI Airlock's secondary auditor evaluates context sufficiency:
-
-```
-If prompt.is_under_contextualized:
-    BLOCK
-    RETURN "Insufficient regulatory context. Route to user for clarification."
+print(result["gdp_sector"])      # "real_estate" or "professional_services"
+print(result["tier"])           # "CRITICAL" or "ELEVATED"
+print(result["requires_dhitl"])  # True for Tier 1
 ```
 
-This prevents execution of actions where the AI would navigate ambiguity without proper grounding—exactly the failure mode GDPval identifies.
+### 2. Economic Valuation Export
+
+```python
+valuation = matrix.export_economic_valuation("Wire $1M to overseas supplier")
+# Returns GDPVal-aligned task valuation with sector, tier, domain
+```
+
+### 3. Sector-Aware Routing
+
+The supervisor router uses GDP sector detection to:
+1. Identify domain from query keywords
+2. Route to appropriate expert adapter
+3. Apply sector-specific governance rules
 
 ---
 
-## Summary: Theory to Practice
+## Economic Logic
 
-| GDPval Finding | MAIA Implementation |
-|-----------------|---------------------|
-| 3% catastrophic failure rate | Tier 1 + DHITL (human-in-the-loop) |
-| 26% "Bad" failure rate | Tier 2 + AI Auditor (automated) |
-| Format errors / hallucinations | PVI Airlock validation |
-| O*NET task specialization | LoRA adapter hot-swap |
-| Human expert grading | SME consensus voting |
-| Under-contextualized failures | Context sufficiency check |
+| Failure Mode | GDPval Finding | MAIA Control |
+|------------|-------------|-------------|
+| Catastrophic (3%) | Regulatory fines, legal liability | Tier 1 + DHITL → 0% |
+| Bad (26%) | Operational drag | Tier 2 + AI Audit |
+| Format errors | Most common failure | Validation layer |
+| Hallucinations | Secondary failure | Auditing module |
 
-**The Thesis**: If GDPval proves AI can replace human workflows economically, MAIA is the enterprise software that executes that transition safely.
+**The Thesis**: MAIA mathematically suppresses catastrophic risk while capturing the ~10x cost efficiency GDPval demonstrates.
+
+---
+
+## References
+
+- [GDPVal Benchmark](https://github.com/amaarora/GDPVal)
+- [GDPVal Blog Post](https://amaarora.github.io/posts/2025-12-15-gdpval-review.html)
+- SR 26-02: Enterprise AI Governance Standard
