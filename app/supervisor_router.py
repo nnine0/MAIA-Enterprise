@@ -120,7 +120,7 @@ class SupervisorRouter:
     """
     
     def __init__(self, lorax_url: str = LORAX_URL):
-        self.client = AsyncOpenAI(base_url=f"{lorax_url}/v1", api_key="not-needed")
+        self.client = AsyncOpenAI(base_url=f"{lorax_url}/v1", api_key=os.getenv("LORAX_API_KEY", "not-needed"))
         self.default_hub = "maia/governance-hub-v1"
         
     async def route(self, user_query: str) -> DispatchToken:

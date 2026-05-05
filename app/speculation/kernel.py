@@ -13,6 +13,7 @@ Layer 7 (Application) → Executes only SIGNED trajectories
 """
 
 import asyncio
+import os
 from typing import Optional, Dict, Any, List
 from datetime import datetime
 from openai import AsyncOpenAI
@@ -49,7 +50,7 @@ class SpeculationKernel:
         self.lorax_url = lorax_url
         self.config = config or SpeculationConfig.from_env()
         
-        self.client = AsyncOpenAI(base_url=f"{lorax_url}/v1", api_key="not-needed")
+        self.client = AsyncOpenAI(base_url=f"{lorax_url}/v1", api_key=os.getenv("LORAX_API_KEY", "not-needed"))
         self.gpu_config = get_gpu_config()
         
         saguaro_scheduler.set_client(self.client)

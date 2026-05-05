@@ -7,13 +7,10 @@ import nltk
 from rank_bm25 import BM25Okapi
 from qdrant_client import AsyncQdrantClient
 from openai import AsyncOpenAI
-from config import EMBEDDINGS_URL, LORAX_URL, QDRANT_URL, MAX_CONTEXT_LENGTH
-from typing import List
-
-nltk.download('punkt')
+from config import EMBEDDINGS_URL, LORAX_URL, LORAX_API_KEY, QDRANT_URL, MAX_CONTEXT_LENGTH
 
 vector_db = AsyncQdrantClient(url=QDRANT_URL)
-client = AsyncOpenAI(base_url=f"{LORAX_URL}/v1", api_key="not-needed")
+client = AsyncOpenAI(base_url=f"{LORAX_URL}/v1", api_key=LORAX_API_KEY)
 
 async def get_rag_context(user_query: str) -> str:
     """

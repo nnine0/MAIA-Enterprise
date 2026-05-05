@@ -11,6 +11,7 @@ API_PORT = int(os.getenv("API_PORT", "8000"))
 DASHBOARD_PORT = int(os.getenv("DASHBOARD_PORT", "3033"))
 
 LORAX_URL = os.getenv("LORAX_URL", "http://127.0.0.1:8080")
+LORAX_API_KEY = os.getenv("LORAX_API_KEY", "not-needed")  # Local inference - typically not required
 
 # Base model - uses LoRAX API which handles chat templates automatically
 # No manual prompt templates needed - the API applies model-specific templates

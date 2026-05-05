@@ -19,7 +19,7 @@ from typing import Optional, Dict, Any, List
 from dataclasses import dataclass, field
 from enum import Enum
 from openai import AsyncOpenAI
-from config import LORAX_URL
+from config import LORAX_URL, LORAX_API_KEY
 
 
 class MaterialityTier(Enum):
@@ -275,7 +275,7 @@ class PVIAirlock:
     """
     
     def __init__(self, lorax_url: str = LORAX_URL):
-        self.client = AsyncOpenAI(base_url=f"{lorax_url}/v1", api_key="not-needed")
+        self.client = AsyncOpenAI(base_url=f"{lorax_url}/v1", api_key=LORAX_API_KEY)
         
         # Materiality Matrix keywords for risk tiering
         self.critical_keywords = {

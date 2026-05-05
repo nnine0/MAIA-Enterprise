@@ -75,7 +75,7 @@ class CircuitBreaker:
     """
     
     def __init__(self, lorax_url: str = None):
-        self.client = AsyncOpenAI(base_url=f"{lorax_url or config.LORAX_URL}/v1", api_key="not-needed")
+        self.client = AsyncOpenAI(base_url=f"{lorax_url or config.LORAX_URL}/v1", api_key=os.getenv("LORAX_API_KEY", "not-needed"))
         self.signing_key = uuid.uuid4().hex[:16]
         
         self.critical_keywords = config.CRITICAL_KEYWORDS

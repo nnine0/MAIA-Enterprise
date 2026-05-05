@@ -78,7 +78,7 @@ def verify_api_key(x_maia_key: str = Header(...)) -> str:
         raise HTTPException(status_code=403, detail="Invalid API Key")
     return x_maia_key
 
-client = AsyncOpenAI(base_url=f"{config.LORAX_URL}/v1", api_key="not-needed")
+client = AsyncOpenAI(base_url=f"{config.LORAX_URL}/v1", api_key=config.LORAX_API_KEY)
 vector_db = AsyncQdrantClient(url=config.QDRANT_URL)
 
 

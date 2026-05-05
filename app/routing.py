@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 def _get_client():
     from openai import AsyncOpenAI
-    return AsyncOpenAI(base_url=f"{config.LORAX_URL}/v1", api_key="not-needed")
+    return AsyncOpenAI(base_url=f"{config.LORAX_URL}/v1", api_key=config.LORAX_API_KEY)
 
 
 client = None  # Lazy init

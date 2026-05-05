@@ -4,9 +4,9 @@ Auditing module for response validation and sanitization.
 
 import re
 from openai import AsyncOpenAI
-from config import LORAX_URL
+from config import LORAX_URL, LORAX_API_KEY
 
-client = AsyncOpenAI(base_url=f"{LORAX_URL}/v1", api_key="not-needed")
+client = AsyncOpenAI(base_url=f"{LORAX_URL}/v1", api_key=LORAX_API_KEY)
 
 def extract_response(text: str) -> str:
     """
