@@ -5,12 +5,17 @@ Routing module for expert selection.
 import logging
 from typing import Optional
 from dataclasses import dataclass
-from openai import AsyncOpenAI
 import config
 
 logger = logging.getLogger(__name__)
 
-client = AsyncOpenAI(base_url=f"{config.LORAX_URL}/v1", api_key="not-needed")
+
+def _get_client():
+    from openai import AsyncOpenAI
+    return AsyncOpenAI(base_url=f"{config.LORAX_URL}/v1", api_key="not-needed")
+
+
+client = None  # Lazy init
 
 
 @dataclass
@@ -46,6 +51,9 @@ def route_to_expert_keyword(user_query: str) -> RouteResult:
 
 
 async def route_to_expert_llm(user_query: str) -> RouteResult:
+    global client
+    if client is None:
+        client = _get_client()
     """
     LLM-based classification routing.
     Uses the base model's natural language understanding - not embeddings.
