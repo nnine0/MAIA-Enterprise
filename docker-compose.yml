@@ -1,155 +1,139 @@
 version: '3.8'
 
-# MAIA Enterprise - Compliance Appliance
-# Single command deployment with data persistence
-
-networks:
-  maia-net:
-    driver: bridge
-
-volumes:
-  maia-data:
-    driver: local
-  maia-adapters:
-    driver: local
-
 services:
-  # === INFERENCE ENGINE (LoRAX) ===
-  lorax:
-    image: ghcr.io/predibase/lorax:latest
-    container_name: maia-lorax
-    networks:
-      - maia-net
-    restart: unless-stopped
+  # Quad-Node GPU Cluster
+  # Each node runs a governed MAIA kernel on shared GPU
+  
+  maia-node-1:
+    build: .
+    image: maia-enterprise:latest
+    container_name: maia-estimating
+    ports:
+      - "8001:8000"
+    environment:
+      - NODE_ID=estimating
+      - NODE_PORT=8001
+      - GPU_MEMORY_UTIL=0.23
+      - LORA_ADAPTER=estimating_lora
+      - COMPLIANCE_CONFIG=configs/compliance/jacksonville_contractor_v1.json
     deploy:
       resources:
-        limits:
-          memory: 24G
         reservations:
           devices:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
+    volumes:
+      - ./configs:/app/configs
+      - ./logs:/app/logs
+    command: python3 server.py
+
+  maia-node-2:
+    build: .
+    image: maia-enterprise:latest
+    container_name: maia-legal
+    ports:
+      - "8002:8000"
     environment:
-      - CUDA_VISIBLE_DEVICES=0
+      - NODE_ID=legal
+      - NODE_PORT=8002
+      - GPU_MEMORY_UTIL=0.23
+      - LORA_ADAPTER=legal_lora
+      - COMPLIANCE_CONFIG=configs/compliance/jacksonville_contractor_v1.json
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
     volumes:
-      - maia-data:/data
-      - maia-adapters:/adapters
-    shm_size: '2gb'
-    command: >
-      --model-id google/gemma-4-26b-a4b-it
-      --max-batch-prefill-tokens 8192
-      --max-total-tokens 32768
-      --enable-mtp
-      --mtp-draft-tokens 4
-      --temperature 1.0
-      --top-p 0.95
-      --top-k 64
-      --gpu-memory-utilization 0.8
-      --trust-remote-code
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    ports:
-      - "8080:80"
+      - ./configs:/app/configs
+      - ./logs:/app/logs
+    command: python3 server.py
 
-  # === VECTOR DATABASE (Qdrant) ===
-  vector-db:
-    image: qdrant/qdrant:latest
-    container_name: maia-qdrant
-    networks:
-      - maia-net
-    restart: unless-stopped
-    volumes:
-      - maia-data:/qdrant/storage
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:6333/readyz"]
-      interval: 15s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
+  maia-node-3:
+    build: .
+    image: maia-enterprise:latest
+    container_name: maia-safety
     ports:
-      - "6333:6333"
-
-  # === TASK QUEUE (Redis) ===
-  redis:
-    image: redis:alpine
-    container_name: maia-redis
-    networks:
-      - maia-net
-    restart: unless-stopped
-    volumes:
-      - maia-data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 3s
-      retries: 3
-    ports:
-      - "6379:6379"
-
-  # === GOVERNANCE CONTROLLER ===
-  maia-app:
-    build:
-      context: ./app
-      dockerfile: Dockerfile
-      target: app
-    container_name: maia-controller
-    networks:
-      - maia-net
-    restart: unless-stopped
-    depends_on:
-      lorax:
-        condition: service_healthy
-      vector-db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      - "8003:8000"
     environment:
-      - LORAX_URL=http://lorax:80
-      - QDRANT_URL=http://vector-db:6333
-      - REDIS_URL=redis://redis:6379/0
-      - CUDA_VISIBLE_DEVICES=
-    env_file:
-      - .env
+      - NODE_ID=safety
+      - NODE_PORT=8003
+      - GPU_MEMORY_UTIL=0.23
+      - LORA_ADAPTER=safety_lora
+      - COMPLIANCE_CONFIG=configs/compliance/jacksonville_contractor_v1.json
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
     volumes:
-      - maia-data:/data_logs
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      - ./configs:/app/configs
+      - ./logs:/app/logs
+    command: python3 server.py
+
+  maia-node-4:
+    build: .
+    image: maia-enterprise:latest
+    container_name: maia-logistics
     ports:
-      - "8000:8000"
+      - "8004:8000"
+    environment:
+      - NODE_ID=logistics
+      - NODE_PORT=8004
+      - GPU_MEMORY_UTIL=0.23
+      - LORA_ADAPTER=logistics_lora
+      - COMPLIANCE_CONFIG=configs/compliance/jacksonville_contractor_v1.json
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    volumes:
+      - ./configs:/app/configs
+      - ./logs:/app/logs
+    command: python3 server.py
+
+  # Shared services
+  dashboard:
+    build: .
+    image: maia-enterprise:latest
+    container_name: maia-dashboard
+    ports:
       - "3033:3033"
-
-  # === BACKGROUND WORKER ===
-  maia-worker:
-    build:
-      context: ./app
-      dockerfile: Dockerfile
-      target: worker
-    container_name: maia-worker
-    networks:
-      - maia-net
-    restart: unless-stopped
-    depends_on:
-      redis:
-        condition: service_healthy
-      lorax:
-        condition: service_healthy
-      vector-db:
-        condition: service_healthy
     environment:
-      - LORAX_URL=http://lorax:80
-      - QDRANT_URL=http://vector-db:6333
-      - REDIS_URL=redis://redis:6379/0
-      - CUDA_VISIBLE_DEVICES=
-    env_file:
-      - .env
+      - NODE_ID=dashboard
     volumes:
-      - maia-data:/data_logs
-      - maia-adapters:/adapters
-    command: ["celery", "-A", "tasks", "worker", "--loglevel=info"]
+      - ./logs:/app/logs
+    depends_on:
+      - maia-node-1
+      - maia-node-2
+      - maia-node-3
+      - maia-node-4
+    command: python3 -m http.server 3033
+
+  # Governance audit trail
+  forensics:
+    build: .
+    image: maia-enterprise:latest
+    container_name: maia-forensics
+    ports:
+      - "9000:9000"
+    volumes:
+      - ./logs:/app/logs
+    environment:
+      - NODE_ID=forensics
+    command: tail -f /dev/null
+
+networks:
+  default:
+    driver: bridge
+    ipam:
+      config:
+        subnet: 172.28.0.0/16
