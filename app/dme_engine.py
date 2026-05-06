@@ -300,6 +300,66 @@ class ToolAdapter:
         },
         
         # =================================================================
+        # 6. HUMAN-PARITY BIAS ADAPTER (HR / Underwriting)
+        # =================================================================
+        # Monitors all people-decisions (hiring, loan, insurance) for implicit bias
+        # "Anonymized Reasoning" - cannot see protected classes or proxies
+        "bias_adapter": {
+            "adapter_id": "governance/bias-audit-v4",
+            "allowed_actions": ["audit_decision", "check_fairness", "anonymize"],
+            "blocked_actions": ["infer_race", "infer_gender", "infer_age", "proxy_infer"],
+            "protected_classes": ["race", "gender", "age", "national_origin", "disability"],
+            "proxy_patterns": ["zip_code", "club_membership", "spending_pattern"],
+            "requires_human_review": True,
+            "red_line": "Cannot infer protected classes or proxies"
+        },
+        
+        # =================================================================
+        # 7. CYBER-FORTRESS CODE AUDITOR (IT / Manufacturing)
+        # =================================================================
+        # Real-time auditing of code - Negative-Logic Adapter
+        # Trained on CVEs, SQL injection, buffer overflows
+        "cyber_audit": {
+            "adapter_id": "it/cyber-fortress-v4",
+            "allowed_actions": ["scan_code", "detect_cve", "check_injection"],
+            "blocked_actions": ["write_code", "execute", "modify"],
+            "cve_patterns": ["SQL_injection", "buffer_overflow", "XSS", "path_traversal"],
+            "negative_logic": True,  # Recognizes exploits, doesn't write code
+            "requires_safety_signature": True,
+            "red_line": "Code must pass Neural Signature of Safety"
+        },
+        
+        # =================================================================
+        # 8. OFAC/SANCTIONS GLOBAL GATEWAY (Banking / Logistics)
+        # =================================================================
+        # Fuzzy-matching against OFAC, UN, EU sanctions lists
+        # Trained on shell company structures and high-risk routing
+        "sanctions_gateway": {
+            "adapter_id": "finance/ofac-gateway-v4",
+            "allowed_actions": ["check_sanctions", "verify_entity", "fuzzy_match"],
+            "blocked_actions": ["approve_transaction", "clear_shipment"],
+            "sanctions_lists": ["OFAC", "UN", "EU", "UK_HMT"],
+            "high_risk_patterns": ["shell_company", "grey_area_port", "nested_routing"],
+            "requires_compliance_clearance": True,
+            "red_line": "Hard-locks until human Compliance Officer clears"
+        },
+        
+        # =================================================================
+        # 9. DISCLOSURE-GOVERNOR (Finance / PR / Public Admin)
+        # =================================================================
+        # Prevents MNPI leaks or unauthorized PR statements
+        # Audits outgoing for SEC (Reg FD) or HIPAA violations
+        "disclosure_governor": {
+            "adapter_id": "governance/disclosure-governor-v4",
+            "allowed_actions": ["audit_communication", "redact_mnpi", "check_reg_fd"],
+            "blocked_actions": ["send_forecast", "leak_mnpi", "unauthorized_pr"],
+            "document_types": ["press_release", "earnings_forecast", "material_disclosure"],
+            "safe_harbor_language": ["forward_looking_statements", "risk_factors"],
+            "auto_redact": True,
+            "red_line": "CFO-unapproved forecasts auto-redacted"
+        },
+        
+        # =================================================================
         # LEGACY ADAPTERS (Backward Compatibility)
         # =================================================================
         "email_adapter": {
@@ -335,6 +395,10 @@ class ToolAdapter:
         "contract_redline": ["contract", "agreement", "redline", "legal", "clause", "indemnification"],
         "kafka_dispatch": ["kafka", "logistics", "freight", "routing", "truck", "dispatch"],
         "aibom_inventory": ["inventory", "registry", "adapter", "lineage", "model card"],
+        "bias_adapter": ["bias", "fairness", "discrimination", "hiring", "underwriting", "ECOA"],
+        "cyber_audit": ["code", "security", "CVE", "vulnerability", "exploit", "scan"],
+        "sanctions_gateway": ["OFAC", "sanction", "blocked", "entity verification", "shell company"],
+        "disclosure_governor": ["disclosure", "MNPI", "press release", "earnings", "material"],
         "email_adapter": ["email", "send", "mail", "meeting", "notification"],
         "http_adapter": ["api", "http", "endpoint", "call"],
         "file_adapter": ["upload", "download", "file", "document"]
