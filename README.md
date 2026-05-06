@@ -383,22 +383,25 @@ See `STANDARD.md` for complete architectural specification.
 
 ## Example Transaction Log
 
-Sample entries from the Circuit Breaker Dashboard showing Multi-Sector DME validation:
+<!-- Smaller table for readability -->
+<small>
 
-| Time | Transaction ID | Query | Sector | Tool | Tier | Status | Latency | Reason |
-|------|--------------|-------|--------|------|------|--------|---------|--------|
-| 18:03 | maia-8f3a2b1c | Wire $25M to Russia | finance | swift_adapter | T1 | **BLOCKED** | 45ms | OFAC sanctions hit |
-| 18:02 | maia-7d4c9e2f | SELECT * FROM ledger balance > $1M | finance | sql_ledger | T1 | **BLOCKED** | 38ms | Balance > $1M trigger |
-| 18:01 | maia-6e5d8a1b | Redline contract clause | legal | contract_redline | T2 | **PASS** | 35ms | No Core Protection |
-| 18:00 | maia-5f4c7b2a | Pre-approve loan $75K | finance | swift_adapter | T1 | **PENDING** | 52ms | Role threshold |
-| 17:59 | maia-4a3b6c1d | Scan API for CVE | IT | cyber_audit | T2 | **PASS** | 42ms | No CVE patterns |
-| 17:58 | maia-3b2c5d4e | Draft clinical SOP | biotech | contract_redline | T2 | **PASS** | 48ms | QA reviewed |
-| 17:57 | maia-2c1d4e5f | Book freight to Havana | logistics | kafka_dispatch | T1 | **BLOCKED** | 35ms | Grey area port |
-| 17:56 | maia-1d2c3e4f | Hire from zip 19104 | HR | bias_adapter | T1 | **BLOCKED** | 28ms | Proxy pattern |
-| 17:55 | maia-9e8d7c6f | Release Q4 forecast | finance | disclosure_governor | T1 | **BLOCKED** | 22ms | CFO approval |
-| 17:54 | maia-8f7c6d5e | Update adapter registry | IT | aibom_inventory | T2 | **PASS** | 15ms | Lineage logged |
-| 17:53 | maia-7c6e5d4f | Send meeting summary | IT | email_adapter | T3 | **BYPASS** | 8ms | Low materiality |
-| 17:52 | maia-6b5d4e3f | Check credit score | finance | sql_ledger | T2 | **PASS** | 32ms | Anonymized |
+| Time | Transaction ID | Query | Tool | Tier | Status | Latency | Reason |
+|------|--------------|-------|------|------|--------|---------|--------|
+| 18:03 | 8f3a2b1c | Wire $25M Russia | swift | T1 | **BLK** | 45ms | OFAC hit |
+| 18:02 | 7d4c9e2f | SELECT > $1M | sql | T1 | **BLK** | 38ms | Balance |
+| 18:01 | 6e5d8a1b | Redline clause | contract | T2 | **PASS** | 35ms | OK |
+| 18:00 | 5f4c7b2a | Loan $75K | swift | T1 | **PEN** | 52ms | Threshold |
+| 17:59 | 4a3b6c1d | Scan CVE | cyber | T2 | **PASS** | 42ms | OK |
+| 17:58 | 3b2c5d4e | Clinical SOP | contract | T2 | **PASS** | 48ms | QA |
+| 17:57 | 2c1d4e5f | Freight Havana | kafka | T1 | **BLK** | 35ms | Grey port |
+| 17:56 | 1d2c3e4f | Hire zip 19104 | bias | T1 | **BLK** | 28ms | Proxy |
+| 17:55 | 9e8d7c6f | Forecast Q4 | disclosure | T1 | **BLK** | 22ms | CFO |
+| 17:54 | 8f7c6d5e | Registry update | aibom | T2 | **PASS** | 15ms | Logged |
+| 17:53 | 7c6e5d4f | Meeting summary | email | T3 | **BYP** | 8ms | Low |
+| 17:52 | 6b5d4e3f | Credit score | sql | T2 | **PASS** | 32ms | OK |
+
+</small>
 
 ### Key Observations
 - **Finance**: T1 on >$10K wire or >$1M balance
