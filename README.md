@@ -1,30 +1,54 @@
-# MAIA: Enterprise AI Governance
+# MAIA: Enterprise AI Governance OS
 
-> Enterprise AI Governance Operating System for SR 26-02 Compliance
-
-## License
-
-**PROPRIETARY - NO COMMERCIAL USE**
-
-This software is proprietary to MAIA Enterprise. See [LICENSE](./LICENSE) for full restrictions.
+> The Industrial Neural Operating System for Regulated Industries
 
 ---
 
-## Purpose
+## About
 
-MAIA (Multi-Adapter Inference Architecture) is an enterprise AI Governance Operating System that solves the fundamental problem facing the Global 2000: **how to deploy AI at scale while satisfying increasingly strict regulatory requirements**.
+MAIA (Multi-Adapter Inference Architecture) is an **enterprise AI Governance Operating System**—a neural microkernel running between the reasoning engine and the real world.
 
-The Federal Reserve's SR 26-02 mandate requires banks to implement governance controls for AI deployments. MAIA provides the governance layer between AI reasoning and execution:
+### The Problem
 
-- **Effective Challenge** - Independent review of AI decisions
-- **Materiality Matrix** - GDP-aligned risk tiering (9 sectors, 44 occupations)
-- **Continuous Monitoring** - Real-time audit trails
-- **Conceptual Soundness** - Forensic proof of reasoning
+The Global 2000 faces an impossible choice:
+- **Deploy AI** = Risk regulatory violation, audit failure, fines
+- **Restrict AI** = Lose competitive advantage
+
+### Our Vision
+
+MAIA transforms AI from a **liability** into a **controlled industrial instrument**—the same way PLCs transformed factory floors from artisanal craft to reproducible manufacturing.
+
+### The Scope
+
+MAIA is not a chatbot. It is a **complete governance infrastructure** that enterprises deploy to:
+
+| Layer | Component | Purpose |
+|-------|-----------|---------|
+| **L9: Agentic** | Gemma 4 + MTP/DFlash | Intent generation with speculative decoding |
+| **L8: Governance** | Circuit Breaker + DME Engine | 4-layer recursive escalation |
+| **L7: Application** | Tool-Adapters | Constrained LoRA weight-sets |
+
+### Key Capabilities
+
+- **GDP-Aligned Materiality** - 9 sectors × 44 occupations mapping
+- **Dynamic Materiality Escalation (DME)** - L1→L2→L3→L4 semantic analysis
+- **Tool-Adapters (Neural Permissioning)** - 5 critical business tools as constrained LoRAs
 - **Unified Speculative Stack** - MTP + DFlash + SSD for zero-latency governance
+- **DHITL Human Sovereignty** - 3 SME votes for Tier 1 decisions
+- **AIBOM Inventory** - SR 26-02 required adapter registry
 
-MAIA's **Circuit Breaker** pauses the **Action Trajectory** between Layer 9 (Agentic) and Layer 7 (Execution), validating intent against corporate policy before any action is taken. The **Latency Erasure** property means governance overhead happens in speculative cycles—no time-tax for safety.
+### The Moat
 
-**The Innovation**: Using MTP (Multi-Token Prediction) for internal lookahead and SSD (Saguaro) for async audit, MAIA achieves "Hidden Compliance"—the bank gets zero-latency governance while the model generates.
+> "Others give you an AI that can 'use a browser.' That is a liability. I give you a Neural microkernel where every 'hand' (tool) is a constrained mathematical subset of the brain."
+
+MAIA replaces "Prompt Engineering" with **Neural Permissioning**—tools physically cannot reason outside their programmed boundaries.
+
+### For Who
+
+- **Banks** - SR 26-02 compliance for trading, lending, wire transfers
+- **Pharma** - HIPAA/GCP for clinical trials, drug safety
+- **Logistics** - Hazmat, real-time routing, CSX compliance
+- **Legal/Real Estate** - Contract redlining, title verification
 
 ---
 
