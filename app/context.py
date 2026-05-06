@@ -82,12 +82,15 @@ class MAIAContext:
         from airlock import PVIAirlock, SMEPool, RLHFTrainingData
         from supervisor_router import SupervisorRouter
         from training_guardrails import guardrails
+        from dme_engine import dme_engine, maia_orchestrator
         
         self._components["circuit_breaker"] = CircuitBreaker()
         self._components["airlock"] = PVIAirlock()
         self._components["sme_pool"] = SMEPool()
         self._components["rlhf_data"] = RLHFTrainingData()
         self._components["supervisor_router"] = SupervisorRouter()
+        self._components["dme_engine"] = dme_engine
+        self._components["maia_orchestrator"] = maia_orchestrator
         self._components["training_guardrails"] = guardrails
     
     def get(self, key: str):
