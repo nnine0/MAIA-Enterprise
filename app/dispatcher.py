@@ -10,6 +10,7 @@ Implements Interrupt-and-Reconfigure pattern:
 3. Applies Logit Bias firewall
 4. Generates governed parameters
 5. Dispatches via JSON-RPC
+6. Logs to forensics for SR 26-02 compliance
 """
 
 import re
@@ -20,6 +21,13 @@ from typing import Generator, Optional, Dict, Any, List
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
+
+# Forensics integration
+try:
+    from forensics.logger import get_logger
+    FORENSICS_AVAILABLE = True
+except ImportError:
+    FORENSICS_AVAILABLE = False
 
 
 logger = logging.getLogger("MAIA-Dispatcher")
@@ -263,7 +271,8 @@ class NeuralToolDispatcher:
         self,
         tool_id: str,
         generated_params: str,
-        reasoning_context: str
+        reasoning_context: str,
+        query: str = ""
     ) -> DispatchResult:
         """
         Execute the full dispatch workflow.
@@ -282,6 +291,31 @@ class NeuralToolDispatcher:
         
         # Check governance
         governance = self.check_governance(tool_id, generated_params)
+        violations = governance.get("violations", [])
+        
+        # Log to forensics (SR 26-02 compliance)
+        if FORENSICS_AVAILABLE:
+            try:
+                forensics = get_logger()
+                governance_layer = tool_spec.get("governance_layer", {})
+                tier = 1 if governance_layer.get("materiality") == "CRITICAL" else 2
+                policy_id = governance_layer.get("airlock_policy", "default")
+                
+                forensics.log(
+                    query=query or "dispatch",
+                    thinking_block=reasoning_context[:500],
+                    tool_id=tool_id,
+                    tool_intent_detected=True,
+                    policy_id=policy_id,
+                    tier=tier,
+                    violations=violations,
+                    governance_passed=governance["passed"],
+                    dhitl_required=governance.get("requires_dhitl", False),
+                    response_denied=not governance["passed"],
+                    blocked_reason=violations[0] if violations else None
+                )
+            except Exception as e:
+                self.logger.warning(f"Forensics logging failed: {e}")
         
         if not governance["passed"]:
             return DispatchResult(
