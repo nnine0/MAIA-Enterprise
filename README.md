@@ -350,8 +350,8 @@ docker compose up -d
 # Install dependencies
 pip install pytest pytest-asyncio
 
-# Run test suite
-MAIA_API_KEY=test-key pytest tests/ -v
+# Run test suite (requires MAIA_API_KEY with 16+ chars for config validation)
+MAIA_API_KEY=testing_key_placeholder pytest tests/ -v
 ```
 
 ### Files
