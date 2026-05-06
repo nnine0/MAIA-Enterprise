@@ -218,11 +218,90 @@ class ToolAdapter:
     L3: Functional Tool Adapter
     
     Treats tools as specialized LoRA adapters.
-    The tool itself becomes a constrained weight-set.
+    The tool itself becomes a constrained weight-set - physically cannot reason outside boundaries.
+    
+    MAIA Innovation: "Neural Permissioning" replaces "Prompt Engineering"
     """
     
     # Map tools to their constrained capabilities
     TOOL_CAPABILITIES: Dict[str, Dict] = {
+        # =================================================================
+        # 1. LEDGER-AUDIT SQL ADAPTER (Finance/Accounting)
+        # =================================================================
+        # "Read-Only/Append-Only" weight-set
+        # The weights are trained ONLY on SELECT and INSERT - model "forgets" DELETE/DROP
+        "sql_ledger": {
+            "adapter_id": "finance/ledger-audit-v4",
+            "allowed_actions": ["SELECT", "INSERT", "SHOW", "DESCRIBE"],
+            "blocked_actions": ["DROP", "DELETE", "TRUNCATE", "ALTER", "CREATE", "UPDATE", "GRANT", "REVOKE"],
+            "requires_audit_trail": True,
+            "max_rows": 1000,
+            "sensitive_fields": ["ssn", "routing_number", "balance", "account_number"],
+            "auto_escalate_on": ["balance > 1000000", "ssn", "routing_number"],
+            "red_line": "Only SELECT/INSERT - physically cannot DELETE"
+        },
+        
+        # =================================================================
+        # 2. SWIFT/FEDWIRE TRANSACTION ADAPTER (Banking)
+        # =================================================================
+        # Tier 1 "Money Hand" - generates MT103/Fedwire ISO 20022
+        "swift_adapter": {
+            "adapter_id": "finance/swift-wire-v4",
+            "allowed_actions": ["MT103", "ISO20022", "wire_initiation"],
+            "message_format": "MT103",
+            "requires_dual_approval": True,
+            "max_amount": 10000,  # Auto-escalate above
+            "blocked_countries": ["Russia", "Iran", "North Korea", "Cuba", "Syria"],
+            "requires_routing_verification": True,
+            "red_line": "No transfers > $10K without DHITL"
+        },
+        
+        # =================================================================
+        # 3. CONTRACT-REDLINE ADAPTER (Legal/Real Estate/Pharma)
+        # =================================================================
+        # Reviews/edits DOCX/PDF - identifies Force Majeure, Indemnification, Liability Caps
+        "contract_redline": {
+            "adapter_id": "legal/contract-redline-v4",
+            "allowed_actions": ["review", "redline", "annotate", "identify_clause"],
+            "blocked_actions": ["delete_indemnification", "remove_liability", "waive_protection"],
+            "critical_clauses": ["Force Majeure", "Indemnification", "Liability Cap", "Indemnity"],
+            "core_protection_violations": ["delete_limitation", "remove_indemnification"],
+            "requires_partner_approval_for": ["Indemnification", "Liability Cap"],
+            "red_line": "Cannot delete Core Protection clauses"
+        },
+        
+        # =================================================================
+        # 4. LOGISTICS-KAFKA DISPATCH ADAPTER (Supply Chain)
+        # =================================================================
+        # Real-time freight matching and autonomous routing
+        "kafka_dispatch": {
+            "adapter_id": "logistics/kafka-dispatch-v4",
+            "allowed_actions": ["publish", "subscribe", "route", "match_load"],
+            "kafka_topics": ["truck_location", "fuel_level", "load_status", "hazmat_alert"],
+            "blocked_actions": ["delete", "purge_topic"],
+            "auto_swap_on": ["hazmat_flag", "safety_incident"],
+            "safety_compliance": "hazmat_regulations",
+            "swaps_to": "logistics/safety-auditor-v4",
+            "red_line": "Auto-swap to Safety-Auditor on Hazmat"
+        },
+        
+        # =================================================================
+        # 5. AIBOM-INVENTORY ADAPTER (Infrastructure/Governance)
+        # =================================================================
+        # "Tool that watches the Tools" - required by SR 26-02
+        # Logs adapter lineage, version, training data hash
+        "aibom_inventory": {
+            "adapter_id": "governance/aibom-inventory-v4",
+            "allowed_actions": ["register", "log_lineage", "version", "update_registry"],
+            "requires_audit_trail": True,
+            "tracks": ["adapter_id", "version", "training_data_hash", "lineage", "created_at"],
+            "auto_updates": True,
+            "red_line": "Always has VIN number for every adapter"
+        },
+        
+        # =================================================================
+        # LEGACY ADAPTERS (Backward Compatibility)
+        # =================================================================
         "email_adapter": {
             "allowed_actions": ["meeting_summary", "status_update", "meeting_notice"],
             "blocked_actions": ["password_reset", "credentials", "api_keys", "ssn"],
@@ -230,17 +309,11 @@ class ToolAdapter:
             "max_recipients": 10,
             "blocked_domains": ["gmail.com", "yahoo.com", "personal.com"]
         },
-        "sql_adapter": {
+        "sql_adapter": {  # Legacy alias
             "allowed_actions": ["SELECT", "SHOW"],
             "blocked_actions": ["DROP", "DELETE", "TRUNCATE", "ALTER"],
             "requires_audit_trail": True,
             "max_rows": 1000
-        },
-        "swift_adapter": {
-            "allowed_actions": ["wire_transfer"],
-            "requires_dual_approval": True,
-            "max_amount": 10000,
-            "blocked_countries": ["Russia", "Iran", "North Korea"]
         },
         "http_adapter": {
             "allowed_actions": ["GET", "POST"],
@@ -255,20 +328,24 @@ class ToolAdapter:
         }
     }
     
+    # Business-specific tool signatures
+    TOOL_SIGNATURES: Dict[str, List[str]] = {
+        "sql_ledger": ["ledger", "SAP", "oracle", "accounting", "general ledger", "trial balance"],
+        "swift_adapter": ["wire", "transfer", "fedwire", "SWIFT", "MT103", "payment"],
+        "contract_redline": ["contract", "agreement", "redline", "legal", "clause", "indemnification"],
+        "kafka_dispatch": ["kafka", "logistics", "freight", "routing", "truck", "dispatch"],
+        "aibom_inventory": ["inventory", "registry", "adapter", "lineage", "model card"],
+        "email_adapter": ["email", "send", "mail", "meeting", "notification"],
+        "http_adapter": ["api", "http", "endpoint", "call"],
+        "file_adapter": ["upload", "download", "file", "document"]
+    }
+    
     @classmethod
     def identify_tool(cls, query: str) -> str:
         """Identify which tool the query requires"""
         query_lower = query.lower()
         
-        tool_signatures = {
-            "email_adapter": ["email", "send", "mail", "meeting", "notification"],
-            "sql_adapter": ["query", "database", "select", "from", "where"],
-            "swift_adapter": ["wire", "transfer", "payment", "$"],
-            "http_adapter": ["api", "http", "endpoint", "call"],
-            "file_adapter": ["upload", "download", "file", "document"]
-        }
-        
-        for tool, signatures in tool_signatures.items():
+        for tool, signatures in cls.TOOL_SIGNATURES.items():
             if any(sig in query_lower for sig in signatures):
                 return tool
         
