@@ -83,6 +83,7 @@ class MAIAContext:
         from supervisor_router import SupervisorRouter
         from training_guardrails import guardrails
         from dme_engine import dme_engine, maia_orchestrator
+        from security import security_orchestrator, get_security_orchestrator
         
         self._components["circuit_breaker"] = CircuitBreaker()
         self._components["airlock"] = PVIAirlock()
@@ -92,6 +93,7 @@ class MAIAContext:
         self._components["dme_engine"] = dme_engine
         self._components["maia_orchestrator"] = maia_orchestrator
         self._components["training_guardrails"] = guardrails
+        self._components["security_orchestrator"] = security_orchestrator
     
     def get(self, key: str):
         """Get component by name"""

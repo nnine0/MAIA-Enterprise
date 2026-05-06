@@ -217,13 +217,16 @@ MAIA replaces "Prompt Engineering" with **Neural Permissioning**—tools physica
 
 ## Key Components Reference
 
-**The Pitch**: "An agent using our SQL-Adapter doesn't just 'promise' not to delete your database—it physically doesn't have the weights required to formulate the command."
+### 9. Adversarial Defense (Weight-Level)
 
-### 8. Latent State Observability
+| Defense | Attack Vector | Solution |
+|---------|----------------|----------|
+| Weight-Level | Prompt Injection | Constrained LoRA - cannot generate dangerous tokens |
+| Latent Hash | Adapter Injection | Deviation triggers Circuit Breaker |
+| Orchestrator | Role Escalation | Role → adapter access control |
+| DHITL MF | Social Engineering | Multi-factor by transaction value |
 
-- Intra-Inference Telemetry - Neural Flight Recorder
-- Latent hashes at decision nodes provide forensic proof
-- Turns "Black Box" AI into "Glass Box" for Fed auditors
+**The Pitch**: "Our SQL-Adapter physically doesn't have the weights to delete."
 
 ---
 
