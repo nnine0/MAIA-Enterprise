@@ -42,6 +42,9 @@ services:
       --max-total-tokens 32768
       --enable-mtp
       --mtp-draft-tokens 4
+      --temperature 1.0
+      --top-p 0.95
+      --top-k 64
       --gpu-memory-utilization 0.8
       --trust-remote-code
     healthcheck:

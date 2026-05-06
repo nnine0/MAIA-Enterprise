@@ -92,3 +92,24 @@ ADAPTER_TEMPERATURES = {
     "precise": 0.1,
     "routing": 0.1,
 }
+
+# Gemma 4 sampling best practices
+TARGET_TEMPERATURE = 1.0
+TARGET_TOP_P = 0.95
+TARGET_TOP_K = 64
+
+MODEL_CAPABILITIES = {
+    "context_window": 256000,
+    "supported_modalities": ["text", "image"],
+    "thinking_mode": True,
+    "function_calling": True,
+    "multilingual": True,
+    "languages": 140,
+}
+
+ADAPTER_TEMPERATURES = {
+    "default": 0.4,
+    "creative": 0.7,
+    "precise": 0.1,
+    "routing": 0.1,
+}
