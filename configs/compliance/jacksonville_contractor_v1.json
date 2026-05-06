@@ -1,91 +1,90 @@
 {
-  "policy_metadata": {
-    "version": "2026.4.1",
-    "sector": "Heavy_Construction_Logistics",
-    "jurisdiction": "US_FL_FEDERAL",
-    "governance_standard": "SR_26-02_OSHA_FAR",
-    "compliance_mode": "Deterministic_Weight_Constraint"
+  "version": "1.0.0",
+  "name": "Jacksonville Contractor Compliance",
+  "description": "Materiality Matrix for Jacksonville-based contractors",
+  "sectors": ["construction", "maritime", "logistics", "legal"],
+  "violation_patterns": {
+    "CRITICAL": [
+      "bypass osha safety",
+      "skip fall protection",
+      "omit davis-bacon wage",
+      "under-bid structural steel",
+      "exclude rebar costs",
+      "hide contingency",
+      "front-load change orders",
+      "fabricate safety log"
+    ],
+    "HIGH": [
+      "circumvent inspection",
+      "unauthorized override",
+      "skip ppe requirement",
+      "material substitution",
+      "undocumented overtime"
+    ],
+    "MEDIUM": [
+      "incomplete documentation",
+      "delayed reporting",
+      "minor deviation"
+    ]
   },
-  "materiality_matrix": {
-    "CRITICAL": {
-      "action": "PHYSICAL_INTERRUPT",
-      "alert_level": "RED",
-      "audit_required": true,
-      "description": "Immediate threat to life-safety or structural integrity. Kill inference before token finalization."
+  "materiality_tiers": {
+    "TIER_1": {
+      "threshold": 50000,
+      "requires_dhitl": true,
+      "domains": ["safety", "financial", "legal"]
     },
-    "HIGH": {
-      "action": "DHITL_INTERCEPT",
-      "alert_level": "ORANGE",
-      "audit_required": true,
-      "description": "Financial or legal risk exceeding $500k. Require Determined Human-in-the-Loop approval."
+    "TIER_2": {
+      "threshold": 10000,
+      "requires_dhitl": false,
+      "domains": ["operations", "logistics"]
     },
-    "MEDIUM": {
-      "action": "LATENT_HASH_LOG",
-      "alert_level": "YELLOW",
-      "audit_required": true,
-      "description": "Minor policy deviation. Log reasoning trajectory for forensic audit."
+    "TIER_3": {
+      "threshold": 0,
+      "requires_dhitl": false,
+      "domains": ["admin", "informational"]
     }
   },
-  "violation_triggers": [
+  "domain_keywords": {
+    "safety": ["osha", "ppe", "fall protection", "scaffold", "hazard", "safety"],
+    "financial": ["bid", "estimate", "margin", "cost", "pricing", "invoice", "payment"],
+    "legal": ["contract", "far", "dfars", "clause", "indemnification", "liability"],
+    "operations": ["schedule", "delivery", "inspection", "permit"],
+    "logistics": ["transport", "fleet", "hazmat", "dot", "shipping"],
+    "admin": ["internal", "hr", "training"]
+  },
+  "trigger_patterns": [
     {
-      "id": "SAFE-001",
-      "category": "Life_Safety",
-      "materiality": "CRITICAL",
-      "intent_patterns": [
-        "bypass osha",
-        "ignore load limits",
-        "manual override of safety sensors",
-        "circumvent fall protection",
-        "falsify safety log",
-        "post-date inspection"
-      ],
-      "reasoning_manifold_threshold": 0.92,
-      "remediation_instruction": "Trajectory blocked: AI attempted to reason around mandatory life-safety protocols."
+      "pattern": "\\d+%.*margin",
+      "tier": "TIER_1",
+      "action": "flag"
     },
     {
-      "id": "FIN-002",
-      "category": "Financial_Integrity",
-      "materiality": "HIGH",
-      "intent_patterns": [
-        "margin below 3%",
-        "hidden fee injection",
-        "price fixing",
-        "unauthorized discount override",
-        "under-bid structural materials"
-      ],
-      "reasoning_manifold_threshold": 0.85,
-      "remediation_instruction": "Trajectory held: Financial decision exceeds autonomous spending limit. Routing to CFO."
+      "pattern": "skip.*safety",
+      "tier": "TIER_1",
+      "action": "interrupt"
     },
     {
-      "id": "GOV-003",
-      "category": "Contractual_Compliance",
-      "materiality": "HIGH",
-      "intent_patterns": [
-        "ignore far clauses",
-        "bypass davis-bacon act",
-        "substitute non-certified materials",
-        "hide subcontractor identity"
-      ],
-      "reasoning_manifold_threshold": 0.88,
-      "remediation_instruction": "Trajectory held: Action violates Federal Acquisition Regulations (FAR)."
-    },
-    {
-      "id": "PRIV-004",
-      "category": "Data_Sovereignty",
-      "materiality": "MEDIUM",
-      "intent_patterns": [
-        "export bid logic to public api",
-        "reveal employee pii",
-        "leak trade secrets to subcontractor"
-      ],
-      "reasoning_manifold_threshold": 0.75,
-      "remediation_instruction": "Trajectory logged: Data sovereignty boundary approached. Masking PII."
+      "pattern": "below\\s+\\d+%",
+      "tier": "TIER_2",
+      "action": "flag"
     }
   ],
-  "neural_ekg_config": {
-    "latent_hash_model": "ibm-granite/granite-embedding-97m",
-    "sampling_interval_tokens": 10,
-    "drift_tolerance": 0.12,
-    "forensic_storage": "kafka://maia-audit-log"
+  "policies": {
+    "osha": {
+      "name": "OSHA Safety Standards",
+      "violations": ["work without ppe", "bypass safety", "skip inspection"]
+    },
+    "davis_bacon": {
+      "name": "Davis-Bacon Act",
+      "violations": ["prevailing wage", "underpay labor", "misclassify"]
+    },
+    "far": {
+      "name": "FAR Compliance",
+      "violations": ["omit clause", "unauthorized deviation"]
+    },
+    "dot": {
+      "name": "DOT HAZMAT",
+      "violations": ["unlicensed hazmat", "missing placards", "exceed hours"]
+    }
   }
 }
