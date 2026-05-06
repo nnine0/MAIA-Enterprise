@@ -323,26 +323,44 @@ async def train_update_endpoint(api_key: str = Depends(verify_api_key)) -> dict:
     
     Retraining only occurs when:
     1. Minimum feedback threshold reached (default: 10)
-    2. Feedback has passed validation (not user-flagged as spam)
+    2. All SafetyGuardrails checks pass
     3. [Optional] SME approval for critical domains
     """
+    from app.training_guardrails import guardrails, SafetyGuardrails
+    
     os.makedirs(config.DATA_LOGS_DIR, exist_ok=True)
     trigger_file = f"{config.DATA_LOGS_DIR}/pending_train"
     
-    # Check if we have enough validated feedback
-    feedback_count = _count_validated_feedback()
-    min_threshold = 10
+    # Get RLHF training data
+    from app.airlock import get_rlhf_training_data
+    training_samples = get_rlhf_training_data()
     
-    if feedback_count < min_threshold:
+    # Run guardrails
+    status, message, results = guardrails.run_all_checks(training_samples)
+    
+    if status.value == "block":
         return {
-            "status": "pending",
-            "message": f"Need {min_threshold - feedback_count} more valid feedback",
-            "feedback_count": feedback_count
+            "status": "blocked",
+            "message": message,
+            "guardrail_results": results
+        }
+    
+    if status.value == "warn":
+        return {
+            "status": "warning",
+            "message": message,
+            "guardrail_results": results
         }
     
     # Write trigger - Celery picks this up
     with open(trigger_file, 'w') as f:
         f.write(str(datetime.now()))
+    
+    return {
+        "status": "approved",
+        "message": "Training guardrails passed",
+        "guardrail_results": results
+    }
     
     return {"status": "triggered", "feedback_count": feedback_count}
 
