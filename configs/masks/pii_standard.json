@@ -1,0 +1,14 @@
+{
+  "mask_version": "1.0.0",
+  "mask_type": "pii_standard",
+  "description": "Logit bias mask for PII pattern blocking",
+  "blocked_patterns": [
+    {"pattern": "\\d{3}-\\d{2}-\\d{4}", "action": "block", "replacement": "[SSN_REDACTED]"},
+    {"pattern": "\\d{4}-\\d{4}-\\d{4}-\\d{4}", "action": "block", "replacement": "[CC_REDACTED]"},
+    {"pattern": "social security", "action": "suppress"},
+    {"pattern": "ssn", "action": "suppress"},
+    {"pattern": "date of birth", "action": "suppress", "replacement": "[DOB_REDACTED]"},
+    {"pattern": "\\d{1,2}/\\d{1,2}/\\d{2,4}", "action": "block", "replacement": "[DATE_REDACTED]"}
+  ],
+  "allowed_replacements": ["[REDACTED]", "[SSN_REDACTED]", "[PII_MASKED]"]
+}

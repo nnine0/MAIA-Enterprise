@@ -1,0 +1,91 @@
+{
+  "policy_metadata": {
+    "version": "2026.4.1",
+    "sector": "Heavy_Construction_Logistics",
+    "jurisdiction": "US_FL_FEDERAL",
+    "governance_standard": "SR_26-02_OSHA_FAR",
+    "compliance_mode": "Deterministic_Weight_Constraint"
+  },
+  "materiality_matrix": {
+    "CRITICAL": {
+      "action": "PHYSICAL_INTERRUPT",
+      "alert_level": "RED",
+      "audit_required": true,
+      "description": "Immediate threat to life-safety or structural integrity. Kill inference before token finalization."
+    },
+    "HIGH": {
+      "action": "DHITL_INTERCEPT",
+      "alert_level": "ORANGE",
+      "audit_required": true,
+      "description": "Financial or legal risk exceeding $500k. Require Determined Human-in-the-Loop approval."
+    },
+    "MEDIUM": {
+      "action": "LATENT_HASH_LOG",
+      "alert_level": "YELLOW",
+      "audit_required": true,
+      "description": "Minor policy deviation. Log reasoning trajectory for forensic audit."
+    }
+  },
+  "violation_triggers": [
+    {
+      "id": "SAFE-001",
+      "category": "Life_Safety",
+      "materiality": "CRITICAL",
+      "intent_patterns": [
+        "bypass osha",
+        "ignore load limits",
+        "manual override of safety sensors",
+        "circumvent fall protection",
+        "falsify safety log",
+        "post-date inspection"
+      ],
+      "reasoning_manifold_threshold": 0.92,
+      "remediation_instruction": "Trajectory blocked: AI attempted to reason around mandatory life-safety protocols."
+    },
+    {
+      "id": "FIN-002",
+      "category": "Financial_Integrity",
+      "materiality": "HIGH",
+      "intent_patterns": [
+        "margin below 3%",
+        "hidden fee injection",
+        "price fixing",
+        "unauthorized discount override",
+        "under-bid structural materials"
+      ],
+      "reasoning_manifold_threshold": 0.85,
+      "remediation_instruction": "Trajectory held: Financial decision exceeds autonomous spending limit. Routing to CFO."
+    },
+    {
+      "id": "GOV-003",
+      "category": "Contractual_Compliance",
+      "materiality": "HIGH",
+      "intent_patterns": [
+        "ignore far clauses",
+        "bypass davis-bacon act",
+        "substitute non-certified materials",
+        "hide subcontractor identity"
+      ],
+      "reasoning_manifold_threshold": 0.88,
+      "remediation_instruction": "Trajectory held: Action violates Federal Acquisition Regulations (FAR)."
+    },
+    {
+      "id": "PRIV-004",
+      "category": "Data_Sovereignty",
+      "materiality": "MEDIUM",
+      "intent_patterns": [
+        "export bid logic to public api",
+        "reveal employee pii",
+        "leak trade secrets to subcontractor"
+      ],
+      "reasoning_manifold_threshold": 0.75,
+      "remediation_instruction": "Trajectory logged: Data sovereignty boundary approached. Masking PII."
+    }
+  ],
+  "neural_ekg_config": {
+    "latent_hash_model": "ibm-granite/granite-embedding-97m",
+    "sampling_interval_tokens": 10,
+    "drift_tolerance": 0.12,
+    "forensic_storage": "kafka://maia-audit-log"
+  }
+}

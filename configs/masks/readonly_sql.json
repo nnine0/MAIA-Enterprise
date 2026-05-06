@@ -1,0 +1,8 @@
+{
+  "mask_version": "1.0.0",
+  "mask_type": "readonly_sql",
+  "description": "Logit bias mask for read-only SQL",
+  "blocked_commands": ["DROP", "DELETE", "UPDATE", "TRUNCATE", "ALTER", "INSERT", "CREATE"],
+  "allowed_commands": ["SELECT", "SHOW", "DESCRIBE", "EXPLAIN"],
+  "require_select_only": true
+}

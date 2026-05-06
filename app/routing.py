@@ -1,8 +1,10 @@
 """
 Routing module for expert selection.
+Supports both department path routing and query-based routing.
 """
 
 import logging
+import re
 from typing import Optional
 from dataclasses import dataclass
 import config
@@ -23,6 +25,52 @@ class RouteResult:
     expert: str
     confidence: float = 1.0
     method: str = "keyword"
+    department: Optional[str] = None
+    node_port: Optional[int] = None
+
+
+DEPARTMENT_MAP = {
+    "/estimating": {
+        "department": "estimating",
+        "node_port": 8001,
+        "keywords": ["bid", "estimate", "margin", "cost", "pricing", "quote", "job", "project"],
+    },
+    "/legal": {
+        "department": "legal",
+        "node_port": 8002,
+        "keywords": ["contract", "legal", "far", "dfars", "compliance", "clause", "indemnification", "liability"],
+    },
+    "/safety": {
+        "department": "safety",
+        "node_port": 8003,
+        "keywords": ["safety", "osha", "hazard", "inspection", "site", "work order", "stop work"],
+    },
+    "/logistics": {
+        "department": "logistics",
+        "node_port": 8004,
+        "keywords": ["logistics", "fleet", "delivery", "driver", "dot", "hazmat", "shipping", "transport"],
+    },
+}
+
+
+def route_by_path(path: str) -> Optional[RouteResult]:
+    """
+    Route by URL path prefix.
+    E.g., /estimating/* -> Node 1 (port 8001)
+    """
+    path_lower = path.lower().rstrip("/")
+    
+    for path_prefix, info in DEPARTMENT_MAP.items():
+        if path_lower.startswith(path_prefix):
+            return RouteResult(
+                expert=info["department"],
+                confidence=1.0,
+                method="path",
+                department=info["department"],
+                node_port=info["node_port"]
+            )
+    
+    return None
 
 
 def route_to_expert_keyword(user_query: str) -> RouteResult:
@@ -32,9 +80,12 @@ def route_to_expert_keyword(user_query: str) -> RouteResult:
     query_lower = user_query.lower()
     
     keywords_map = {
+        "estimating": ["bid", "estimate", "margin", "cost", "pricing", "quote", "job", "project", "structural", "rebar", "contingency"],
+        "legal": ["contract", "legal", "far", "dfars", "compliance", "clause", "indemnification", "liability", "davis-bacon"],
+        "safety": ["safety", "osha", "hazard", "inspection", "site", "work order", "stop work", "fall protection", "scaffold"],
+        "logistics": ["logistics", "fleet", "delivery", "driver", "dot", "hazmat", "shipping", "transport", "hours of service"],
         "real_estate_leasing": ["real estate", "leasing", "property", "mortgage"],
         "manufacturing": ["manufacturing", "engineering", "factory", "production"],
-        "professional_services": ["law", "legal", "accounting", "consulting"],
         "government": ["government", "public policy", "regulatory"],
         "health_care": ["health", "medical", "care", "hospital"],
         "finance_insurance": ["finance", "insurance", "investment", "banking"],
@@ -45,6 +96,15 @@ def route_to_expert_keyword(user_query: str) -> RouteResult:
     
     for expert, keywords in keywords_map.items():
         if any(kw in query_lower for kw in keywords):
+            info = DEPARTMENT_MAP.get(f"/{expert}")
+            if info:
+                return RouteResult(
+                    expert=expert,
+                    confidence=0.8,
+                    method="keyword",
+                    department=info["department"],
+                    node_port=info["node_port"]
+                )
             return RouteResult(expert=expert, confidence=0.7, method="keyword")
     
     return RouteResult(expert="general", confidence=0.5, method="keyword")

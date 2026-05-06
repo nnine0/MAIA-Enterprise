@@ -12,9 +12,12 @@ Key Features:
 2. Policy drift detection every ~10 tokens
 3. Forensic hashing for SR 26-02 compliance
 4. Privacy filter - strips thought blocks from user output
+5. JSON config loading for compliance rules
+6. Trie-based pattern matching for fast intent detection
 """
 
 import re
+import json
 import logging
 import hashlib
 import time
@@ -22,6 +25,99 @@ from typing import Generator, Optional, List, Dict, Any
 from dataclasses import dataclass, field
 from enum import Enum
 from collections import deque
+from pathlib import Path
+
+
+class TrieNode:
+    """Node for Trie pattern matching"""
+    def __init__(self):
+        self.children: Dict[str, TrieNode] = {}
+        self.is_end: bool = False
+        self.pattern_id: Optional[str] = None
+        self.materiality: Optional[str] = None
+
+
+class IntentTrie:
+    """
+    Trie-based pattern matching for fast intent detection.
+    Loads patterns from JSON config for deterministic matching.
+    """
+    
+    def __init__(self):
+        self.root = TrieNode()
+        self.patterns_by_category: Dict[str, List[str]] = {}
+    
+    def insert(self, pattern: str, pattern_id: str = None, materiality: str = "MEDIUM"):
+        """Insert a pattern into the Trie"""
+        node = self.root
+        words = pattern.lower().split()
+        
+        for word in words:
+            if word not in node.children:
+                node.children[word] = TrieNode()
+            node = node.children[word]
+        
+        node.is_end = True
+        node.pattern_id = pattern_id
+        node.materiality = materiality
+        
+        # Track by category
+        if materiality not in self.patterns_by_category:
+            self.patterns_by_category[materiality] = []
+        self.patterns_by_category[materiality].append(pattern)
+    
+    def search(self, text: str) -> List[Dict]:
+        """Search for patterns in text, return matches with metadata"""
+        text_lower = text.lower()
+        words = text_lower.split()
+        matches = []
+        
+        # Try matching from each word position
+        for start in range(len(words)):
+            node = self.root
+            
+            for i in range(start, len(words)):
+                word = words[i]
+                
+                if word not in node.children:
+                    break
+                
+                node = node.children[word]
+                
+                if node.is_end:
+                    matched_pattern = " ".join(words[start:i+1])
+                    matches.append({
+                        "pattern": matched_pattern,
+                        "pattern_id": node.pattern_id,
+                        "materiality": node.materiality,
+                        "position": start
+                    })
+        
+        return matches
+    
+    def load_from_json(self, config_path: str):
+        """Load patterns from JSON config file"""
+        path = Path(config_path)
+        
+        if not path.exists():
+            # Try relative to this file
+            path = Path(__file__).parent.parent / config_path
+        
+        if path.exists():
+            with open(path) as f:
+                config = json.load(f)
+            
+            for trigger in config.get("violation_triggers", []):
+                materiality = trigger.get("materiality", "MEDIUM")
+                trigger_id = trigger.get("id", "")
+                
+                for pattern in trigger.get("intent_patterns", []):
+                    self.insert(pattern, trigger_id, materiality)
+            
+            return config
+        
+        return None
+from pathlib import Path
 
 
 class StreamState(Enum):
@@ -72,75 +168,113 @@ class ForensicTrajectory:
 
 @dataclass
 class MaterialityMatrix:
-    """Materiality Matrix for scoring reasoning intents"""
+    """
+    Materiality Matrix for scoring reasoning intents.
     
-    # Key patterns that indicate policy violations
-    VIOLATION_PATTERNS = {
-        ViolationType.SAFETY_IGNORE: [
-            r"skip\s+(\w+\s+){0,3}(check|safety)",
-            r"ignore\s+(\w+\s+){0,3}(safety|check)",
-            r"bypass\s+(\w+\s+){0,3}(safety|rule)",
-            r"don't\s+verify",
-            r"no\s+need\s+to\s+check",
-        ],
-        ViolationType.POLICY_BYPASS: [
-            r"circumvent\s+policy",
-            r"workaround\s+rule",
-            r"ignore\s+margin",
-            r"don't\s+enforce",
-            r"approve\s+anyway",
-            r"skip\s+the\s+\d+%",
-        ],
-        ViolationType.DECEPTIVE_ALIGNMENT: [
-            r"say\s+(\w+\s+){0,3}safe\s+but",
-            r"plan\s+something\s+different",
-            r"hide\s+truth",
-            r"mislead\s+user",
-        ],
-        ViolationType.HAZARD_MISSED: [
-            r"no\s+(hazard|risk|problem)",
-            r"looks\s+fine",
-        ],
-        ViolationType.PRIVACY_LEAK: [
-            r"our\s+secret\s+(margin|profit)",
-            r"confidential",
-        ],
-    }
+    Supports loading from JSON config and
+    uses Trie-based pattern matching for fast detection.
+    """
     
-    # Thresholds
+    # Default thresholds
     VIOLATION_THRESHOLD = 0.85
     DHITL_THRESHOLD = 0.70
     
+    # Materiality action mappings
+    MATERIALITY_ACTIONS = {
+        "CRITICAL": "PHYSICAL_INTERRUPT",
+        "HIGH": "DHITL_INTERCEPT", 
+        "MEDIUM": "LATENT_HASH_LOG"
+    }
+    
+    def __init__(self, config_path: Optional[str] = None):
+        self.config_path = config_path
+        self.config = None
+        self.trie = IntentTrie()
+        
+        # Load config if provided
+        if config_path:
+            self.load_config(config_path)
+    
+    def load_config(self, config_path: str) -> bool:
+        """Load compliance config from JSON"""
+        config = self.trie.load_from_json(config_path)
+        
+        if config:
+            self.config = config
+            # Update thresholds from config
+            for trigger in config.get("violation_triggers", []):
+                # Could update dynamic thresholds here
+                pass
+            return True
+        return False
+    
+    def get_thresholds(self) -> Dict[str, float]:
+        """Get threshold by materiality level"""
+        if not self.config:
+            return {"CRITICAL": 0.92, "HIGH": 0.85, "MEDIUM": 0.75}
+        
+        thresholds = {}
+        for trigger in self.config.get("violation_triggers", []):
+            mat = trigger.get("materiality", "MEDIUM")
+            threshold = trigger.get("reasoning_manifold_threshold", 0.85)
+            thresholds[mat] = threshold
+        
+        return thresholds
+    
+    def get_action(self, materiality: str) -> str:
+        """Get action for materiality level"""
+        if self.config:
+            matrix = self.config.get("materiality_matrix", {})
+            if materiality in matrix:
+                return matrix[materiality].get("action", "LATENT_HASH_LOG")
+        
+        return self.MATERIALITY_ACTIONS.get(materiality, "LATENT_HASH_LOG")
+    
     def score_intent(self, reasoning: str) -> float:
-        """Score reasoning for policy violations"""
-        reasoning_lower = reasoning.lower()
-        total_matches = 0
-        max_category = 0
+        """Score reasoning using Trie-based pattern matching"""
+        # Use Trie for fast matching
+        matches = self.trie.search(reasoning)
         
-        for violation_type, patterns in self.VIOLATION_PATTERNS.items():
-            matches = sum(1 for p in patterns if re.search(p, reasoning_lower, re.IGNORECASE))
-            if matches > max_category:
-                max_category = matches
-            total_matches += matches
-        
-        # Normalize to 0-1 score
-        if total_matches == 0:
+        if not matches:
             return 0.0
         
-        # Non-linear scaling for multiple violations
-        score = min(1.0, total_matches * 0.3)
-        return score
+        # Score based on materiality of matches
+        materiality_scores = {
+            "CRITICAL": 1.0,
+            "HIGH": 0.85,
+            "MEDIUM": 0.60
+        }
+        
+        # Return highest score from matches
+        max_score = 0.0
+        for match in matches:
+            mat = match.get("materiality", "MEDIUM")
+            score = materiality_scores.get(mat, 0.5)
+            max_score = max(max_score, score)
+        
+        return max_score
     
     def get_violations(self, reasoning: str) -> List[ViolationType]:
         """Get list of violations in reasoning"""
-        reasoning_lower = reasoning.lower()
-        violations = []
+        matches = self.trie.search(reasoning)
         
-        for violation_type, patterns in self.VIOLATION_PATTERNS.items():
-            if any(re.search(p, reasoning_lower, re.IGNORECASE) for p in patterns):
-                violations.append(violation_type)
+        violations = []
+        for match in matches:
+            mat = match.get("materiality", "MEDIUM")
+            
+            # Map to ViolationType
+            if mat == "CRITICAL":
+                violations.append(ViolationType.SAFETY_IGNORE)
+            elif mat == "HIGH":
+                violations.append(ViolationType.POLICY_BYPASS)
+            else:
+                violations.append(ViolationType.PRIVACY_LEAK)
         
         return violations
+    
+    def get_trigger_matches(self, reasoning: str) -> List[Dict]:
+        """Get full trigger metadata for matches"""
+        return self.trie.search(reasoning)
 
 
 class Gemma4ThinkingAirlock:

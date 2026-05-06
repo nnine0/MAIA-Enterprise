@@ -1,0 +1,14 @@
+{
+  "mask_version": "1.0.0",
+  "mask_type": "anti_structuring",
+  "description": "Logit bias mask for AML structuring detection",
+  "blocked_patterns": [
+    {"pattern": "split transaction", "action": "suppress"},
+    {"pattern": "below 10000", "action": "block"},
+    {"pattern": "under 10", "action": "block"},
+    {"pattern": "avoid ctr", "action": "block"},
+    {"pattern": "structure", "context": "financial", "action": "flag"}
+  ],
+  "threshold": 10000,
+  "require_dhitl": true
+}

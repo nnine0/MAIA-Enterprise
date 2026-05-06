@@ -205,7 +205,7 @@ if __name__ == "__main__":
     
     test_queries = [
         "What is the weather today?",  # Creative
-        "Submit bid for Jacksonville contract at 2% margin",  # Material
+        "Submit bid for federal contract at 2% margin",  # Material
         "Draft contract for merger",  # Material
         "Write a poem about AI",  # Creative
     ]

@@ -55,6 +55,10 @@ from dag_orchestrator import (
     get_workflow_status
 )
 
+from dispatcher import NeuralToolDispatcher, DispatchResult
+from kernel_manifest import create_kernel_manifest
+from tool_router import create_tool_router
+
 from config import (
     MAIA_API_KEY,
     LORAX_URL,
@@ -69,6 +73,28 @@ import config
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+# Initialize Neural Tool Dispatcher
+dispatcher: NeuralToolDispatcher = None
+kernel_manifest = None
+tool_router = None
+
+def init_dispatcher():
+    """Initialize the Neural Tool Dispatcher"""
+    global dispatcher, kernel_manifest, tool_router
+    try:
+        dispatcher = NeuralToolDispatcher("configs/maia_kernel_manifest.json")
+        kernel_manifest = create_kernel_manifest()
+        tool_router = create_tool_router()
+        logger.info("Neural Tool Dispatcher initialized")
+        logger.info(f"Tools registered: {dispatcher.get_stats()['tools_registered']}")
+    except Exception as e:
+        logger.warning(f"Dispatcher init deferred: {e}")
+        dispatcher = None
+        kernel_manifest = None
+        tool_router = None
+
+init_dispatcher()
 
 app = FastAPI(
     title="MAIA Governance Layer",
@@ -241,6 +267,137 @@ async def query_endpoint(request: QueryRequest, api_key: str = Depends(verify_ap
     
     result = await execute_maia_protocol(sanitized_query)
     return result
+
+
+class ToolDispatchRequest(BaseModel):
+    query: str
+    force_tool: str = None
+
+
+class ToolDispatchResponse(BaseModel):
+    tool_id: str
+    intent_detected: bool
+    rpc_call: dict = None
+    forensic_hash: str = None
+    governance_passed: bool
+    error: str = None
+
+
+@app.post("/tool_dispatch")
+async def tool_dispatch_endpoint(
+    request: ToolDispatchRequest,
+    api_key: str = Depends(verify_api_key)
+) -> dict:
+    """
+    Neural Tool Dispatch endpoint.
+    
+    Detects [CALL_TOOL:TOOL_ID] in reasoning, hot-swaps adapter,
+    applies logit bias, and dispatches JSON-RPC.
+    """
+    global dispatcher
+    
+    if dispatcher is None:
+        return {"error": "Dispatcher not initialized", "status": "unhealthy"}
+    
+    # 1. Check if query contains tool intent
+    intent = dispatcher.detect_tool_intent(request.query)
+    
+    if intent:
+        tool_id = intent.tool_id
+        
+        # 2. Reconfigure kernel (hot-swap LoRA)
+        dispatcher.reconfigure_kernel(tool_id)
+        
+        # 3. Check governance
+        governance = dispatcher.check_governance(tool_id, request.query)
+        
+        if not governance["passed"]:
+            return {
+                "tool_id": tool_id,
+                "intent_detected": True,
+                "governance_passed": False,
+                "error": governance["violations"]
+            }
+        
+        # 4. Get tool router suggestion if no force
+        if not request.force_tool:
+            router_suggestion = tool_router.route_intent(request.query)
+            if router_suggestion:
+                tool_id = router_suggestion.adapter_id
+        
+        # 5. Build RPC call
+        rpc = dispatcher.build_rpc_payload(tool_id, {"query": request.query})
+        
+        # 6. Execute dispatch
+        result = dispatcher.execute_dispatch(tool_id, json.dumps(rpc.get("params", {})), request.query)
+        
+        return {
+            "tool_id": tool_id,
+            "intent_detected": True,
+            "rpc_call": rpc,
+            "forensic_hash": result.forensic_hash[:16] if result.forensic_hash else None,
+            "governance_passed": result.success,
+            "error": result.error
+        }
+    
+    # No tool intent - use tool router to find matching tool
+    router_suggestion = tool_router.route_intent(request.query)
+    
+    if router_suggestion:
+        tool_id = router_suggestion.adapter_id
+        governance = dispatcher.check_governance(tool_id, request.query)
+        
+        return {
+            "tool_id": tool_id,
+            "intent_detected": False,
+            "router_suggestion": True,
+            "governance_passed": governance["passed"],
+            "tool_function": router_suggestion.tool_function
+        }
+    
+    return {
+        "intent_detected": False,
+        "no_tool_matched": True,
+        "message": "No tool intent detected in query"
+    }
+
+
+@app.get("/tools")
+async def tools_endpoint(api_key: str = Depends(verify_api_key)) -> dict:
+    """List all registered tools"""
+    global dispatcher
+    
+    if dispatcher is None:
+        return {"error": "Dispatcher not initialized"}
+    
+    return {
+        "tools": dispatcher.list_tools(),
+        "stats": dispatcher.get_stats()
+    }
+
+
+@app.get("/tools/{tool_id}/governance")
+async def tool_governance_endpoint(
+    tool_id: str,
+    api_key: str = Depends(verify_api_key)
+) -> dict:
+    """Get governance config for specific tool"""
+    global dispatcher
+    
+    if dispatcher is None:
+        return {"error": "Dispatcher not initialized"}
+    
+    tool = dispatcher.tools.get(tool_id)
+    
+    if not tool:
+        return {"error": f"Tool not found: {tool_id}"}
+    
+    return {
+        "tool_id": tool_id,
+        "governance_layer": tool.get("governance_layer"),
+        "neural_layer": tool.get("neural_layer"),
+        "action_layer": tool.get("action_layer")
+    }
 
 
 @app.post("/query_batch")
