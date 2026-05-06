@@ -63,16 +63,26 @@ class LatentTelemetry:
     
     # Decision nodes that trigger hashing
     DECISION_TRIGGERS = {
-        "wire", "transfer", "send money", "payment":
-            DecisionNodeType.WIRE_TRANSFER,
-        "approve", "credit limit", "loan", "mortgage":
-            DecisionNodeType.CREDIT_APPROVAL,
-        "call", "invoke", "execute", "tool":
-            DecisionNodeType.TOOL_CALL,
-        "policy", "compliance", "check", "verify":
-            DecisionNodeType.POLICY_CHECK,
-        "escalate", "block", "deny", "reject":
-            DecisionNodeType.ESCALATION
+        "wire": DecisionNodeType.WIRE_TRANSFER,
+        "transfer": DecisionNodeType.WIRE_TRANSFER,
+        "send money": DecisionNodeType.WIRE_TRANSFER,
+        "payment": DecisionNodeType.WIRE_TRANSFER,
+        "approve": DecisionNodeType.CREDIT_APPROVAL,
+        "credit limit": DecisionNodeType.CREDIT_APPROVAL,
+        "loan": DecisionNodeType.CREDIT_APPROVAL,
+        "mortgage": DecisionNodeType.CREDIT_APPROVAL,
+        "call": DecisionNodeType.TOOL_CALL,
+        "invoke": DecisionNodeType.TOOL_CALL,
+        "execute": DecisionNodeType.TOOL_CALL,
+        "tool": DecisionNodeType.TOOL_CALL,
+        "policy": DecisionNodeType.POLICY_CHECK,
+        "compliance": DecisionNodeType.POLICY_CHECK,
+        "check": DecisionNodeType.POLICY_CHECK,
+        "verify": DecisionNodeType.POLICY_CHECK,
+        "escalate": DecisionNodeType.ESCALATION,
+        "block": DecisionNodeType.ESCALATION,
+        "deny": DecisionNodeType.ESCALATION,
+        "reject": DecisionNodeType.ESCALATION
     }
     
     def __init__(self):

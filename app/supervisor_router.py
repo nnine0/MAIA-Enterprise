@@ -10,6 +10,7 @@ Sentinel: PVI Airlock sidecar monitoring entire chain
 
 import asyncio
 import json
+import os
 from typing import Optional, Dict, List, Tuple
 from dataclasses import dataclass
 from enum import Enum

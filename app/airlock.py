@@ -303,8 +303,30 @@ class PVIAirlock:
             "client", "account", "exposure", "margin", "guarantee"
         }
         
+        # Adapter configurations
+        self.actor_adapters: Dict[str, str] = {}
+        self.auditor_adapters: Dict[str, str] = {}
+        
+        # DHITL configuration (lazy initialized)
+        self._sme_pool = None
+        self._rlfh_data = None
+        
         # Initialize security components
         self._init_security()
+    
+    @property
+    def sme_pool(self) -> SMEPool:
+        """Lazy initialization of SME pool"""
+        if self._sme_pool is None:
+            self._sme_pool = SMEPool()
+        return self._sme_pool
+    
+    @property
+    def rlfh_data(self) -> RLHFTrainingData:
+        """Lazy initialization of RLHF training data"""
+        if self._rlfh_data is None:
+            self._rlfh_data = RLHFTrainingData()
+        return self._rlfh_data
     
     def _init_security(self):
         """Initialize security integration"""
@@ -369,14 +391,6 @@ class PVIAirlock:
         result["tier"] = tier.name
         
         return result
-        
-        # Adapter configurations
-        self.actor_adapters: Dict[str, str] = {}
-        self.auditor_adapters: Dict[str, str] = {}
-        
-        # DHITL configuration
-        self.sme_pool = sme_pool
-        self.rlfh_data = rlhf_data
         
     def _compute_latent_hash(self, reasoning: str) -> str:
         """Compute forensic latent hash for audit trail"""
