@@ -383,20 +383,39 @@ See `STANDARD.md` for complete architectural specification.
 
 ## Example Transaction Log
 
-Sample entries from the Circuit Breaker Dashboard showing SR 26-02 compliance validation:
+Sample entries from the Circuit Breaker Dashboard showing Multi-Sector DME validation:
 
-| Time | Transaction ID | Query | Tier | Status | Latency | Reason |
-|------|--------------|-------|--------|--------|---------|--------|
-| 18:03:45 | maia-8f3a2b1c | Wire $25M to sanctioned entity | T1 | **BLOCKED** | 45ms | SSD caught violation |
-| 18:02:33 | maia-7d4c9e2f | Approve $75M loan no stress test | T1 | **BLOCKED** | 48ms | Sanctions check failed |
-| 18:01:22 | maia-6e5d8a1b | Update credit policy | T2 | **PASS** | 35ms | MTP + DFlash OK |
-| 18:00:45 | maia-5f4c7b2a | Issue stand-by letter $50M | T1 | **PENDING** | 52ms | Requires SME review |
-| 17:59:30 | maia-4a3b6c1d | Increase limit no income verify | T2 | **BLOCKED** | 38ms | Income verification required |
-| 17:58:15 | maia-3b2c5d4e | Prepare commercial LOI | T2 | **PASS** | 42ms | GDP sector verified |
-| 17:57:02 | maia-2c1d4e5f | List meeting rooms floor 5 | T3 | **BYPASS** | 12ms | Low materiality |
-| 17:56:33 | maia-1d2c3e4f | Wire $10M new counterparty | T1 | **PENDING** | 48ms | New counterparty |
-| 17:55:20 | maia-9e8d7c6f | Draft clinical trial SOP | T2 | **PASS** | 38ms | Compliance validated |
-| 17:54:08 | maia-8f7c6d5e | Reset my password | T3 | **BYPASS** | 8ms | Benign query |
+| Time | Transaction ID | Query | Sector | Tool | Tier | Status | Latency | Reason |
+|------|--------------|-------|--------|------|------|--------|---------|--------|
+| 18:03:45 | maia-8f3a2b1c | Wire $25M to Russia | finance_insurance | swift_adapter | T1 | **BLOCKED** | 45ms | OFAC sanctions list hit |
+| 18:02:33 | maia-7d4c9e2f | SELECT * FROM ledger WHERE balance > $1M | finance_insurance | sql_ledger | T1 | **BLOCKED** | 38ms | Balance > $1M trigger |
+| 18:01:22 | maia-6e5d8a1b | Redline contract clause | professional_services | contract_redline | T2 | **PASS** | 35ms | No Core Protection clauses |
+| 18:00:45 | maia-5f4c7b2a | Pre-approve loan $75K | finance_insurance | swift_adapter | T1 | **PENDING** | 52ms | Role permission under threshold |
+| 17:59:30 | maia-4a3b6c1d | Scan API code for CVE | information_tech | cyber_audit | T2 | **PASS** | 42ms | No CVE patterns detected |
+| 17:58:15 | maia-3b2c5d4e | Draft clinical SOP | biotech_pharma | contract_redline | T2 | **PASS** | 48ms | QA reviewed |
+| 17:57:02 | maia-2c1d4e5f | Book freight to Havana | logistics_supply | kafka_dispatch | T1 | **BLOCKED** | 35ms | Grey area port blocked |
+| 17:56:33 | maia-1d2c3e4f | Hire candidate from zip 19104 | information_tech | bias_adapter | T1 | **BLOCKED** | 28ms | Proxy pattern (zip) detected |
+| 17:55:20 | maia-9e8d7c6f | Release Q4 earnings forecast | professional_services | disclosure_governor | T1 | **BLOCKED** | 22ms | CFO approval required |
+| 17:54:08 | maia-8f7c6d5e | Update adapter registry | information_tech | aibom_inventory | T2 | **PASS** | 15ms | Lineage logged |
+| 17:53:01 | maia-7c6e5d4f | Send meeting summary | information_tech | email_adapter | T3 | **BYPASS** | 8ms | Low materiality |
+| 17:52:30 | maia-6b5d4e3f | Check customer credit score | finance_insurance | sql_ledger | T2 | **PASS** | 32ms | Anonymized data verified |
+
+### Key Observations
+
+1. **Finance/Banking** - T1 on any `swift_adapter` > $10K or `sql_ledger` > $1M balances
+2. **Legal/Contracts** - T2 on `contract_redline`, T1 on Core Protection deletions
+3. **IT/Security** - T2 on `cyber_audit`, T1 on inferred proxy patterns
+4. **Logistics** - T1 on `kafka_dispatch` to grey area ports
+5. **Bias/Fairness** - T1 on ANY `bias_adapter` proxy pattern (zip, club)
+6. **Disclosure** - T1 on `disclosure_governor` unapproved forecasts
+
+### Latency by Tier
+
+| Tier | Avg Latency | Governance |
+|------|------------|------------|
+| T1 | 45ms | Full Circuit Breaker + DHITL |
+| T2 | 35ms | DME Engine + AI Audit |
+| T3 | 8ms | MTP Direct (bypass) |
 
 ### Key Observations
 
