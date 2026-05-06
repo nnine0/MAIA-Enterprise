@@ -3,6 +3,7 @@ Tests for Conceptual Soundness module.
 """
 
 import pytest
+import json
 import tempfile
 import os
 from app.conceptual_soundness import (
@@ -182,6 +183,10 @@ class TestFeatureAttribution:
 
 class TestConceptualSoundnessProof:
     """Tests for ConceptualSoundnessProof dataclass."""
+
+    def setup_method(self):
+        """Set up test fixtures."""
+        self.explainer = ConceptualSoundnessExplainer()
 
     def test_proof_timestamp(self):
         """Test proof includes timestamp."""

@@ -3,12 +3,18 @@ Test fixtures for MAIA Enterprise tests.
 """
 
 import pytest
-from unittest.mock import AsyncMock, Mock, MagicMock
+import pytest_asyncio
+from unittest.mock import AsyncMock, Mock, MagicMock, patch
 import sys
 import os
 
 # Add app to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'app'))
+
+
+# Configure asyncio markers
+def pytest_configure(config):
+    config.addinivalue_line("markers", "asyncio: mark test as async")
 
 
 @pytest.fixture
@@ -27,6 +33,45 @@ def mock_qdrant():
 def mock_openai():
     with pytest.mock.patch('openai.AsyncOpenAI') as mock:
         yield mock
+
+
+@pytest_asyncio.fixture
+async def mock_airlock():
+    """Mock PVIAirlock for async tests."""
+    with patch('app.airlock.PVIAirlock') as MockAirlock:
+        instance = AsyncMock()
+        instance.execute_vetted_transaction = AsyncMock(return_value={
+            "transaction_id": "tx_test",
+            "trajectory": "test trajectory",
+            "verdict": "APPROVED",
+            "tier": "TIER_3_BENIGN"
+        })
+        instance.get_materiality_tier = Mock(return_value="TIER_3_BENIGN")
+        yield instance
+
+
+@pytest_asyncio.fixture
+async def mock_supervisor():
+    """Mock SupervisorRouter for async tests."""
+    with patch('app.supervisor_router.SupervisorRouter') as MockSupervisor:
+        instance = AsyncMock()
+        instance.route = AsyncMock(return_value={
+            "industry": "finance",
+            "sub_domain": "banking",
+            "dispatch_token": "TOKEN_test"
+        })
+        yield instance
+
+
+@pytest_asyncio.fixture
+async def mock_telemetry():
+    """Mock LatentTelemetry for async tests."""
+    with patch('app.latent_telemetry.LatentTelemetry') as MockTelemetry:
+        instance = AsyncMock()
+        instance.start_session = AsyncMock(return_value="session_test")
+        instance.record_node = AsyncMock()
+        instance.end_session = AsyncMock(return_value=[])
+        yield instance
 
 
 @pytest.fixture

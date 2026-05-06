@@ -166,6 +166,10 @@ class TestMaterialityTiers:
 class TestTierConfig:
     """Tests for TierConfig dataclass."""
 
+    def setup_method(self):
+        """Set up test fixtures."""
+        self.matrix = MaterialityMatrix()
+
     def test_tier_config_properties(self):
         """Test tier config has expected properties."""
         config = self.matrix.get_config(MaterialityTier.TIER_1_CRITICAL)

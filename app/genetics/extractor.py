@@ -102,11 +102,11 @@ class TrajectoryGeneticsExtractor:
     """
 
     INTENT_PATTERNS: Dict[IntentClass, List[str]] = {
-        IntentClass.QUERY: [r"what is", r"how do", r"explain", r"define", r"list"],
+        IntentClass.QUERY: [r"^what is", r"^how do", r"^explain", r"^define", r"^list", r"\?$"],
         IntentClass.READ: [r"get\s+\w+", r"retrieve", r"fetch", r"show\s+me", r"display"],
         IntentClass.WRITE: [r"create\s+\w+", r"save\s+\w+", r"store", r"insert", r"add\s+\w+"],
         IntentClass.TRANSFER: [r"transfer", r"send\s+\w+", r"wire", r"payment", r"remit"],
-        IntentClass.EXECUTE: [r"run\s+\w+", r"execute", r"trigger", r"invoke", r"call\s+\w+"],
+        IntentClass.EXECUTE: [r"^run\s+\w+", r"^execute", r"^trigger", r"^invoke", r"^call\s+\w+"],
         IntentClass.CONFIGURE: [r"config", r"setup", r"enable", r"disable", r"set\s+\w+"],
         IntentClass.DELETE: [r"delete", r"remove", r"drop", r"truncate", r"erase"],
         IntentClass.APPROVE: [r"approve", r"accept", r"confirm", r"authorize", r"allow"],
@@ -124,15 +124,15 @@ class TrajectoryGeneticsExtractor:
 
     RISK_PATTERNS: Dict[RiskDomain, List[str]] = {
         RiskDomain.FINANCE: [r"money", r"dollar", r"financial", r"investment", r"stock", r"bond", r"fund", r"transfer", r"payment"],
-        RiskDomain.LEGAL: [r"legal", r"contract", r"law", r"compliance", r"regulation", r"litigation", r"agreement"],
-        RiskDomain.HEALTHCARE: [r"medical", r"health", r"patient", r"diagnosis", r"prescription", r"treatment", r"clinical"],
+        RiskDomain.LEGAL: [r"legal", r"contract", r"law", r"compliance", r"regulation", r"litigation", r"agreement", r"implications"],
+        RiskDomain.HEALTHCARE: [r"medical", r"health", r"patient", r"diagnosis", r"prescription", r"treatment", r"clinical", r"symptoms", r"chest", r"sore throat"],
         RiskDomain.OPERATIONS: [r"operations", r"process", r"workflow", r"schedul", r"deploy"],
         RiskDomain.HR: [r"employee", r"hiring", r"payroll", r"benefits", r"performance"],
         RiskDomain.IT_SECURITY: [r"security", r"password", r"encryption", r"access", r"firewall", r"vpn"],
     }
 
     MAGNITUDE_PATTERNS: Dict[ValueMagnitude, List[str]] = {
-        ValueMagnitude.TIER_1_CRITICAL: [r"\$[\d,]+", r"million", r"billion", r"large", r"critical", r"urgent"],
+        ValueMagnitude.TIER_1_CRITICAL: [r"\$[\d,]+", r"million", r"billion", r"large", r"critical", r"urgent", r"diagnose", r"treatment", r"symptoms", r"chest\s+pain"],
         ValueMagnitude.TIER_2_ELEVATED: [r"moderate", r"medium", r"standard", r"routine"],
         ValueMagnitude.TIER_3_BENIGN: [r"small", r"minimal", r"informational", r"low"],
     }
@@ -229,7 +229,7 @@ class TrajectoryGeneticsExtractor:
                 if re.search(pattern, text):
                     return magnitude
 
-        critical_keywords = ["investment", "merger", "acquisition", "contract", "diagnosis", "treatment"]
+        critical_keywords = ["investment", "merger", "acquisition", "contract", "diagnosis", "treatment", "chest pain", "symptoms"]
         if any(kw in query.lower() for kw in critical_keywords):
             return ValueMagnitude.TIER_1_CRITICAL
 

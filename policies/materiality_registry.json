@@ -2,7 +2,7 @@
   "version": "2.0",
   "description": "Materiality Matrix Registry - GDP Sector Aligned",
   "registry_id": "maia-sr2602-v2",
-  "status": "active",
+  "status": "ACTIVE",
   "effective_date": "2025-01-01",
   "owner": "MAIA Governance",
   "approvers": ["SME Committee"],
@@ -27,7 +27,7 @@
       "description": "Critical risk - economically valuable task requiring human SME domain expert review (GDPVal tier)",
       "criteria": {
         "domains": ["finance_insurance", "government_public", "biotech_pharma", "real_estate"],
-        "keywords": ["wire", "transfer", "sanction", "fraud", "aml", " Due Diligence", "merger", "acquisition", "compliance", "regulatory", "SOP", "clinical", "patent", "litigation", "settlement", "contract", "legal"],
+        "keywords": ["wire", "transfer", "sanction", "fraud", "aml", "due diligence", "merger", "acquisition", "compliance", "regulatory", "SOP", "clinical", "patent", "litigation", "settlement", "contract", "legal", "diagnose", "symptoms", "prescription", "patient", "treatment", "chest pain", "healthcare", "medical"],
         "financial_threshold": 10000,
         "requires_dhitl": true,
         "requires_audit_trail": true,
@@ -46,7 +46,7 @@
       "description": "Elevated risk - domain expert review required (GDPVal tier)",
       "criteria": {
         "domains": ["finance_insurance", "professional_services", "retail_trade", "manufacturing"],
-        "keywords": ["policy", "limit", "approval", "evaluation", "risk", "audit", "report", "schedule", "proposal", "LOI", "proposal"],
+        "keywords": ["policy", "limit", "approval", "evaluation", "risk", "audit", "report", "schedule", "proposal", "LOI", "proposal", "budget", "vendor", "cost", "expense"],
         "financial_threshold": 1000,
         "requires_dhitl": false,
         "requires_audit_trail": true,

@@ -117,8 +117,13 @@ class MaterialityMatrix:
             domain_matched = False
             sector_matched = False
             
-            if domain and domain.lower() in [d.lower() for d in config.domains]:
-                domain_matched = True
+            # Check domain with partial matching (e.g., "finance" matches "finance_insurance")
+            if domain:
+                domain_lower = domain.lower()
+                for d in config.domains:
+                    if domain_lower in d.lower() or d.lower() in domain_lower:
+                        domain_matched = True
+                        break
             
             if detected_sector and detected_sector.lower() in [d.lower() for d in config.domains]:
                 sector_matched = True
