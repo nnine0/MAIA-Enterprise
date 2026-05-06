@@ -1,29 +1,28 @@
 #!/bin/bash
-# MAIA Kernel Launch Script
-# ======================
+# MAIA Kernel Launch Script - Gemma 4 Version
+# ============================================
 # Launch the MAIA Speculative Governance Stack with vLLM
 
 set -e
 
-# Configuration
-TARGET_MODEL="${TARGET_MODEL:-ibm-granite/granite-4.1-3b}"
-DRAFTER_MODEL="${DRAFTER_MODEL:-HuggingFaceTB/nanowhale-100m}"
-EMBEDDING_MODEL="${EMBEDDING_MODEL:-ibm-granite/granite-embedding-97m}"
+# Configuration - Gemma 4 E4B
+TARGET_MODEL="${TARGET_MODEL:-google/gemma-4-E4B-it}"
+DRAFTER_MODEL="${DRAFTER_MODEL:-google/gemma-4-E4B-it-assistant}"
 
-NUM_SPECULATIVE="${NUM_SPECULATIVE:-5}"
-MAX_LORAS="${MAX_LORAS:-20}"
+NUM_SPECULATIVE="${NUM_SPECULATIVE:-16}"
+MAX_LORAS="${MAX_LORAS:-10}"
 MAX_LORA_RANK="${MAX_LORA_RANK:-64}"
-GPU_UTIL="${GPU_UTIL:-0.90}"
-MAX_CONTEXT="${MAX_CONTEXT:-8192}"
+GPU_UTIL="${GPU_UTIL:-0.95}"
+MAX_CONTEXT="${MAX_CONTEXT:-32768}"
 
 echo "=========================================="
-echo "  MAIA Kernel Launch"
+echo "  MAIA Kernel Launch (Gemma 4)"
 echo "=========================================="
 echo "  Target Model:  $TARGET_MODEL"
-echo "  Drafter Model:  $DRAFTER_MODEL" 
-echo "  Embedding:      $EMBEDDING_MODEL"
-echo "  VRAM:          $(echo "$GPU_UTIL * 100" | bc)%"
-echo "  Max LoRAs:     $MAX_LORAS"
+echo "  Drafter Model: $DRAFTER_MODEL"
+echo "  VRAM:         $(echo "$GPU_UTIL * 100" | bc)%"
+echo "  Max LoRAs:    $MAX_LORAS"
+echo "  Thinking:    Enabled"
 echo "=========================================="
 echo ""
 
@@ -41,6 +40,7 @@ echo ""
 vllm serve "$TARGET_MODEL" \
     --speculative-model "$DRAFTER_MODEL" \
     --num-speculative-tokens "$NUM_SPECULATIVE" \
+    --enable-thinking \
     --enable-lora \
     --max-loras "$MAX_LORAS" \
     --max-lora-rank "$MAX_LORA_RANK" \
@@ -53,11 +53,8 @@ vllm serve "$TARGET_MODEL" \
 echo ""
 echo "MAIA Kernel running at http://localhost:8000"
 echo ""
-echo "Test routing:"
+echo "Testing with thinking prompt:"
 echo '  curl -X POST http://localhost:8000/v1/chat/completions \'
-echo '    -H "Authorization: Bearer MAIA_LOCAL" \'
-echo '    -d "{"
-echo '      "model": "ibm-granite/granite-4.1-3b",'
-echo '      "messages": [{"role": "user", "content": "Submit bid at 2%"}],'
-echo '      "extra_body": {"lora_name": "finance_insurance_adapter"}'
-echo '    }"'
+echo '    -H "Authorization: Bearer MAIA" \'
+echo '    -d "{\"model\": \"google/gemma-4-E4B-it\",'
+echo '       \"messages\": [{\"role\": \"user\", \"content\": \"...\"}]}"'

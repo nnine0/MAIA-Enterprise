@@ -2,12 +2,19 @@
 MAIA Kernel - vLLM Speculative Decoding Configuration
 ========================================
 
-Model Selection (Microkernel Bundle):
-- Target (Verifier): ibm-granite/granite-4.1-3b (~3.2GB INT4)
-- Drafter (Proposer): HuggingFaceTB/nanowhale-100m (~400MB)
-- Embedding (Latent Hash): ibm-granite/granite-embedding-97m (~200MB)
+Updated for Gemma 4 E4B Stack (24GB Footprint)
 
-The MAIA Kernel uses vLLM's superior speculative decoding + Multi-LoRA support.
+Model Selection (Quad-Node Configuration):
+- Target (Verifier): google/gemma-4-E4B-it (~4.2GB INT4)
+- Drafter (Proposer): google/gemma-4-E4B-it-assistant (~0.6GB)
+- System/KV Cache: vLLM PagedAttention (~1.2GB)
+- Total: ~6.0GB - Perfect Quad-Node Fit
+
+Key Features:
+- Native Thinking/Reasoning support
+- Hybrid attention for Gemma 4
+- Multimodal compliance (vision)
+- Thinking Airlock: scans internal reasoning
 """
 
 from dataclasses import dataclass, field
@@ -17,71 +24,113 @@ from enum import Enum
 
 class ModelSize(Enum):
     """Model size classifications"""
-    SMALL = "small"      # < 3B params
-    MEDIUM = "medium"  # 3-10B params  
-    LARGE = "large"    # > 10B params
+    E2B = "E2B"      # Efficient 2B
+    E4B = "E4B"      # Efficient 4B (Gemma 4)
+    E8B = "E8B"      # Efficient 8B
 
 
 @dataclass
 class ModelBundle:
-    """The MAIA Microkernel Bundle"""
-    # Target model (Verifier) - granite-4.1-3b
-    target_model: str = "ibm-granite/granite-4.1-3b"
-    target_size_gb: float = 3.2  # INT4/AWQ
+    """The MAIA Microkernel Bundle - Gemma 4 version"""
+    # Target model (Verifier) - Gemma 4 E4B
+    target_model: str = "google/gemma-4-E4B-it"
+    target_size_gb: float = 4.2  # INT4
     
-    # Drafter model (Proposer) - nanowhale-100m  
-    drafter_model: str = "HuggingFaceTB/nanowhale-100m"
-    drafter_size_gb: float = 0.4
+    # Drafter model (Proposer) - Google's native speculative
+    drafter_model: str = "google/gemma-4-E4B-it-assistant"
+    drafter_size_gb: float = 0.6
     
-    # Embedding model (Latent Hash)
-    embedding_model: str = "ibm-granite/granite-embedding-97m"
-    embedding_size_gb: float = 0.2
+    # Embedding model (for latent hashing)
+    embedding_model: str = "google/gemma-4-embedding-2b"
+    embedding_size_gb: float = 0.8
     
     @property
     def total_vram_gb(self) -> float:
         """Total VRAM for the bundle"""
         return self.target_size_gb + self.drafter_size_gb + self.embedding_size_gb
+    
+    @property
+    def is_thinking_capable(self) -> bool:
+        """Gemma 4 native thinking"""
+        return True
+
+
+@dataclass
+class ThinkingConfig:
+    """Gemma 4 thinking/reasoning configuration"""
+    enabled: bool = True
+    max_thinking_tokens: int = 8192
+    thinking_tag_start: str = "<|channel>thought"
+    thinking_tag_end: str = "<|channel|>"
+    
+    # Deceptive alignment detection
+    detect_internal_reasoning: bool = True
+    scan_for_policy_violations: bool = True
+
+
+@dataclass
+class MultiModalConfig:
+    """Vision/multimodal configuration"""
+    enabled: bool = True
+    max_resolution: int = 2048
+    supported_formats: List[str] = field(default_factory=lambda: ["jpeg", "png", "webp"])
+    
+    # OSHA-style hazard detection
+    safety_hazard_detection: bool = True
+    attention_map_monitoring: bool = True
 
 
 @dataclass
 class LoRAConfig:
-    """Multi-LoRA configuration"""
+    """Multi-LoRA configuration - Gemma 4 optimized"""
     enabled: bool = True
-    max_loras: int = 20
+    max_loras: int = 10
     max_lora_rank: int = 64
     lora_dtype: str = "float16"
+    
+    # Gemma 4 hybrid attention modules
+    target_modules: List[str] = field(default_factory=lambda: [
+        "q_proj", "k_proj", "v_proj", "o_proj",
+        "gate_proj", "up_proj", "down_proj"
+    ])
 
 
 @dataclass
 class SpeculationConfig:
     """Speculative decoding configuration"""
     enabled: bool = True
-    drafter_model: str = "HuggingFaceTB/nanowhale-100m"
-    num_speculative_tokens: int = 5
+    drafter_model: str = "google/gemma-4-E4B-it-assistant"
+    num_speculative_tokens: int = 16  # Higher for Gemma 4
     
     @property
     def vram_overhead_gb(self) -> float:
-        """VRAM needed for speculative decoding (minimal)"""
-        return 0.4  # Nanowhale is small
+        """VRAM needed for speculative decoding"""
+        return 0.6  # Drafter is small
 
 
 @dataclass
 class VRAMReservation:
     """VRAM reservation for various components"""
-    kernel_utilization: float = 0.90  # 90% for inference
-    latent_hash_reserved: float = 0.05  # 5% for latent hashing
-    adapter_pool_reserved: float = 0.05  # 5% for dynamic adapters
+    kernel_utilization: float = 0.95  # 95% for Gemma 4
+    thinking_pool: float = 0.02     # 2% for thinking tokens
+    vision_pool: float = 0.03     # 3% for multimodal
     
     @property
     def total_reserved(self) -> float:
-        return self.kernel_utilization + self.latent_hash_reserved + self.adapter_pool_reserved
+        return self.kernel_utilization + self.thinking_pool + self.vision_pool
 
 
 @dataclass
 class MAIAKernelConfig:
-    """Complete MAIA Kernel configuration"""
+    """Complete MAIA Kernel configuration - Gemma 4 version"""
     # Model bundle
     models: ModelBundle = field(default_factory=ModelBundle)
+    
+    # Thinking configuration
+    thinking: ThinkingConfig = field(default_factory=ThinkingConfig)
+    
+    # Multimodal configuration
+    multimodal: MultiModalConfig = field(default_factory=MultiModalConfig)
     
     # Speculative decoding
     speculation: SpeculationConfig = field(default_factory=SpeculationConfig)
@@ -93,7 +142,7 @@ class MAIAKernelConfig:
     vram: VRAMReservation = field(default_factory=VRAMReservation)
     
     # Context
-    max_context_len: int = 8192
+    max_context_len: int = 32768  # Gemma 4 supports 128K
     trust_remote_code: bool = True
     
     @property
@@ -107,7 +156,8 @@ class MAIAKernelConfig:
             "vllm", "serve", self.models.target_model,
             "--speculative-model", self.speculation.drafter_model,
             "--num-speculative-tokens", str(self.speculation.num_speculative_tokens),
-            "--enable-lora",
+            "--enable-thinking" if self.thinking.enabled else "",
+            "--enable-lora" if self.lora.enabled else "",
             "--max-loras", str(self.lora.max_loras),
             "--max-lora-rank", str(self.lora.max_lora_rank),
             "--gpu-memory-utilization", str(self.vram.kernel_utilization),
@@ -117,76 +167,32 @@ class MAIAKernelConfig:
         return [a for a in args if a]  # Filter empty strings
 
 
-@dataclass  
-class SectorAdapter:
-    """Sector-specific LoRA adapter"""
-    sector_id: str
-    sector_name: str
-    lora_name: str
-    min_margin: Optional[float] = None
-    max_margin: Optional[float] = None
-    requires_dhitl: bool = False
-    policy_hashes: Optional[Dict] = None  # Latent hash signatures
-
-
-# Default sector adapters
-DEFAULT_ADAPTERS = [
-    SectorAdapter(
-        sector_id="finance_insurance",
-        sector_name="Finance & Insurance",
-        lora_name="finance_insurance_adapter",
-        min_margin=0.05,
-        requires_dhitl=True,
-    ),
-    SectorAdapter(
-        sector_id="government_public", 
-        sector_name="Government & Public Sector",
-        lora_name="government_public_adapter",
-        min_margin=0.05,
-        requires_dhitl=True,
-    ),
-    SectorAdapter(
-        sector_id="biotech_pharma",
-        sector_name="Biotech & Pharma", 
-        lora_name="biotech_pharma_adapter",
-        min_margin=None,
-        requires_dhitl=False,
-    ),
-    SectorAdapter(
-        sector_id="real_estate",
-        sector_name="Real Estate",
-        lora_name="real_estate_adapter",
-        max_margin=0.80,
-        requires_dhitl=False,
-    ),
-    SectorAdapter(
-        sector_id="general",
-        sector_name="General",
-        lora_name="general_adapter", 
-        min_margin=None,
-        requires_dhitl=False,
-    ),
-]
-
-
-# Factory function
-def create_kernel_config(
-    target_model: str = "ibm-granite/granite-4.1-3b",
-    drafter_model: str = "HuggingFaceTB/nanowhale-100m",
-    max_loras: int = 20,
-    vram_utilization: float = 0.90
+# Factory function for Gemma 4
+def create_gemma4_kernel(
+    target_model: str = "google/gemma-4-E4B-it",
+    drafter_model: str = "google/gemma-4-E4B-it-assistant",
+    max_loras: int = 10,
+    vram_utilization: float = 0.95
 ) -> MAIAKernelConfig:
-    """Create a configured MAIA Kernel"""
+    """Create a configured Gemma 4 MAIA Kernel"""
     return MAIAKernelConfig(
         models=ModelBundle(
             target_model=target_model,
             drafter_model=drafter_model,
+        ),
+        thinking=ThinkingConfig(
+            enabled=True,
+            max_thinking_tokens=8192,
         ),
         speculation=SpeculationConfig(
             drafter_model=drafter_model,
         ),
         lora=LoRAConfig(
             max_loras=max_loras,
+            target_modules=[
+                "q_proj", "k_proj", "v_proj", "o_proj",
+                "gate_proj", "up_proj", "down_proj"
+            ],
         ),
         vram=VRAMReservation(
             kernel_utilization=vram_utilization,
@@ -196,25 +202,20 @@ def create_kernel_config(
 
 # Example usage
 if __name__ == "__main__":
-    config = create_kernel_config()
+    config = create_gemma4_kernel()
     
-    print("=== MAIA Kernel Configuration ===")
+    print("=== MAIA Kernel Configuration (Gemma 4) ===")
     print(f"Target Model: {config.models.target_model}")
     print(f"Drafter Model: {config.models.drafter_model}")
-    print(f"Embedding Model: {config.models.embedding_model}")
     print(f"Total VRAM: {config.total_vram_gb}GB")
+    print()
+    print(f"Thinking: {config.thinking.enabled}")
+    print(f"  Max tokens: {config.thinking.max_thinking_tokens}")
     print()
     print(f"Speculation: {config.speculation.num_speculative_tokens} tokens")
     print(f"Max LoRAs: {config.lora.max_loras}")
+    print(f"Target modules: {config.lora.target_modules}")
     print(f"GPU Utilization: {config.vram.kernel_utilization}")
     print()
     print("=== vLLM Launch Command ===")
     print(" ".join(config.get_vllm_args()))
-    print()
-    print("=== Sector Adapters ===")
-    for adapter in DEFAULT_ADAPTERS:
-        print(f"  {adapter.sector_id}: {adapter.lora_name}")
-        if adapter.min_margin:
-            print(f"    Min margin: {adapter.min_margin:.0%}")
-        if adapter.requires_dhitl:
-            print(f"    DHITL required")
