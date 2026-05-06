@@ -107,7 +107,6 @@ class TestMaterialityMatrix:
             tier = airlock.get_materiality_tier(query)
             assert tier == MaterialityTier.TIER_1_CRITICAL, f"Query: {query}"
 
-    @pytest.mark.skip(reason="airlock.py uses different keywords than materiality_matrix.py - known behavior difference")
     def test_tier_2_elevated_keywords(self, airlock):
         """Tier 2: Medium risk triggers conditional audit"""
         test_queries = [

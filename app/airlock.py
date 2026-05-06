@@ -300,7 +300,8 @@ class PVIAirlock:
         }
         self.elevated_keywords = {
             "risk", "limit", "approval", "policy", "audit", "report",
-            "client", "account", "exposure", "margin", "guarantee"
+            "client", "account", "exposure", "margin", "guarantee",
+            "schedule", "proposal", "budget", "vendor", "cost", "expense"
         }
         
         # Adapter configurations
