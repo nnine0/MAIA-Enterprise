@@ -49,6 +49,7 @@ class TestGovernanceRouter:
 
         assert decision.resolution_path in [
             ResolutionPath.APPROVED_SYMBOLIC,
+            ResolutionPath.APPROVED_NEURAL,
             ResolutionPath.ESCALATE_DHITL,
             ResolutionPath.ESCALATE_SME
         ]

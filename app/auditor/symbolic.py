@@ -81,22 +81,21 @@ class SymbolicRule:
     def _match_condition(self, intent: str, system: str, magnitude: str, risk: str) -> bool:
         """Check if condition matches trajectory attributes."""
         condition = self.condition
-
-        checks = []
-        checks.append(("Intent", intent, "Intent"))
-        checks.append(("Target_System", system, "Target_System"))
-        checks.append(("Value_Magnitude", magnitude, "Value_Magnitude"))
-        checks.append(("Risk_Domain", risk, "Risk_Domain"))
-
-        for attr_name, attr_val, pattern_name in checks:
+        
+        # Parse condition like "Intent == TRANSFER"
+        for attr_name in ["Intent", "Target_System", "Value_Magnitude", "Risk_Domain"]:
             if f"{attr_name} ==" in condition:
                 expected = condition.split(f"{attr_name} ==")[1].strip().strip('"')
-                checks.append((pattern_name, attr_val == expected))
-
-        for check in checks[4:]:
-            if not check[1]:
-                return False
-
+                actual = locals().get(attr_name.lower().replace("_", ""))
+                if attr_name == "Intent" and intent != expected:
+                    return False
+                if attr_name == "Target_System" and system != expected:
+                    return False
+                if attr_name == "Value_Magnitude" and magnitude != expected:
+                    return False
+                if attr_name == "Risk_Domain" and risk != expected:
+                    return False
+        
         return True
 
 
