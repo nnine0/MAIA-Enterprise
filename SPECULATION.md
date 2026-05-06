@@ -180,6 +180,64 @@ command: --model-id google/gemma-4-26b-a4b-it --enable-mtp
 | Saguaro Hypotheses | +4.0 GB | Optional |
 | **Full Stack Max** | **~24 GB** | Fits on RTX 3090 |
 
+### The Airlock Speculative Loop
+
+The core governance innovation: **Proposer is Adapter-Agnostic, Verifier is Adapter-Strict**.
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                  AIRLOCK SPECULATIVE LOOP                              │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│   Request: "Adjust project margin for the Navy bid."                     │
+│                                                                     │
+│   ┌───────────────────────────────────────────────────────────────┐   │
+│   │  LAYER 9: MTP PROPOSER (Adapter-Agnostic)                  │   │
+│   │  - Uses base model ONLY (no adapter weights loaded)           │   │
+│   │  - Proposes: [SET] [MARGIN] [TO] [2%]                  │   │
+│   │  - Near-zero VRAM (shared KV cache)                     │   │
+│   └───────────────────────────────────────────────────────────────┘   │
+│                             ↓                                  │
+│   ┌───────────────────────────────────────────────────────────────┐   │
+│   │  LAYER 8: MTP VERIFIER (Adapter-Strict)                  │   │
+│   │  - Validates against MATERIALITY MATRIX                  │   │
+│   │  - Checks [2%] against loaded adapter weights           │   │
+│   │  - Checks Navy sector policy constraints                │   │
+│   └───────────────────────────────────────────────────────────────┘   │
+│                             ↓                                  │
+│   ┌───────────────────────────────────────────────────────────────┐   │
+│   │  POLICY HIT: "Minimum margin for Navy bids is 5%"            │   │
+│   │  - Proposer suggested 2% (outside LoRA weight space)         │   │
+│   │  - Verifier detects NON-PHYSICAL TRAJECTORY          │   │
+│   └───────────────────────────────────────────────────────────────┘   │
+│                             ↓                                  │
+│   ┌───────────────────────────────────────────────────────────────┐   │
+│   │  OUTCOME OPTIONS:                                      │   │
+│   │  A) AUTO-CORRECT: Rewrite [2%] → [5%] (if within policy) │   │
+│   │  B) DHITL ESCALATION: Trigger human review            │   │
+│   │  C) BLOCK: Reject entire draft                       │   │
+│   └───────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Proposer vs Verifier: Key Differences
+
+| Aspect | Proposer (Layer 9) | Verifier (Layer 8) |
+|--------|-------------------|-------------------|
+| **Adapter** | Adapter-Agnostic | Adapter-Strict |
+| **Model** | Base model only | Loaded LoRA adapter |
+| **VRAM** | ~0MB (shared KV) | Uses adapter weights |
+| **Speed** | Fast (<10ms) | Depends on adapter |
+| **Purpose** | Draft tokens | Validate against policy |
+
+### Non-Physical Trajectories
+
+The Verifier detects when proposals fall outside the loaded adapter's weight space:
+
+1. **Value Violation**: Proposer suggests 2%, policy minimum is 5%
+2. **Sector Violation**: Proposer uses general language, but Navy adapter expects formal bidding terminology
+3. **Compliance Violation**: Proposer ignores regulatory constraints built into adapter
+
 ### Hardware Substrate Specs
 
 | GPU | VRAM | Bandwidth | FP32 TFLOPS | Can Run MAIA? |
