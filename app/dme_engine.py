@@ -395,7 +395,7 @@ class ToolAdapter:
         "contract_redline": ["contract", "agreement", "redline", "legal", "clause", "indemnification"],
         "kafka_dispatch": ["kafka", "logistics", "freight", "routing", "truck", "dispatch"],
         "aibom_inventory": ["inventory", "registry", "adapter", "lineage", "model card"],
-        "bias_adapter": ["bias", "fairness", "discrimination", "hiring", "underwriting", "ECOA"],
+        "bias_adapter": ["bias", "fairness", "discrimination", "hiring", "underwriting", "ECOA", "zip", "proxy"],
         "cyber_audit": ["code", "security", "CVE", "vulnerability", "exploit", "scan"],
         "sanctions_gateway": ["OFAC", "sanction", "blocked", "entity verification", "shell company"],
         "disclosure_governor": ["disclosure", "MNPI", "press release", "earnings", "material"],

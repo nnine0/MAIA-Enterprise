@@ -65,32 +65,38 @@ class WeightLevelDefense:
     - Even if attacker screams "DELETE DATABASE", the neurons/path don't exist
     """
     
-    # Patterns that trigger weight-level defense
+    # Dangerous patterns to check in queries (by category)
     INJECTION_PATTERNS: Dict[str, List[str]] = {
-        "sql": ["DROP", "DELETE", "TRUNCATE", "ALTER", "GRANT", "REVOKE"],
-        "shell": ["rm -rf", "sudo", "chmod 777", "eval", "exec"],
+        "sql": ["DROP TABLE", "DELETE FROM", "TRUNCATE", "ALTER TABLE", "GRANT ", "REVOKE"],
+        "shell": ["rm -rf", "sudo ", "chmod 777", "eval(", "exec("],
         "system": ["import os", "subprocess", "sys.exit", "os._exit"],
         "network": ["curl ", "wget ", "nc -e", "socat"],
         "memory": ["del ", "free(", "gc.collect"],
     }
     
+    # Which tools are VULNERABLE to which patterns
+    TOOL_VULNERABILITY: Dict[str, List[str]] = {
+        "sql_ledger": ["sql"],
+        "swift_adapter": ["shell"],
+        "kafka_dispatch": ["shell", "system"],
+        "email_adapter": ["network"],
+        "contract_redline": ["memory"],
+    }
+    
     @classmethod
     def detect_injection(cls, query: str, active_adapter: str) -> Tuple[bool, str]:
-        """Check if query attempts injection into active adapter context"""
+        """Check if query contains injection patterns matching this adapter type"""
         query_upper = query.upper()
         
-        # Get allowed actions for adapter
-        allowed = cls._get_allowed_actions(active_adapter)
+        # Get what this adapter is vulnerable to
+        vulnerable_to = cls.TOOL_VULNERABILITY.get(active_adapter, [])
         
-        # If query contains blocked patterns for this adapter
-        blocked = cls.INJECTION_PATTERNS.get(active_adapter, [])
-        
-        for pattern in blocked:
-            if pattern in query_upper:
-                # Further verify: Can this adapter actually execute?
-                if pattern not in allowed:
-                    # Adapter physically cannot execute this
-                    return True, f"Weight-level block: {pattern} not in {active_adapter} vocabulary"
+        # Check each dangerous pattern category
+        for category in vulnerable_to:
+            patterns = cls.INJECTION_PATTERNS.get(category, [])
+            for pattern in patterns:
+                if pattern.upper() in query_upper:
+                    return True, f"Weight-level block: {pattern} in {category} for {active_adapter}"
         
         return False, "Clean"
     

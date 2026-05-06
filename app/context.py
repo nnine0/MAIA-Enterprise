@@ -146,6 +146,10 @@ class MAIAContext:
     @property
     def maia_orchestrator(self):
         return self._components.get("maia_orchestrator")
+    
+    @property
+    def security_orchestrator(self):
+        return self._components.get("security_orchestrator")
 
 
 # Global context instance
