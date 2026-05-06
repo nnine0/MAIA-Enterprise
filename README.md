@@ -177,30 +177,45 @@ MAIA replaces "Prompt Engineering" with **Neural Permissioning**—tools physica
 
 ### 5. Tool-Adapters (Neural Permissioning)
 
-- **sql_ledger**: Read-Only adapter - physically cannot DELETE/DROP
-- **swift_adapter**: No >$10K transfers without DHITL approval
-- **contract_redline**: Cannot delete Indemnification clauses
-- **kafka_dispatch**: Auto-swap to Safety-Auditor on Hazmat
-- **aibom_inventory**: "Tool that watches the Tools" - SR 26-02 required
+**9 Critical Tool-Adapters as Constrained LoRA Weight-Sets**:
 
-**The Innovation**: "Neural Permissioning" replaces "Prompt Engineering"
-> "Others give you an AI that can 'use a browser.' That is a liability. I give you a Neural microkernel where every 'hand' (tool) is a constrained mathematical subset of the brain."
+| Adapter | Domain | Constraint |
+|---------|--------|------------|
+| `sql_ledger` | Finance | Only SELECT/INSERT - cannot DELETE |
+| `swift_adapter` | Banking | No >$10K without DHITL |
+| `contract_redline` | Legal | Cannot delete Indemnification |
+| `kafka_dispatch` | Logistics | Auto-swap on Hazmat |
+| `aibom_inventory` | Governance | SR 26-02 VIN tracker |
+| `bias_adapter` | HR/Underwriting | Cannot infer protected classes |
+| `cyber_audit` | Security | Requires Neural Signature |
+| `sanctions_gateway` | Compliance | Hard-locks until human clears |
+| `disclosure_governor` | PR/Finance | Auto-redacts unapproved forecasts |
 
-### 5. DHITL (Decentralized Human-in-the-Loop)
+**The Pitch**: "An agent using our SQL-Adapter doesn't just 'promise' not to delete—it physically lacks the weights."
 
-- Tier 1 (Critical) transactions require human SME review
+### 6. DHITL (Decentralized Human-in-the-Loop)
+
+- Tier 1 (Critical) transactions require human SME review on mobile app
 - 3 SME votes = consensus (APPROVED/REJECTED)
 - Votes become RLHF training data for adapter fine-tuning
 - **The Authority of Alignment**: SMEs as "Supreme Court"
 
-### 7. Tool-Adapters (Neural Permissioning)
+### 7. Materiality Matrix (GDP-Aligned)
 
-- **Tool-as-Adapter**: Each tool is a constrained LoRA weight-set
-- **sql_ledger**: Read-Only SAP/Oracle - physically cannot DELETE
-- **swift_adapter**: MT103/Fedwire - no >$10K without DHITL
-- **contract_redline**: DOCX/PDF - cannot delete Core Protection clauses
-- **kafka_dispatch**: Real-time routing - auto-swap on Hazmat
-- **aibom_inventory**: Adapter registry - always has VIN number
+- **9 GDP Sectors** from GDPVal benchmark (44 occupations)
+- **3 Risk Tiers**: Critical / Elevated / Benign
+- GDP sector auto-detection from query keywords
+- Domain-specific governance rules
+
+### 8. Latent State Observability
+
+- Intra-Inference Telemetry - Neural Flight Recorder
+- Latent hashes at decision nodes provide forensic proof
+- Turns "Black Box" AI into "Glass Box" for Fed auditors
+
+---
+
+## Key Components Reference
 
 **The Pitch**: "An agent using our SQL-Adapter doesn't just 'promise' not to delete your database—it physically doesn't have the weights required to formulate the command."
 
