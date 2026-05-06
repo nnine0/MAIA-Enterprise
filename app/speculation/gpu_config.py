@@ -27,7 +27,14 @@ MTP KEY: Uses shared KV cache with base model - near-zero VRAM overhead.
 
 from dataclasses import dataclass
 from typing import Optional, Dict, Tuple
-import torch
+import os
+
+# Try importing torch, but allow fallback for testing
+try:
+    import torch
+    TORCH_AVAILABLE = True
+except ImportError:
+    TORCH_AVAILABLE = False
 
 
 @dataclass
