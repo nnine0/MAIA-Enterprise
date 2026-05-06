@@ -136,6 +136,14 @@ class MAIAContext:
     @property
     def saguaro_scheduler(self):
         return self._components.get("saguaro_scheduler")
+    
+    @property
+    def dme_engine(self):
+        return self._components.get("dme_engine")
+    
+    @property
+    def maia_orchestrator(self):
+        return self._components.get("maia_orchestrator")
 
 
 # Global context instance
