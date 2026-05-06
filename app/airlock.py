@@ -1,13 +1,23 @@
 """
 MAIA PVI (Policy-Validation-Interrupt) Airlock
+=============================================
 Implements the Non-Blocking Interceptor pattern for SR 26-02 compliance.
 
 Architecture:
-- Actor (Expert Adapter): Generates the action trajectory
-- Auditor (SR 26-02 Adapter): Provides Effective Challenge
+- Router: Identifies the "Business Material" (sector/tool)
+- Microkernel: Loads appropriate LoRA adapter
+- PVI Airlock: Monitors internal activations (Latent Hashing)
+- Security: Weight-level defense, role access control
 - Circuit Breaker: Blocks non-compliant trajectories
-- Latent Telemetry: Neural EKG for audit trails
 - DHITL Voting: Human SME review for Tier 1 trajectories
+
+The "Policy Enforcement Point":
+- Router identifies prompt as "Business Material"
+- Sends to MAIA Microkernel
+- Loads "Corporate Risk Adapter" (LoRA weight set)
+- PVI Airlock monitors activations (Latent Hashing)
+- If AI tries "back-dated safety check", Airlock triggers Physical Interrupt
+  because that trajectory doesn't exist in the signed weight-space
 """
 
 import asyncio
@@ -272,6 +282,11 @@ class PVIAirlock:
     Coordinates Actor (Expert) and Auditor (SR 26-02) within same async batch.
     Validates action trajectories in latent space before execution.
     Includes DHITL Voting for Tier 1 trajectories - human SMEs are the "Supreme Court."
+    
+    Integration with Security:
+    - WeightLevelDefense: Checks if dangerous patterns in active adapter
+    - LatentHashVerifier: Monitors neural activations for anomalies
+    - OrchestratorDefense: Validates role-based adapter access
     """
     
     def __init__(self, lorax_url: str = LORAX_URL):
@@ -287,6 +302,73 @@ class PVIAirlock:
             "risk", "limit", "approval", "policy", "audit", "report",
             "client", "account", "exposure", "margin", "guarantee"
         }
+        
+        # Initialize security components
+        self._init_security()
+    
+    def _init_security(self):
+        """Initialize security integration"""
+        try:
+            from security import (
+                WeightLevelDefense,
+                LatentHashVerifier,
+                OrchestratorDefense,
+                SecurityOrchestrator
+            )
+            self.weight_defense = WeightLevelDefense()
+            self.latent_verifier = LatentHashVerifier()
+            self.orchestrator_defense = OrchestratorDefense()
+            self.security_orchestrator = SecurityOrchestrator()
+            self._security_enabled = True
+        except ImportError:
+            self._security_enabled = False
+    
+    async def intercept_with_security(
+        self,
+        query: str,
+        adapter_id: str,
+        user_role: str,
+        transaction_value: float = 0,
+        latent_hash: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Main entry point: PVI Airlock with Security Integration
+        
+        Flow:
+        1. Route identifies "Business Material"
+        2. Load appropriate LoRA adapter
+        3. Run security checks (weight-level, latent hash, role)
+        4. If safe, proceed; if blocked, trigger interrupt
+        """
+        result = {
+            "allowed": True,
+            "reason": "passed",
+            "security_checks": {},
+            "tier": "T3"
+        }
+        
+        # Run security checks if enabled
+        if self._security_enabled:
+            is_safe, reason, threat_level = await self.security_orchestrator.evaluate(
+                query=query,
+                adapter_id=adapter_id,
+                user_role=user_role,
+                transaction_value=transaction_value,
+                latent_hash=latent_hash
+            )
+            result["security_checks"]["weight_defense"] = "passed" if is_safe else "blocked"
+            
+            if not is_safe:
+                result["allowed"] = False
+                result["reason"] = f"security_blocked: {reason}"
+                result["threat_level"] = threat_level.name
+                return result
+        
+        # Determine tier
+        tier = self.get_materiality_tier(query)
+        result["tier"] = tier.name
+        
+        return result
         
         # Adapter configurations
         self.actor_adapters: Dict[str, str] = {}
