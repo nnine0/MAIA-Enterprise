@@ -18,6 +18,10 @@ The Global 2000 faces an impossible choice:
 
 MAIA transforms AI from a **liability** into a **controlled industrial instrument**—the same way PLCs transformed factory floors from artisanal craft to reproducible manufacturing.
 
+**The PLC Analogy**: Before 1968, changing a factory line required hiring an electrician to physically rewire relay panels (days of downtime). Then the PLC arrived—you could now change the entire production logic in software, in seconds. Factories went from artisanal craft to reproducible manufacturing.
+
+MAIA does the same for AI: instead of "prompt engineering" (manually rewiring reasoning), you deploy constrained LoRA weight-sets that physically cannot reason outside their boundaries. Change the logic instantly, without breaking compliance.
+
 ### The Scope
 
 MAIA is not a chatbot. It is a **complete governance infrastructure** that enterprises deploy to:
