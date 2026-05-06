@@ -32,6 +32,15 @@ from airlock import execute_vetted_transaction, batch_vetted_transactions, Airlo
 from circuit_breaker import intercept_and_validate
 from supervisor_router import route_query, supervisor_router
 from memory_manager import get_memory_status, load_adapter
+from dme_engine import (
+    SectorAdapter,
+    RoleAdapter,
+    ToolAdapter,
+    DMEngine,
+    MAIAOrchestrator,
+    get_orchestrator,
+    get_dme_engine,
+)
 from latent_telemetry import (
     start_telemetry_session,
     emit_signature,
