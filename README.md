@@ -139,12 +139,24 @@ MAIA's **Circuit Breaker** pauses the **Action Trajectory** between Layer 9 (Age
 - New model support in under 1 hour
 - **Strategic Advantage**: Decoupled Rate of Intelligence (models) from Standard of Trust (MAIA)
 
-### 4. Multi-Adapter Orchestration
+### 4. Dynamic Materiality Escalation (DME) Engine
 
-- **Supervisor LoRA**: Neural dispatch within latent space
-- **Hub/Spoke**: Executive → Manager → Worker adapter hierarchy  
-- **DAG Orchestrator**: Parallel streams with convergence points
-- GPU never blocked - yield and park workflows
+- **4-Layer Hierarchy**: Sector → Occupation → Tool → Context
+- **L1 (Sector)**: Sets "Red Lines" (SR 26-02, HIPAA, SOX)
+- **L2 (Role)**: Determines permissions (can propose $50M loan?)
+- **L3 (Tool)**: Functional Tool-Adapters with constrained weights
+- **L4 (Context)**: The Escalator - semantic intent analysis
+
+### 5. Tool-Adapters (Neural Permissioning)
+
+- **sql_ledger**: Read-Only adapter - physically cannot DELETE/DROP
+- **swift_adapter**: No >$10K transfers without DHITL approval
+- **contract_redline**: Cannot delete Indemnification clauses
+- **kafka_dispatch**: Auto-swap to Safety-Auditor on Hazmat
+- **aibom_inventory**: "Tool that watches the Tools" - SR 26-02 required
+
+**The Innovation**: "Neural Permissioning" replaces "Prompt Engineering"
+> "Others give you an AI that can 'use a browser.' That is a liability. I give you a Neural microkernel where every 'hand' (tool) is a constrained mathematical subset of the brain."
 
 ### 5. DHITL (Decentralized Human-in-the-Loop)
 
@@ -153,7 +165,18 @@ MAIA's **Circuit Breaker** pauses the **Action Trajectory** between Layer 9 (Age
 - Votes become RLHF training data for adapter fine-tuning
 - **The Authority of Alignment**: SMEs as "Supreme Court"
 
-### 6. Latent State Observability
+### 7. Tool-Adapters (Neural Permissioning)
+
+- **Tool-as-Adapter**: Each tool is a constrained LoRA weight-set
+- **sql_ledger**: Read-Only SAP/Oracle - physically cannot DELETE
+- **swift_adapter**: MT103/Fedwire - no >$10K without DHITL
+- **contract_redline**: DOCX/PDF - cannot delete Core Protection clauses
+- **kafka_dispatch**: Real-time routing - auto-swap on Hazmat
+- **aibom_inventory**: Adapter registry - always has VIN number
+
+**The Pitch**: "An agent using our SQL-Adapter doesn't just 'promise' not to delete your database—it physically doesn't have the weights required to formulate the command."
+
+### 8. Latent State Observability
 
 - Intra-Inference Telemetry - Neural Flight Recorder
 - Latent hashes at decision nodes provide forensic proof
