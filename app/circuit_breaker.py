@@ -12,6 +12,7 @@ Zero-Trust Architecture:
 import asyncio
 import hashlib
 import json
+import os
 import uuid
 from datetime import datetime
 from typing import Optional, Dict, Any, List
