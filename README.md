@@ -36,10 +36,12 @@ MAIA is not a chatbot. It is a **complete governance infrastructure** that enter
 
 - **GDP-Aligned Materiality** - 9 sectors × 44 occupations mapping
 - **Dynamic Materiality Escalation (DME)** - L1→L2→L3→L4 semantic analysis
-- **Tool-Adapters (Neural Permissioning)** - 5 critical business tools as constrained LoRAs
+- **Tool-Adapters (Neural Permissioning)** - 51 specialized business tools as constrained LoRAs
 - **Unified Speculative Stack** - MTP + DFlash + SSD for zero-latency governance
 - **DHITL Human Sovereignty** - 3 SME votes for Tier 1 decisions
 - **AIBOM Inventory** - SR 26-02 required adapter registry
+- **Neural Tool Dispatcher** - Kernel-level tool execution with governance
+- **Quad-Node Deployment** - Multi-sector GPU isolation
 
 ### The Moat
 
@@ -51,8 +53,11 @@ MAIA replaces "Prompt Engineering" with **Neural Permissioning**—tools physica
 
 - **Banks** - SR 26-02 compliance for trading, lending, wire transfers
 - **Pharma** - HIPAA/GCP for clinical trials, drug safety
-- **Logistics** - Hazmat, real-time routing, CSX compliance
+- **Logistics** - Hazmat, real-time routing, maritime compliance
 - **Legal/Real Estate** - Contract redlining, title verification
+- **Construction** - OSHA safety, prevailing wage, structural integrity
+- **Energy/Utilities** - NERC CIP critical infrastructure
+- **Defense/Aerospace** - ITAR, classified handling
 
 ---
 
@@ -75,13 +80,13 @@ MAIA replaces "Prompt Engineering" with **Neural Permissioning**—tools physica
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    USER REQUEST                              │
-└─────────────────────────────────────────────────────────────┘
+└──────────────��──────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
 │              SUPERVISOR ROUTER (Hub/Spoke)                   │
-│   Executive LoRA → Industry → Manager LoRA → Sub-domain   │
-│   Dispatch Token: [EXECUTE: {expert}, AUDIT: {auditor}]    │
+│   Executive LoRA → Industry → Manager LoRA → Sub-domain       │
+│   Dispatch Token: [EXECUTE: {expert}, AUDIT: {auditor}]      │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -95,7 +100,7 @@ MAIA replaces "Prompt Engineering" with **Neural Permissioning**—tools physica
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
 │              LORAX KERNEL (Unified Speculative Stack)        │
-│   Base Model: Gemma 4 26B A4B It + MTP Drafter           │
+│   Base Model: Gemma 4 2B + MTP Drafter                     │
 │   Hardware: RTX 3090 (24GB) → Blackwell (Enterprise)      │
 │   Multi-Adapter: Hot-swappable expert adapters             │
 │   VRAM Efficiency: Near-zero (Shared KV Cache)          │
@@ -128,13 +133,136 @@ MAIA replaces "Prompt Engineering" with **Neural Permissioning**—tools physica
 │   Decision Nodes → Latent hash at critical points          │
 │   Audit Log → Kafka → Fed-verifiable proof                  │
 └─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    KAFKA AUDIT LOG                            │
-│   transaction_id | materiality_tier | latent_trace_id       │
-│   dhitl_session_id | sme_votes | conceptual_soundness        │
-└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Neural Tool System
+
+### Kernel Components
+
+| Component | File | Purpose |
+|-----------|------|---------|
+| **NeuralToolDispatcher** | `app/dispatcher.py` | CPU scheduler for tool hot-swapping |
+| **KernelManifest** | `app/kernel_manifest.py` | Tool registry with JSON-RPC |
+| **ToolRouter** | `app/tool_router.py` | Intent-based tool routing |
+| **Kernel Server** | `server.py` | vLLM wrapper with Layer 8/9 governance |
+| **Quad-Node Deploy** | `deploy_quad_node.sh` | Multi-sector deployment |
+
+### Tool Adapter Registry (51 Specialized Adapters)
+
+#### Construction/Site Safety
+- `estimating_lora` - Margin protection (3.5% floor)
+- `legal_lora` - FAR/DFARS compliance
+- `safety_lora` - OSHA site safety
+- `logistics_lora` - DOT HOS limits
+- `machinery_safety_envelope` - Heavy equipment remote kill-switch
+- `davis_bacon_wage_auditor` - Prevailing wage compliance
+
+#### Healthcare/Pharma
+- `hipaa_privacy_airlock` - PII de-identification
+- `fda_protocol_adherence` - Clinical trial integrity
+- `med_expert_v1` - DHITL-required diagnosis
+- `insurance_policy_eval` - Fair claims
+
+#### Regional Banking
+- `fair_lending_bias_v4` - ECOA/FHAct compliance
+- `anti_money_laundering` - Structuring detection
+- `ofac_sanctions_v2` - SDN geofencing
+- `sr26_02_validator` - Latent trace required
+
+#### Maritime/Logistics
+- `dot_imdg_safety` - Class 1 restrictions
+- `defense_export_v3` - ITAR compliance
+- `harmonized_tariff_law` - Tariff fraud prevention
+- `predictive_safety_os` - Maintenance integrity
+- `crane_stability_validator` - Maritime weight limits
+
+#### Energy/Utilities
+- `nerc_cip_compliance` - Critical infrastructure multi-sig
+- `arc_flash_safety_v2` - PPE detection
+- `epa_emissions_audit` - Data integrity
+- `utility_rate_governance` - PSC cap compliance
+- `smart_grid_scada_gateway` - Hardware token required
+
+#### Defense/Aerospace
+- `rules_of_engagement_v7` - ROE compliance
+- `mil_spec_compliance` - NAVAIR integrity
+- `top_secret_redaction` - Classification masking
+- `rugged_hardware_diag` - Sensor integrity
+
+#### Legal Tech
+- `ethical_wall_v2` - Conflict of interest
+- `privilege_redactor` - Attorney-client privilege
+- `indemnification_enforcer` - LOA override
+- `sec_finra_reporting` - Forensic trace
+
+#### Insurtech
+- `anti_bias_actuarial` - Proxy detection
+- `siu_investigation_v1` - Pattern integrity
+- `state_regulatory_filing` - OIR cap compliance
+- `empathetic_compliance` - Coverage guarantees
+
+#### Neural Tools (Tool-Adapters)
+- `email_governed_workflow` - PII-locked email
+- `sql_readonly_auditor` - Read-only SQL
+- `erp_materiality_guard` - >$50k DHITL
+- `aibom_forensic_reporter` - Self-audit
+- `hazmat_route_planner` - Class 1 blocked
+- `document_redactor` - Privilege redaction
+- `incident_escalator` - Auto-escalation
+- `safety_ppe_detector` - Vision PPE
+- `eeoc_bias_detector` - Anonymization
+
+### JSON-RPC Tool Workflow
+
+```python
+# Tool Detection in Reasoning
+"Transfer $75k. [CALL_TOOL:FINANCIAL_WIRE_V1]"
+  ↓
+# Intent Detection
+dispatcher.detect_tool_intent() → tool_id="FINANCIAL_WIRE_V1"
+  ↓
+# Kernel Reconfigure
+dispatcher.reconfigure_kernel(tool_id) → Load LoRA adapter
+  ↓
+# Governance Check
+dispatcher.check_governance(tool_id, text) → Block PII/structuring
+  ↓
+# Execute Dispatch
+dispatcher.execute_dispatch(tool_id, params, context)
+  ↓
+# forensic_hash = sha256(tool_id+context)
+{
+  "success": true,
+  "tool_id": "FINANCIAL_WIRE_V1",
+  "forensic_hash": "d7d4f936..."
+}
+```
+
+---
+
+## Quad-Node Deployment
+
+Single 24GB GPU can run 4 isolated nodes:
+
+| Node | Port | Domain | VRAM |
+|------|------|--------|-----|
+| Estimating | 8001 | Financial | 5.4 GB |
+| Legal | 8002 | FAR/Compliance | 5.4 GB |
+| Safety | 8003 | OSHA | 5.4 GB |
+| Logistics | 8004 | DOT | 5.4 GB |
+| System | - | KV Cache | 2.2 GB |
+
+```bash
+# Deploy quad-node cluster
+./deploy_quad_node.sh start
+
+# Check status
+./deploy_quad_node.sh status
+
+# Stop cluster
+./deploy_quad_node.sh stop
 ```
 
 ---
@@ -148,7 +276,7 @@ MAIA replaces "Prompt Engineering" with **Neural Permissioning**—tools physica
 - Restrict AI = lose competitive advantage
 
 **MAIA Solution**:
-- **Fixed VRAM Rent**: 17.8GB baseline (Gemma 4 26B + Airlock + KV Cache)
+- **Fixed VRAM Rent**: 17.8GB baseline (Gemma 4 + Airlock + KV Cache)
 - **MTP Shared KV**: Near-zero VRAM overhead (uses base model activations)
 - **Materiality-based routing**: Only high-risk triggers full audit
 - **RTX 3090 compatible**: Full stack fits on 24GB
@@ -177,19 +305,19 @@ MAIA replaces "Prompt Engineering" with **Neural Permissioning**—tools physica
 
 ### 5. Tool-Adapters (Neural Permissioning)
 
-**9 Critical Tool-Adapters as Constrained LoRA Weight-Sets**:
+**51 Specialized Tool-Adapters as Constrained LoRA Weight-Sets**:
 
 | Adapter | Domain | Constraint |
 |---------|--------|------------|
-| `sql_ledger` | Finance | Only SELECT/INSERT - cannot DELETE |
-| `swift_adapter` | Banking | No >$10K without DHITL |
-| `contract_redline` | Legal | Cannot delete Indemnification |
-| `kafka_dispatch` | Logistics | Auto-swap on Hazmat |
-| `aibom_inventory` | Governance | SR 26-02 VIN tracker |
-| `bias_adapter` | HR/Underwriting | Cannot infer protected classes |
-| `cyber_audit` | Security | Requires Neural Signature |
-| `sanctions_gateway` | Compliance | Hard-locks until human clears |
-| `disclosure_governor` | PR/Finance | Auto-redacts unapproved forecasts |
+| `email_governed_workflow` | Communication | PII blocked |
+| `sql_readonly_auditor` | Data | SELECT only |
+| `erp_materiality_guard` | Finance | >$50k → DHITL |
+| `aibom_forensic_reporter` | Audit | Self-audit |
+| `hazmat_route_planner` | Logistics | Class 1 blocked |
+| `eeoc_bias_detector` | HR | Proxy blocked |
+| `smart_grid_scada_gateway` | Utilities | Hardware token |
+| `crane_stability_validator` | Maritime | Weight limit |
+| `davis_bacon_wage_auditor` | Construction | Prevailing wage |
 
 **The Pitch**: "An agent using our SQL-Adapter doesn't just 'promise' not to delete—it physically lacks the weights."
 
@@ -217,67 +345,62 @@ MAIA replaces "Prompt Engineering" with **Neural Permissioning**—tools physica
 
 ## Key Components Reference
 
-### 9. Adversarial Defense (Weight-Level)
-
-| Defense | Attack Vector | Solution |
-|---------|----------------|----------|
-| Weight-Level | Prompt Injection | Constrained LoRA - cannot generate dangerous tokens |
-| Latent Hash | Adapter Injection | Deviation triggers Circuit Breaker |
-| Orchestrator | Role Escalation | Role → adapter access control |
-| DHITL MF | Social Engineering | Multi-factor by transaction value |
-
-**The Pitch**: "Our SQL-Adapter physically doesn't have the weights to delete."
+| Module | Purpose |
+|--------|---------|
+| `app/circuit_breaker.py` | Layer 8: Governance (Circuit Breaker) |
+| `app/airlock.py` | Layer 7: PVI Airlock |
+| `app/supervisor_router.py` | Hub/Spoke hierarchical routing |
+| `app/memory_manager.py` | VRAM/RAM/NVMe hot-swapping |
+| `app/latent_telemetry.py` | Neural EKG + latent hashing |
+| `app/dag_orchestrator.py` | Async DAG workflow |
+| `app/dispatcher.py` | Neural Tool Dispatcher |
+| `app/kernel_manifest.py` | Tool registry + JSON-RPC |
+| `app/tool_router.py` | Intent-based tool routing |
+| `app/gemma4_thinking_airlock.py` | Layer 8 reasoning interceptor |
+| `app/routing.py` | Departmental path routing |
+| `server.py` | Kernel Server with governance |
+| `deploy_quad_node.sh` | Quad-node deployment |
 
 ---
 
-## Business Implications
+## Quick Start
 
-### Technical Value
+```bash
+# Copy and configure environment
+cp .env.example .env
+# Edit .env and set MAIA_API_KEY (required, min 16 chars)
 
-| Aspect | Benefit |
-|--------|---------|
-| **VRAM Efficiency** | 17.8GB fixed rent (solves VRAM/Compliance paradox) |
-| **MTP Shared KV** | Near-zero overhead - uses base model activations |
-| **Model Agnostic** | Forward-compatible with any Transformer-based model |
-| **Regulatory Compliance** | Native SR 26-02 support with audit-ready telemetry |
-| **Throughput** | 80 audits/second on H100 (10x human consultant) |
-| **Latency** | 45ms end-to-end (vs 7 days human) |
-| **Hot-Swappable Adapters** | Update policies without system downtime |
+# Start the Kernel Server
+cd MAIA-Enterprise
+python3 server.py
 
-### Operational Value
+# Or deploy quad-node cluster
+./deploy_quad_node.sh start
+```
 
-| Aspect | Benefit |
-|--------|---------|
-| **Defensible** | Fed-audit-ready with latent hash forensic trails |
-| **Scalable** | Thousands of adapters with sub-second hot-swap |
-| **Self-Evolving** | STaR loop enables continuous improvement |
-| **Transparent** | Glass box architecture - every decision traceable |
-| **Human-in-the-Loop** | DHITL ensures ultimate authority stays with domain experts |
+### Testing Tool Dispatch
 
-### Performance Comparison
+```bash
+# Test tool dispatch
+curl -X POST http://localhost:8000/tool_dispatch \
+  -H "X-MAIA-Key: your_key" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "Send email. [CALL_TOOL:GOVERNED_SMTP_V1]"}'
 
-| Metric | Human Consultant | MAIA on RTX 3090 (Edge) | MAIA on H100 (Factory) |
-|--------|------------------|-------------------------|----------------------|
-| **Throughput** | 1 report / week | 10 audits / second | 80 audits / second |
-| **Hardware Cost** | $150,000 (Salary) | $1,500 (One-time) | $35,000 (One-time) |
-| **Latent Latency** | 7 Days | 150ms | 45ms |
-| **Compliance Resolution** | Low (Human Error) | 100% (Deterministic) | 100% (High-Fidelity) |
+# List tools
+curl -X GET http://localhost:8000/tools \
+  -H "X-MAIA-Key: your_key"
+```
 
-### Strategic Value
+### Running Tests
 
-- **Compliance-as-Code**: Policy enforcement at the kernel level, not prompt level
-- **Decoupled Architecture**: Rate of Intelligence (models) separated from Standard of Trust (MAIA)
-- **Future-Proof**: New models supported in under 1 hour via standardized projection modules
-- **Risk Mitigation**: Circuit breaker pattern prevents regulatory violations before they occur
+```bash
+# Install dependencies
+pip install pytest pytest-asyncio
 
-### Competitive Differentiation
-
-| Traditional AI | MAIA |
-|---------------|------|
-| Post-mortem audits | Real-time circuit breaker |
-| Monolithic models | Hot-swappable adapters |
-| Prompt-level governance | Weight-level policy enforcement |
-| Black box decisions | Glass box audit trails |
+# Run test suite
+MAIA_API_KEY=testing_key_placeholder pytest tests/ -v
+```
 
 ---
 
@@ -294,100 +417,7 @@ MAIA replaces "Prompt Engineering" with **Neural Permissioning**—tools physica
 
 ---
 
-## Module Reference
-
-| Module | Purpose |
-|--------|---------|
-| `app/circuit_breaker.py` | Layer 8: Governance (Circuit Breaker) |
-| `app/airlock.py` | Layer 7: PVI Airlock (Legacy) |
-| `app/supervisor_router.py` | Hub/Spoke hierarchical routing |
-| `app/memory_manager.py` | VRAM/RAM/NVMe hot-swapping |
-| `app/latent_telemetry.py` | Neural EKG + latent hashing |
-| `app/dag_orchestrator.py` | Async DAG workflow |
-| `app/speculation/config.py` | DFlash/Saguaro configuration |
-| `app/speculation/dflash_engine.py` | Layer 9: Block diffusion drafting |
-| `app/speculation/saguaro_scheduler.py` | Layer 8: Async SSD |
-| `app/speculation/kernel.py` | Unified L9→L8→L7 orchestration |
-| `app/dashboard.py` | Circuit Breaker Dashboard (port 3033) |
-
----
-
-## Quick Start
-
-```bash
-# Copy and configure environment
-cp .env.example .env
-# Edit .env and set MAIA_API_KEY (required, min 16 chars)
-
-# Start the PVI Airlock Dashboard
-cd MAIA-Enterprise
-python3 app/dashboard.py
-
-# Access: http://localhost:3033
-```
-
-### Deployment (Docker Compose)
-
-```bash
-# Single command deployment
-./deploy.sh
-
-# Or manually:
-cp .env.example .env
-# Edit .env with your MAIA_API_KEY
-docker compose up -d
-
-# Services
-# - Dashboard: http://localhost:3033
-# - API:      http://localhost:8000
-# - LoRAX:   http://localhost:8080
-# - Qdrant:  http://localhost:6333
-```
-
-### Running Tests
-
-```bash
-# Install dependencies
-pip install pytest pytest-asyncio
-
-# Run test suite (requires MAIA_API_KEY with 16+ chars for config validation)
-MAIA_API_KEY=testing_key_placeholder pytest tests/ -v
-```
-
-### Files
-
-| File | Purpose |
-|------|---------|
-| `.env.example` | Environment template |
-| `.github/workflows/ci.yml` | CI/CD pipeline |
-| `LICENSE` | Proprietary license |
-| `pyproject.toml` | Python package config |
-
-### Hardware Requirements
-
-MAIA runs locally on enterprise GPUs:
-- **Minimum**: NVIDIA RTX 3090 (24GB VRAM)
-- **Recommended**: NVIDIA A100 or H100 (80GB+ VRAM)
-
-### Dashboard Test Scenarios
-- PASS (Tier 3): Benign queries - bypass audit
-- PASS (Tier 2): Elevated risk - AI audit passes
-- FAIL (Tier 1): Critical - Circuit breaker trips
-- FAIL (Tier 2): Elevated - AI audit blocks
-- SME Review (Tier 1): Human-in-the-loop required
-
----
-
-## Technical Standard
-
-See `STANDARD.md` for complete architectural specification.
-
----
-
 ## Example Transaction Log
-
-<!-- Smaller table for readability -->
-<small>
 
 | Time | Transaction ID | Query | Tool | Tier | Status | Latency | Reason |
 |------|--------------|-------|------|------|--------|---------|--------|
@@ -396,48 +426,19 @@ See `STANDARD.md` for complete architectural specification.
 | 18:01 | 6e5d8a1b | Redline clause | contract | T2 | **PASS** | 35ms | OK |
 | 18:00 | 5f4c7b2a | Loan $75K | swift | T1 | **PEN** | 52ms | Threshold |
 | 17:59 | 4a3b6c1d | Scan CVE | cyber | T2 | **PASS** | 42ms | OK |
-| 17:58 | 3b2c5d4e | Clinical SOP | contract | T2 | **PASS** | 48ms | QA |
-| 17:57 | 2c1d4e5f | Freight Havana | kafka | T1 | **BLK** | 35ms | Grey port |
-| 17:56 | 1d2c3e4f | Hire zip 19104 | bias | T1 | **BLK** | 28ms | Proxy |
-| 17:55 | 9e8d7c6f | Forecast Q4 | disclosure | T1 | **BLK** | 22ms | CFO |
-| 17:54 | 8f7c6d5e | Registry update | aibom | T2 | **PASS** | 15ms | Logged |
-| 17:53 | 7c6e5d4f | Meeting summary | email | T3 | **BYP** | 8ms | Low |
-| 17:52 | 6b5d4e3f | Credit score | sql | T2 | **PASS** | 32ms | OK |
 
-</small>
+---
 
-### Key Observations
-- **Finance**: T1 on >$10K wire or >$1M balance
-- **Legal**: T1 on Core Protection clause deletions
-- **IT/Security**: T1 on bias proxy patterns
-- **Logistics**: T1 on grey area ports
-- **Disclosure**: T1 on unapproved forecasts
+## Hardware Requirements
 
-### Key Observations
-
-1. **Tier 1 (Critical)** - Finance/real estate transactions over $10K require full Circuit Breaker + DHITL SME review
-2. **Tier 2 (Elevated)** - GDP sector-aligned queries validated by MTP + DFlash + SSD async audit
-3. **Tier 3 (Benign)** - Low-risk queries use MTP direct (no speculation overhead)
-4. **Latency Erasure** - Governance happens in speculative cycles (45ms vs 400ms+ traditional)
-
-### Latent Hash Example
-
-Each transaction includes a forensic latent hash for audit trail:
-
-```
-transaction_id: maia-8f3a2b1c
-latent_hash: 0x7b2f9a4c3d1e8f5a
-mtp_seed_tokens: 4
-dflash_blocks_expanded: 16
-ssd_hypotheses_audited: 3
-```
-
-This hash represents the model's internal reasoning state at the moment of decision—providing mathematical proof of Conceptual Soundness for Federal Reserve auditors.
+MAIA runs locally on enterprise GPUs:
+- **Minimum**: NVIDIA RTX 3090 (24GB VRAM)
+- **Recommended**: NVIDIA A100 or H100 (80GB+ VRAM)
 
 ---
 
 ## Links
 
 - **Dashboard**: http://localhost:3033
+- **Kernel API**: http://localhost:8000
 - **Implementation**: https://github.com/nnine0/MAIA-Enterprise
-- **Prototype**: Working code demonstrating SR 26-02 compliance
