@@ -389,6 +389,7 @@ Single 24GB GPU can run 4 isolated nodes:
 | `app/agentic_gateway.py` | Transparent proxy (invisible governance) |
 | `app/policy_compiler.py` | Policy-to-Physics Compiler |
 | `app/p2w_compiler.py` | P2W Compiler (4-stage pipeline) |
+| `app.forensic_sidecar.py` | Forensic Sidecar (async audit) |
 | `server.py` | Kernel Server with governance |
 | `deploy_quad_node.sh` | Quad-node deployment |
 
