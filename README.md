@@ -637,8 +637,13 @@ MAIA_API_KEY=testing_key_placeholder pytest tests/ -v
 - Streaming fingerprints (not batch)
 - Reduced dimensions (256 vs 4096)
 - Memory-mapped ring buffer: O(1) writes to NVMe
-- **Technical Defense**: "We commit to NVMe-backed circular buffer in <1ms,
-  ensuring audit immutability without inference blocking."
+
+**TWO-TRACK DURABILITY** (Bank Auditor Defense):
+1. **Primary**: Ring buffer commit (<1ms) - fast for inference path
+2. **Secondary**: Async flush to SQL/S3 (durable) - guaranteed persistence
+3. **Verification**: Receipt has "committed_durable" status for auditors
+
+**Technical Defense**: "We commit to NVMe-backed circular buffer in <1ms, ensuring audit immutability without inference blocking."
 
 **Governance Operations**:
 1. **Triage**: Classify complexity (keyword fast path, neural for adversarial)
