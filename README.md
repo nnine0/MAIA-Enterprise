@@ -622,21 +622,18 @@ MAIA_API_KEY=testing_key_placeholder pytest tests/ -v
 
 ### Latency Test Results
 
-| Component | Latency | Notes |
-|-----------|--------|-------|
-| Triage Supervisor | 0.3ms* | Keyword matching fast path |
-| Early Exit Breaker | 0.011ms | Token-level check |
-| Agentic Gateway | 0.215ms | Proxy overhead |
-| Policy Compiler | 0.032ms | Template processing |
-| Dynamic Adapter | 0.015ms | Hash routing |
-| Governance Profiles | 0.004ms | Config lookup |
+| Component | Fast Path | Full Path | Notes |
+|-----------|----------|----------|-------|
+| Triage Supervisor | 0.007ms | 0.8ms* | Keyword + Neural |
+| Early Exit Breaker | 0.015ms | - | Token-level |
+| Agentic Gateway | 0.363ms | - | Proxy overhead |
+| Dynamic Adapter | 0.011ms | - | Hash routing |
 
-*Triage Supervisor with neural embeddings (production):
-- First pass: keyword matching (<0.3ms)
-- Second pass: BERT embedding (~15ms on CPU) for ambiguous/adversarial cases
-- Total worst case: ~15ms (well under Fed 150ms)
+*Triage: Simple/critical queries use keyword matching (<1ms). Ambiguous/adversarial queries trigger BERT embedding (~15ms in production).
 
-**Production Note**: In production deployment, use sentence-transformers for TriageSupervisor to catch sophisticated adversarial attacks that keyword matching misses.
+**Fed Requirement**: <150ms for critical paths
+
+**Production Note**: Use sentence-transformers for neural embeddings in Triage Supervisor to catch sophisticated adversarial attacks.
 
 ---
 
