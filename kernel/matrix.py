@@ -200,7 +200,7 @@ def create_matrix(
 if __name__ == "__main__":
     print("=== MAIA Materiality Matrix ===\n")
     
-    # Test Jacksonville config
+    # Test config
     matrix = create_matrix()
     
     test_queries = [

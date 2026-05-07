@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
-  "name": "Jacksonville Contractor Compliance",
-  "description": "Materiality Matrix for Jacksonville-based contractors",
+  "name": "Contractor Compliance",
+  "description": "Materiality Matrix for contractor operations",
   "sectors": ["construction", "maritime", "logistics", "legal"],
   "violation_patterns": {
     "CRITICAL": [

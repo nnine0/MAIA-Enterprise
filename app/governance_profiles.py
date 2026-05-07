@@ -36,6 +36,8 @@ class ProfileType(Enum):
     HEALTHCARE = "healthcare"
     LEGAL = "legal"
     CONSTRUCTION = "construction"
+    ENERGY = "energy"        # NERC CIP
+    DEFENSE = "defense"      # ITAR/CC
 
 
 # Profile configurations
@@ -100,6 +102,26 @@ GOVERNANCE_PROFILES = {
         "violations": ["osha", "safety", "hazard"],
         "response": "Governed response with safety audit",
     },
+    ProfileType.ENERGY: {
+        "name": "Energy (NERC CIP)",
+        "mode": GovernanceMode.GOVERNANCE,
+        "materiality_tier": 1,
+        "airlock_enabled": True,
+        "audit_enabled": True,
+        "dhitl_enabled": True,
+        "violations": ["bcyber", "ems", "nerc", "critical", "bes", "tsp"],
+        "response": "Governed response with NERC CIP audit",
+    },
+    ProfileType.DEFENSE: {
+        "name": "Defense (ITAR/CC)",
+        "mode": GovernanceMode.GOVERNANCE,
+        "materiality_tier": 1,
+        "airlock_enabled": True,
+        "audit_enabled": True,
+        "dhitl_enabled": True,
+        "violations": ["itar", "export", "classified", "secret", "topsecret", "nuclear"],
+        "response": "Governed response with ITAR audit",
+    },
 }
 
 
@@ -129,6 +151,8 @@ class FrontalLobeRouter:
         "healthcare": ["patient", "diagnosis", "treatment", "phi", "medical"],
         "legal": ["attorney", "privileged", "contract", "lawsuit"],
         "construction": ["safety", "osha", "permit", "inspection"],
+        "energy": ["bcyber", "ems", "grid", "substation", "generation", "nerc", "critical"],
+        "defense": ["export", "itar", "classified", "weapon", "nuclear", "missile"],
     }
     
     BENIGN_KEYWORDS = {

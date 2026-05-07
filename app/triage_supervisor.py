@@ -24,6 +24,7 @@ class GovernanceLevel(Enum):
     GL_1_TRANSACTIONAL = 1  # Single agent, bypass gates
     GL_2_OPERATIONAL = 2     # Sequential pipeline
     GL_3_STRATEGIC = 3      # Full multi-agent
+    GL_4_AUDIT = 4          # Full audit + compliance review
 
 
 class TaskComplexity(Enum):
@@ -84,10 +85,15 @@ class TriageSupervisor:
         "check database", "lookup", "query", "format"
     ]
     
-    # Keywords requiring full governance
+# Keywords requiring full governance
     HIGH_STAKES_KEYWORDS = [
         "wire", "transfer", "approve", "deny", "execute",
         "delete", "modify", "create user", "grant access"
+    ]
+    
+    GL_4_AUDIT_KEYWORDS = [
+        "quarterly", "annual", "compliance", "audit", "regulatory",
+        "finCEN", "sec", "federal reserve", "report"
     ]
     
     def __init__(self, default_gl: GovernanceLevel = GovernanceLevel.GL_2_OPERATIONAL):
@@ -96,6 +102,10 @@ class TriageSupervisor:
     def classify_task(self, query: str) -> TaskComplexity:
         """Classify task complexity"""
         query_lower = query.lower()
+        
+        # GL-4 Audit - regulatory/compliance reports
+        if any(kw in query_lower for kw in self.GL_4_AUDIT_KEYWORDS):
+            return TaskComplexity.COMPLEX
         
         # Simple - fast track
         if any(kw in query_lower for kw in self.FAST_TRACK_KEYWORDS):
@@ -115,6 +125,12 @@ class TriageSupervisor:
         """Determine governance level needed"""
         if user_specified:
             return user_specified
+        
+        query_lower = query.lower()
+        
+        # GL-4 for regulatory/audit keywords
+        if any(kw in query_lower for kw in self.GL_4_AUDIT_KEYWORDS):
+            return GovernanceLevel.GL_4_AUDIT
         
         complexity = self.classify_task(query)
         

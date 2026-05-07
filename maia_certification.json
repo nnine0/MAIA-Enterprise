@@ -1,0 +1,17 @@
+{
+  "version": "1.0.0",
+  "generated_at": "2026-05-07T04:20:43.641124+00:00",
+  "report_period_days": 30,
+  "total_transactions": 0,
+  "violation_summary": {
+    "total_records": 3,
+    "total_violations": 2,
+    "records_with_violations": 2,
+    "denied_responses": 2,
+    "tier1_critical": 2,
+    "tier2_elevated": 1,
+    "tier3_benign": 0
+  },
+  "compliance_status": "COMPLIANT",
+  "signature": "maia-crypto-20260507042043"
+}
