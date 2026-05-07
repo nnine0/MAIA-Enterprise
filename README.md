@@ -1,8 +1,23 @@
 # MAIA: Enterprise AI Governance OS
 
 > The Industrial Neural Operating System for Regulated Industries
+> 
+> The Safety Kernel that allows any AI to be deployed in any regulated environment by simply swapping "Policy Manifests."
 
 ---
+
+## What's New (v1.1.0)
+
+| Feature | Description |
+|---------|-------------|
+| **Triage Supervisor** | Entry-point classification - routes simple queries to fast track |
+| **Governor-Lite** | GL-1/GL-2/GL-3/GL-4 dynamically gates complexity |
+| **Early-Exit Breaker** | Checks speculative tokens BEFORE materialization |
+| **GitOps Pipeline** | Adapter CI/CD with progressive rollout |
+| **Air-gapped Mode** | Offline deployment with USB updates |
+| **MAIA SDK** | CLI tool: `maia init`, `maia simulate`, `maia certify` |
+| **8 Governance Profiles** | Retail, Marketing, Finance, Healthcare, Legal, Construction, Energy (NERC CIP), Defense (ITAR/CC) |
+| **23+ Hot-swappable Adapters** | Modular - update policy without retraining |
 
 ## About
 
@@ -358,8 +373,138 @@ Single 24GB GPU can run 4 isolated nodes:
 | `app/tool_router.py` | Intent-based tool routing |
 | `app/gemma4_thinking_airlock.py` | Layer 8 reasoning interceptor |
 | `app/routing.py` | Departmental path routing |
+| `app/dynamic_adapter.py` | Hot-swappable LoRA adapter manager (23+ adapters) |
+| `app/governance_profiles.py` | Industry profiles with Complexity Slider |
+| `app/triage_supervisor.py` | GL-1/GL-2/GL-3/GL-4 governance levels |
+| `app/early_exit_breaker.py` | Latent Space Circuit Breaker |
+| `app/gitops_pipeline.py` | GitOps CI/CD for adapters |
+| `app/airgapped_deployment.py` | Air-gapped/offline deployment |
+| `app/pvi_airlock.py` | Latent hash validation |
+| `forensics/logger.py` | Immutable audit ledger |
+| `maia.py` | MAIA SDK CLI |
 | `server.py` | Kernel Server with governance |
 | `deploy_quad_node.sh` | Quad-node deployment |
+
+---
+
+## Design Patterns
+
+### 1. Triage Supervisor (Entry Point)
+Lightweight supervisor at the entry point classifies queries as simple/complex and routes accordingly.
+
+```python
+from app.triage_supervisor import TriageSupervisor, GovernanceLevel
+
+t = TriageSupervisor()
+gl = t.determine_gl("Wire $50k to Russia")
+# GL-3 (Strategic) - full governance
+gl = t.determine_gl("Summarize this PDF")  
+# GL-1 (Transactional) - fast track
+```
+
+### 2. Deterministic Offloading
+Replace agentic reasoning with symbolic scripts for predictable tasks.
+
+```python
+from app.triage_supervisor import DETERMINISTIC_SCRIPTS
+# sql_query, format_json, send_email, lookup_database, validate_format
+# replace_agent=True - uses script instead of LLM
+```
+
+### 3. Governor-Lite Mode
+Dynamic governance levels based on task:
+
+| Level | Mode | Use Case |
+|--------|------|---------|
+| GL-1 | Transactional | Fast track, single agent |
+| GL-2 | Operational | Sequential pipeline |
+| GL-3 | Strategic | Full multi-agent |
+| GL-4 | Audit | Compliance reporting |
+
+### 4. Early-Exit Circuit Breaker
+Checks speculative tokens BEFORE materialization - kills generation before output.
+
+```python
+from app.early_exit_breaker import EarlyExitCircuitBreaker
+
+breaker = EarlyExitCircuitBreaker()
+predictions = breaker.simulate_speculative_stream(prompt, tokens, confidences)
+verdict = breaker.check_speculative_tokens(predictions)
+# KILL | ESCALATE | CONTINUE
+```
+
+### 5. Governance-as-Code (Manifest)
+Declarative policy configuration in YAML/JSON.
+
+```yaml
+# configs/maia_kernel_manifest.json
+policy: "HIPAA-Finance-Hybrid"
+airlock:
+  latency_threshold: 150ms
+  interrupt_on: ["PII_LEAK", "UNAUTHORIZED_WIRE_TRANSFER"]
+adapters:
+  - id: "legal_compliance_v4"
+  - id: "risk_math_v2"
+```
+
+### 6. Interceptor Pattern (Sidecar)
+Model stays "pure" - governance is a transparent proxy.
+
+```python
+from app.airlock import PVIAirlock
+# Intercepts trajectories before they reach the model
+# Blocks non-compliant paths
+# Generates forensic hash
+```
+
+### 7. Neural Componentization (Adapter Fabric)
+Multi-LoRA composition with hot-swapping.
+
+```python
+from app.dynamic_adapter import DynamicAdapterManager
+
+m = DynamicAdapterManager()
+# 23+ adapters organized by role:
+# Module A: Banker (domain knowledge)
+# Module B: Compliance (constraint knowledge)  
+# Module C: Audit (reporting)
+```
+
+### 8. Unified Audit Ledger
+Immutable sidecar database for compliance.
+
+```python
+from forensics.logger import get_logger
+
+logger = get_logger()
+logger.log(query, thinking_block, tool_id, violations)
+# Returns latent_hash for forensic verification
+stats = logger.get_violation_stats()
+```
+
+### 9. MAIA SDK CLI
+Developer tool for governance operations.
+
+```bash
+python3 maia.py init --name project --sector finance
+python3 maia.py simulate --scenario sanction
+python3 maia.py certify
+```
+
+---
+
+## Governance Profiles
+
+| Profile | Sector | Materiality | Features |
+|---------|--------|-------------|----------|
+| Retail | General | Tier 3 | Standard mode |
+| Marketing | General | Tier 3 | Standard mode |
+| Finance | SR 26-02 | Tier 1 | Airlock + DHITL |
+| Healthcare | HIPAA | Tier 1 | Airlock + DHITL |
+| Legal | Privilege | Tier 1 | Airlock + DHITL |
+| Construction | OSHA | Tier 2 | Safety audit |
+| Energy | NERC CIP | Tier 1 | Critical infrastructure |
+| Defense | ITAR/CC | Tier 1 | Classified handling |
 
 ---
 
