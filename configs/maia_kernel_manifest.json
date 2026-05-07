@@ -1,6 +1,6 @@
 {
   "manifest_version": "1.0.0",
-  "node_id": "JAX-CORE-01",
+  "node_id": "GENERIC-CORE-01",
   "registry": [
     {
       "tool_id": "GOVERNED_SMTP_V1",
@@ -44,7 +44,7 @@
       },
       "action_layer": {
         "protocol": "json-rpc",
-        "endpoint": "https://core-banking.jax-bank.com/rpc",
+        "endpoint": "https://core-banking.generic-bank.com/rpc",
         "method": "initiate_transfer",
         "parameters": {
           "amount": "float",
@@ -120,7 +120,7 @@
       },
       "action_layer": {
         "protocol": "json-rpc",
-        "endpoint": "https://audit-foremost.jax-bank.com/rpc",
+        "endpoint": "https://audit-foremost.generic-bank.com/rpc",
         "method": "generate_forensic_hash",
         "parameters": {
           "transaction_id": "string",

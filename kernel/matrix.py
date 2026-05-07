@@ -49,7 +49,7 @@ class MaterialityMatrix:
     
     def __init__(
         self,
-        config_path: str = "configs/compliance/jacksonville_contractor_v1.json"
+        config_path: str = "configs/compliance/generic_contractor_v1.json"
     ):
         self.config_path = Path(config_path)
         self.config: Dict = {}
@@ -191,7 +191,7 @@ class MaterialityMatrix:
 
 
 def create_matrix(
-    config_path: str = "configs/compliance/jacksonville_contractor_v1.json"
+    config_path: str = "configs/compliance/generic_contractor_v1.json"
 ) -> MaterialityMatrix:
     """Factory function"""
     return MaterialityMatrix(config_path=config_path)

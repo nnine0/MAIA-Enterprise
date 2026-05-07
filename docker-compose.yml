@@ -15,7 +15,7 @@ services:
       - NODE_PORT=8001
       - GPU_MEMORY_UTIL=0.23
       - LORA_ADAPTER=estimating_lora
-      - COMPLIANCE_CONFIG=configs/compliance/jacksonville_contractor_v1.json
+      - COMPLIANCE_CONFIG=configs/compliance/generic_contractor_v1.json
     deploy:
       resources:
         reservations:
@@ -39,7 +39,7 @@ services:
       - NODE_PORT=8002
       - GPU_MEMORY_UTIL=0.23
       - LORA_ADAPTER=legal_lora
-      - COMPLIANCE_CONFIG=configs/compliance/jacksonville_contractor_v1.json
+      - COMPLIANCE_CONFIG=configs/compliance/generic_contractor_v1.json
     deploy:
       resources:
         reservations:
@@ -63,7 +63,7 @@ services:
       - NODE_PORT=8003
       - GPU_MEMORY_UTIL=0.23
       - LORA_ADAPTER=safety_lora
-      - COMPLIANCE_CONFIG=configs/compliance/jacksonville_contractor_v1.json
+      - COMPLIANCE_CONFIG=configs/compliance/generic_contractor_v1.json
     deploy:
       resources:
         reservations:
@@ -87,7 +87,7 @@ services:
       - NODE_PORT=8004
       - GPU_MEMORY_UTIL=0.23
       - LORA_ADAPTER=logistics_lora
-      - COMPLIANCE_CONFIG=configs/compliance/jacksonville_contractor_v1.json
+      - COMPLIANCE_CONFIG=configs/compliance/generic_contractor_v1.json
     deploy:
       resources:
         reservations:
