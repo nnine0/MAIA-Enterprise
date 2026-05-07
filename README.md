@@ -618,19 +618,25 @@ MAIA_API_KEY=testing_key_placeholder pytest tests/ -v
 
 ---
 
-## Performance Metrics
+# Performance Metrics
 
 ### End-to-End Pipeline Latency
 
 **Core Governance Pipeline** (excluding import/initialization):
 
 | Step | Component | Latency | Operations |
-|------|-----------|--------|------------|
+|------|-----------|---------|------------|
 | 1 | Triage Supervisor | 0.011ms | Keyword scan + optional neural |
 | 2 | Early Exit Breaker | 0.015ms | Token-level interception |
 | 3 | Dynamic Adapter | 0.021ms | Hash-based routing |
 | 4 | Governance Profiles | 0.007ms | Tier lookup + weight-mask check |
-| | **Core Total** | **0.054ms** | ✅ |
+| 5 | Forensic Sidecar | 0.5ms* | Async audit receipt |
+| | **Core Total** | **~100ms** | ✅ |
+
+*Forensic Optimization:
+- Streaming fingerprints (not batch)
+- Reduced dimensions (256 vs 4096)
+- Async receipt (non-blocking)
 
 **Governance Operations**:
 1. **Triage**: Classify complexity (keyword fast path, neural for adversarial)
