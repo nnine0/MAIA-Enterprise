@@ -118,10 +118,10 @@ class AgenticGateway:
         
         self.total_requests += 1
         
-        # Auto-detect sector
+        # Fast sector detection (keyword scan)
         sector = self._classify_sector(prompt)
         
-        # Check violations
+        # Violation check
         is_violation, reason = self._check_violations(prompt, sector)
         
         if is_violation:

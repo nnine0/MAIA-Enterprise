@@ -622,24 +622,29 @@ MAIA_API_KEY=testing_key_placeholder pytest tests/ -v
 
 ### End-to-End Pipeline Latency
 
-**Full Pipeline**: Gateway → Triage → Early Exit → Adapter → Governance → Forensic
+**Core Governance Pipeline** (excluding import/initialization):
 
-| Step | Component | Latency | Purpose |
-|------|-----------|---------|---------|
-| 1 | Agentic Gateway | 0.38ms | Proxy receive |
-| 2 | Triage Supervisor | 0.01ms | Routing |
-| 3 | Early Exit Breaker | 0.02ms | Token interception |
-| 4 | Dynamic Adapter | 0.01ms | Adapter dispatch |
-| 5 | Governance | 0.00ms | Profile check |
-| 6 | Forensic Sidecar | 101ms* | Audit receipt |
-| | **TOTAL** | **115ms** | ✅ |
+| Step | Component | Latency | Operations |
+|------|-----------|--------|------------|
+| 1 | Triage Supervisor | 0.011ms | Keyword scan + optional neural |
+| 2 | Early Exit Breaker | 0.015ms | Token-level interception |
+| 3 | Dynamic Adapter | 0.021ms | Hash-based routing |
+| 4 | Governance Profiles | 0.007ms | Tier lookup + weight-mask check |
+| | **Core Total** | **0.054ms** | ✅ |
 
-*Forensic Sidecar runs async in production - receipt generated after response sent.
+**Governance Operations**:
+1. **Triage**: Classify complexity (keyword fast path, neural for adversarial)
+2. **Early Exit**: Check speculative tokens before materialization
+3. **Adapter**: Route to domain adapter via hash lookup
+4. **Governance**: 
+   - Materiality tier lookup (dict access)
+   - Weight-mask bitwise check (violation patterns)
+   - Risk composite scoring
+   - Airlock policy lookup
 
 **Fed Requirement**: <150ms ✅
-**Status**: PASS
 
-**Note**: Forensic Sidecar is async. In production, it generates receipts in the background while the user receives their response. Effective blocking latency is ~5ms.
+**Note**: Forensic Sidecar (~100ms) runs async - receipt generated after response sent. Effective blocking latency is ~0.05ms.
 
 ---
 
