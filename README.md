@@ -20,6 +20,8 @@
 | **23+ Hot-swappable Adapters** | Modular - update policy without retraining |
 | **Agentic Gateway** | Transparent proxy - invisible governance for existing AI |
 | **Policy-to-Physics Compiler** | Compiles legal text into neural weights |
+| **P2W Compiler** | 4-stage automated factory (Consulting → SaaS) |
+| **P2W Compiler** | 4-stage automated factory (Consulting → SaaS) |
 
 ## About
 
@@ -386,6 +388,7 @@ Single 24GB GPU can run 4 isolated nodes:
 | `maia.py` | MAIA SDK CLI |
 | `app/agentic_gateway.py` | Transparent proxy (invisible governance) |
 | `app/policy_compiler.py` | Policy-to-Physics Compiler |
+| `app/p2w_compiler.py` | P2W Compiler (4-stage pipeline) |
 | `server.py` | Kernel Server with governance |
 | `deploy_quad_node.sh` | Quad-node deployment |
 
@@ -525,6 +528,23 @@ compiled = compiler.compile(PolicyType.SR_26_02)
 **The Narrative:**
 - "We don't prompt engineer safety. We compile legal text."
 - Legal Text → Mathematical Constraints → Physical Impossibility
+
+### 12. P2W (Policy-to-Weights) Compiler
+4-stage automated factory for scaling from consulting to SaaS.
+
+```python
+from app.p2w_compiler import P2WCompiler
+
+compiler = P2WCompiler()
+result = await compiler.compile("sr_2602")
+```
+
+| Stage | Name | Description |
+|-------|------|-------------|
+| 1 | Logic Extraction | Parse PDF to Constraint Manifest |
+| 2 | Synthetic Data | Generate DPO training pairs |
+| 3 | Neural Factory | QLoRA training → .safetensors |
+| 4 | Red-Teaming | Validate <0.01% failure → Certify |
 
 ---
 
