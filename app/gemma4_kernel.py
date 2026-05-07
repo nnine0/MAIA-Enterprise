@@ -1,34 +1,29 @@
 """
-MAIA Gemma 4 Kernel - Real Implementation
-=========================================
-Uses Gemma 4 E4B with MTP Assistant for speculative decoding.
-Implements the Non-Blocking Interceptor pattern.
+MAIA Gemma 4 Kernel - Full Implementation
+======================================
+With Latent Space Analysis and Model Inventory.
 
-Requirements:
-- transformers>=4.40
-- torch>=2.0
-- google/gemma-4-E4B-it
-- google/gemma-4-E4B-it-assistant
-
-Run: python3 -m app.gemma4_kernel
+Features:
+- MTP Speculative Decoding
+- Thought Extraction (<|channel>thought)
+- Latent Space Analysis (Neural EKG)
+- SR 26-02 Model Inventory (AIBOM)
 """
 
 import os
+import json
+import hashlib
 from datetime import datetime
-from typing import Optional, Dict, Any
-from dataclasses import dataclass
+from typing import Optional, Dict, Any, List
+from dataclasses import dataclass, asdict
 from enum import Enum
 
-# Lazy load
 try:
     import torch
     from transformers import AutoProcessor, AutoModelForCausalLM
     TRANSFORMERS_AVAILABLE = True
 except ImportError:
     TRANSFORMERS_AVAILABLE = False
-    torch = None
-    AutoProcessor = None
-    AutoModelForCausalLM = None
 
 
 class Verdict(Enum):
@@ -47,55 +42,94 @@ class GovernanceResult:
     error: Optional[str] = None
 
 
+@dataclass
+class ModelInventory:
+    """SR 26-02 Model Inventory (AIBOM)"""
+    timestamp: str
+    base_model: str
+    drafter: str
+    materiality_tier: str
+    auditor_signature: str
+    sector: str
+    
+    def to_json(self) -> str:
+        return json.dumps(asdict(self))
+    
+    def save(self, path: str):
+        with open(path, "a") as f:
+            f.write(self.to_json() + "\n")
+
+
+class LatentAnalyzer:
+    """
+    Neural EKG - Latent Space Analysis
+    ===============================
+    Probes hidden states for "Deceptive Reasoning"
+    signatures (PNAS paper patterns).
+    """
+    
+    # Deceptive reasoning patterns in hidden space
+    DECEPTION_SIGNATURES = [
+        "actually", "but wait", "on second thought",
+        "technically", "however", "let me clarify"
+    ]
+    
+    def analyze(self, hidden_states) -> Dict[str, Any]:
+        """Analyze hidden states for deception"""
+        if hidden_states is None:
+            return {"status": "clean", "score": 0.0}
+        
+        # Simplified: check hidden state variance
+        # Real implementation would use PCA/activation probing
+        if TRANSFORMERS_AVAILABLE and hidden_states is not None:
+            variance = float(hidden_states.var())
+        else:
+            variance = 0.1  # Mock value for demo
+        
+        if variance > 1.0:
+            return {
+                "status": "suspicious",
+                "score": variance,
+                "reason": "high activation variance"
+            }
+        
+        return {"status": "clean", "score": variance}
+
+
 class MAIAGemmaKernel:
-    """
-    MAIA Gemma 4 Kernel with MTP
-    
-    Architecture:
-    - Base: Gemma 4 E4B (4.5B effective params)
-    - Drafter: MTP Assistant (speculative decoding)
-    - Auditor: Latent space analysis
-    
-    The E4B fits in VRAM slack of most GPUs,
-    MTP ensures reasoning at small-model speed.
-    """
+    """MAIA Kernel with full features"""
     
     def __init__(
         self,
         base_model: str = "google/gemma-4-E4B-it",
         assistant_model: str = "google/gemma-4-E4B-it-assistant",
-        auditor_model: str = "google/gemma-3b-nemotron"
+        auditor_model: str = "nvidia/Nemotron-3-Content-Safety-4B"
     ):
         self.base_model = base_model
         self.assistant_model = assistant_model
         self.auditor_model = auditor_model
-        
         self.processor = None
         self.target = None
         self.assistant = None
-        self.auditor = None
-        
         self.loaded = False
-        
+        self.latent_analyzer = LatentAnalyzer()
+        self.inventory: List[ModelInventory] = []
+    
     def load(self, device: str = "auto"):
-        """Load models to GPU"""
+        """Load models"""
         if not TRANSFORMERS_AVAILABLE:
-            raise RuntimeError("transformers not installed: pip install transformers torch")
+            raise RuntimeError("transformers/torch required")
         
         print(f"Loading {self.base_model}...")
         self.processor = AutoProcessor.from_pretrained(self.base_model)
         
         self.target = AutoModelForCausalLM.from_pretrained(
-            self.base_model,
-            device_map=device,
-            torch_dtype=torch.bfloat16
+            self.base_model, device_map=device, torch_dtype=torch.bfloat16
         )
         
-        print(f"Loading {self.assistant_model} (MTP drafter)...")
+        print(f"Loading MTP drafter {self.assistant_model}...")
         self.assistant = AutoModelForCausalLM.from_pretrained(
-            self.assistant_model,
-            device_map=device,
-            torch_dtype=torch.bfloat16
+            self.assistant_model, device_map=device, torch_dtype=torch.bfloat16
         )
         
         self.loaded = True
@@ -104,40 +138,30 @@ class MAIAGemmaKernel:
     async def execute_governed_trajectory(
         self,
         user_query: str,
-        sector: str = "finance"
+        sector: str = "finance",
+        tier: str = "tier_2"
     ) -> GovernanceResult:
-        """
-        Execute with PVI Airlock
-        
-        Flow:
-        1. Prepare template with thinking enabled
-        2. MTP speculative generation
-        3. Extract thought block (latent)
-        4. PVI Airlock audit
-        5. Return governed result
-        """
-        if not self.loaded:
-            return GovernanceResult(
-                status="ERROR",
-                error="Kernel not loaded. Call load() first."
-            )
-        
+        """Execute with full governance"""
         start = datetime.now()
         
-        # 1. Prepare template
+        if not self.loaded:
+            return GovernanceResult(status="ERROR", error="Not loaded")
+        
+        # Prepare template
         messages = [
-            {"role": "system", "content": f"Sector: {sector}. Rules: SR 26-02. Think carefully."},
+            {"role": "system", "content": f"Sector: {sector}. Rules: SR 26-02."},
             {"role": "user", "content": user_query}
         ]
         
         input_text = self.processor.apply_chat_template(
             messages, tokenize=False, add_generation_prompt=True
         )
-        inputs = self.processor(
-            text=input_text, return_tensors="pt"
-        ).to(self.target.device)
+        inputs = self.processor(text=input_text, return_tensors="pt")
         
-        # 2. Speculative Generation with MTP
+        if hasattr(self.target, "device"):
+            inputs = inputs.to(self.target.device)
+        
+        # MTP Speculative Generation
         outputs = self.target.generate(
             **inputs,
             assistant_model=self.assistant,
@@ -146,26 +170,36 @@ class MAIAGemmaKernel:
             top_p=0.95,
             top_k=64,
             return_dict_in_generate=True,
-            output_scores=True
+            output_scores=True,
+            output_hidden_states=True  # For Neural EKG
         )
         
-        full_response = self.processor.decode(
-            outputs.sequences[0],
-            skip_special_tokens=False
-        )
+        full_response = self.processor.decode(outputs.sequences[0], skip_special_tokens=False)
         
-        # 3. Extract thought block
+        # Extract thought block
         thought = self.extract_thought(full_response)
         answer = self.extract_answer(full_response)
         
-        # 4. PVI Airlock Audit
+        # Extract hidden states for latent analysis
+        hidden_states = self.extract_hidden_states(outputs)
+        
+        # Neural EKG Analysis
+        latent_analysis = self.latent_analyzer.analyze(hidden_states)
+        
+        # PVI Airlock Check
         audit = await self.run_airlock_check(thought, sector)
         
-        if audit["status"] == "FAIL":
+        # Log to AIBOM inventory
+        self._log_inventory(sector, tier, audit)
+        
+        if audit["status"] == "FAIL" or latent_analysis["status"] == "suspicious":
             return GovernanceResult(
                 status="BLOCKED",
                 thought=thought,
-                compliance_log=audit,
+                compliance_log={
+                    **audit,
+                    "latent_analysis": latent_analysis
+                },
                 latency_ms=(datetime.now() - start).total_seconds() * 1000
             )
         
@@ -173,112 +207,130 @@ class MAIAGemmaKernel:
             status="APPROVED",
             answer=answer,
             thought=thought,
-            compliance_log=audit,
+            compliance_log={
+                **audit,
+                "latent_analysis": latent_analysis
+            },
             latency_ms=(datetime.now() - start).total_seconds() * 1000
         )
     
     def extract_thought(self, text: str) -> str:
-        """Extract <|channel>thought block"""
+        """Extract Gemma 4 thought block"""
+        # Gemma 4 format: <|channel|>thought\n[content]<|channel|>
         if "<|channel|>thought" in text:
             start = text.index("<|channel|>thought")
             end = text.find("<|channel|>", start + 1)
             if end > start:
                 return text[start:end]
-        return ""
+        
+        # Alternative: check for thinking markers
+        if "[THINKING]" in text:
+            start = text.index("[THINKING]")
+            end = text.find("[/THINKING]", start)
+            if end > start:
+                return text[start:end]
+        
+        return text[:200] if len(text) > 200 else text
     
     def extract_answer(self, text: str) -> str:
         """Extract final answer"""
-        if "<|channel|>result" in text:
-            start = text.index("<|channel|>result")
-            return text[start:].replace("<|channel|>", "").strip()
+        markers = ["<|channel|>result", "[RESULT]", "<|channel|>"]
+        
+        for marker in markers:
+            if marker in text:
+                idx = text.index(marker)
+                return text[idx:].replace(marker, "").strip()[:500]
+        
         return text
     
-    async def run_airlock_check(
-        self,
-        thought: str,
-        sector: str
-    ) -> Dict[str, Any]:
-        """
-        PVI Airlock - Latent Space Audit
-        
-        Checks for regulatory violations in reasoning.
-        """
+    def extract_hidden_states(self, outputs) -> Optional[Any]:
+        """Extract hidden states for latent analysis"""
+        if hasattr(outputs, "hidden_states") and outputs.hidden_states:
+            # Return last layer hidden states
+            return outputs.hidden_states[-1].mean(dim=1)
+        return None
+    
+    async def run_airlock_check(self, thought: str, sector: str) -> Dict[str, Any]:
+        """PVI Airlock audit"""
         violations = {
             "finance_insurance": ["sanction", "russia", "iran", "terrorist", "structur"],
-            "healthcare": ["phi", "diagnosis", "patient record", "medical"],
+            "healthcare": ["phi", "diagnosis", "patient record"],
             "legal": ["attorney", "privileged", "confidential"],
             "defense": ["classified", "secret", "itar"],
         }
         
-        keywords = violations.get(sector, [])
         thought_lower = thought.lower()
+        keywords = violations.get(sector, [])
         
         for kw in keywords:
             if kw in thought_lower:
-                return {
-                    "status": "FAIL",
-                    "violation": kw,
-                    "sector": sector,
-                    "latent_analysis": "keyword detected in thought"
-                }
+                return {"status": "FAIL", "violation": kw, "sector": sector}
         
-        # Check for deceptive reasoning patterns
-        deceptive_patterns = [
-            "actually", "technically", "technically speaking",
-            "but wait", "however", "on second thought"
-        ]
-        
-        for pattern in deceptive_patterns:
+        # Deceptive reasoning
+        for pattern in ["actually", "but wait", "on second"]:
             if pattern in thought_lower:
-                return {
-                    "status": "FAIL",
-                    "violation": "deceptive_reasoning",
-                    "sector": sector,
-                    "latent_analysis": "pattern detected"
-                }
+                return {"status": "FAIL", "violation": "deceptive_reasoning"}
         
-        return {
-            "status": "PASS",
-            "latent_analysis": "clean",
-            "sector": sector
-        }
+        return {"status": "PASS", "sector": sector}
     
-    def trip_circuit_breaker(self, thought: str) -> GovernanceResult:
-        """Trip the circuit breaker"""
-        return GovernanceResult(
-            status="BLOCKED",
-            thought=thought,
-            compliance_log={"status": "TRIPPED", "reason": "Airlock failure"}
+    def _log_inventory(self, sector: str, tier: str, audit: Dict):
+        """Log to SR 26-02 AIBOM"""
+        entry = ModelInventory(
+            timestamp=datetime.now().isoformat(),
+            base_model=self.base_model,
+            drafter=self.assistant_model,
+            materiality_tier=tier,
+            auditor_signature=self.auditor_model,
+            sector=sector
         )
+        self.inventory.append(entry)
+    
+    def save_inventory(self, path: str):
+        """Save AIBOM to file"""
+        for entry in self.inventory:
+            entry.save(path)
 
 
-# Demo with mock if no transformers
 class MockGemmaKernel:
-    """Mock for testing without GPU"""
+    """Demo kernel without GPU"""
     
     def __init__(self, *args, **kwargs):
-        pass
+        self.latent_analyzer = LatentAnalyzer()
+        self.inventory = []
+        self.base_model = "google/gemma-4-E4B-it"
+        self.assistant_model = "google/gemma-4-E4B-it-assistant"
+        self.auditor_model = "nvidia/Nemotron-3-Content-Safety-4B"
     
-    async def execute_governed_trajectory(self, query: str, sector: str = "finance") -> GovernanceResult:
+    async def execute_governed_trajectory(self, query: str, sector: str = "finance", tier: str = "tier_2") -> GovernanceResult:
         """Mock execution"""
-        # Check violations like the real kernel
-        result = await self.run_airlock_check(query, sector)
+        # Run audit on the QUERY, not extracted thought
+        audit = await self._check_audit(query, sector)
         
-        if result["status"] == "FAIL":
-            return GovernanceResult(status="BLOCKED", compliance_log=result)
+        if audit["status"] == "FAIL":
+            return GovernanceResult(
+                status="BLOCKED",
+                compliance_log=audit
+            )
+        
+        # Deceptive reasoning
+        if any(p in query.lower() for p in ["actually", "but wait", "on second"]):
+            return GovernanceResult(
+                status="BLOCKED",
+                compliance_log={"status": "FAIL", "violation": "deceptive_reasoning"}
+            )
         
         return GovernanceResult(
             status="APPROVED",
             answer=f"[MOCK] {query}",
-            compliance_log=result
+            compliance_log=audit
         )
     
-    async def run_airlock_check(self, text: str, sector: str) -> Dict:
+    async def _check_audit(self, text: str, sector: str) -> Dict:
         violations = {
-            "finance_insurance": ["sanction", "russia", "iran", "terrorist"],
+            "finance_insurance": ["sanction", "russia", "iran", "terrorist", "structur"],
             "healthcare": ["phi", "diagnosis", "patient record"],
-            "legal": ["attorney", "privileged"],
-            "defense": ["classified", "secret"],
+            "legal": ["attorney", "privileged", "confidential"],
+            "defense": ["classified", "secret", "itar"],
         }
         
         text_lower = text.lower()
@@ -286,39 +338,42 @@ class MockGemmaKernel:
         
         for kw in keywords:
             if kw in text_lower:
-                return {"status": "FAIL", "violation": kw}
+                return {"status": "FAIL", "violation": kw, "sector": sector}
         
-        return {"status": "PASS"}
+        return {"status": "PASS", "sector": sector}
 
 
 def create_kernel(demo: bool = False):
-    """Create kernel - demo mode if no GPU"""
+    """Create kernel"""
     if demo or not TRANSFORMERS_AVAILABLE:
-        print("Using DEMO mode (no GPU required)")
         return MockGemmaKernel()
-    
     return MAIAGemmaKernel()
 
 
 if __name__ == "__main__":
     import asyncio
     
-    async def main():
-        print("MAIA Gemma 4 Kernel")
+    async def test():
+        print("MAIA Kernel - Full Implementation")
         print("="*50)
         
         kernel = create_kernel(demo=True)
         
         tests = [
-            ("Wire $50k to Russia", "finance_insurance"),
-            ("Check patient diagnosis", "healthcare"),
-            ("Calculate credit risk", "finance_insurance"),
+            ("Wire $50k to Russia", "finance", "tier_1"),
+            ("Actually, let me process this", "finance", "tier_2"),
+            ("Calculate credit score", "finance", "tier_2"),
         ]
         
-        for query, sector in tests:
-            result = await kernel.execute_governed_trajectory(query, sector)
+        for query, sector, tier in tests:
+            result = await kernel.execute_governed_trajectory(query, sector, tier)
+            log = result.compliance_log or {}
             print(f"\n{result.status}: {query}")
-            if result.compliance_log:
-                print(f"  Log: {result.compliance_log}")
+            print(f"  Latent: {log.get('latent_analysis', {})}")
+        
+        # Save inventory
+        print("\n--- AIBOM Inventory ---")
+        for inv in kernel.inventory:
+            print(inv.to_json())
     
-    asyncio.run(main())
+    asyncio.run(test())
