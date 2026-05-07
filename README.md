@@ -626,12 +626,15 @@ MAIA_API_KEY=testing_key_placeholder pytest tests/ -v
 
 | Step | Component | Latency | Operations |
 |------|-----------|---------|------------|
-| 1 | Triage Supervisor | 0.01ms | Keyword scan + optional neural |
-| 2 | Early Exit Breaker | 0.01ms | Token-level interception |
-| 3 | Dynamic Adapter | 0.02ms | Hash-based routing |
-| 4 | Governance Profiles | 0.01ms | Tier lookup + weight-mask check |
-| 5 | Forensic Sidecar | 0.86ms | Async audit receipt |
-| | **Core Total** | **~0.9ms** | ✅ |
+| 1 | Agentic Gateway | 0.39ms | Proxy receive + violation check |
+| 2 | Triage Supervisor | 0.02ms | Classification (keyword + neural) |
+| 3 | Early Exit Breaker | 0.02ms | Token-level interception |
+| 4 | Dynamic Adapter | 0.01ms | Hash-based routing |
+| 5 | Governance Profiles | 0.01ms | Weight-mask + tier lookup |
+| 6 | Forensic Sidecar | 0.84ms | Two-track audit (fast path) |
+| | **Core Total** | **1.28ms** | ✅ |
+
+**Two-Track Durability**: Fast commit to ring buffer (<1ms), async flush for durability.
 
 *Forensic Optimization:
 - Streaming fingerprints (not batch)
