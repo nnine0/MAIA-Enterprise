@@ -19,6 +19,7 @@
 | **8 Governance Profiles** | Retail, Marketing, Finance, Healthcare, Legal, Construction, Energy (NERC CIP), Defense (ITAR/CC) |
 | **23+ Hot-swappable Adapters** | Modular - update policy without retraining |
 | **Agentic Gateway** | Transparent proxy - invisible governance for existing AI |
+| **Policy-to-Physics Compiler** | Compiles legal text into neural weights |
 
 ## About
 
@@ -384,6 +385,7 @@ Single 24GB GPU can run 4 isolated nodes:
 | `forensics/logger.py` | Immutable audit ledger |
 | `maia.py` | MAIA SDK CLI |
 | `app/agentic_gateway.py` | Transparent proxy (invisible governance) |
+| `app/policy_compiler.py` | Policy-to-Physics Compiler |
 | `server.py` | Kernel Server with governance |
 | `deploy_quad_node.sh` | Quad-node deployment |
 
@@ -505,10 +507,24 @@ python3 -m app.agentic_gateway --upstream https://api.bank.com/v1
 
 ```python
 from app.agentic_gateway import AgenticGateway
-
-gateway = AgenticGateway(upstream="http://bank-ai:8080")
 # Bank AI → localhost:8080 → [Governance] → Upstream Model
 ```
+
+### 11. Policy-to-Physics Compiler
+Compiles legal text into neural weights.
+
+```python
+from app.policy_compiler import PolicyCompiler, PolicyType
+
+compiler = PolicyCompiler()
+compiled = compiler.compile(PolicyType.SR_26_02)
+# Input: "No wire transfers to OFAC countries"
+# Output: LoRA weights that PHYSICALLY cannot violate
+```
+
+**The Narrative:**
+- "We don't prompt engineer safety. We compile legal text."
+- Legal Text → Mathematical Constraints → Physical Impossibility
 
 ---
 
