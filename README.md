@@ -392,6 +392,11 @@ Single 24GB GPU can run 4 isolated nodes:
 | `server.py` | Kernel Server with governance |
 | `deploy_quad_node.sh` | Quad-node deployment |
 
+### Dashboards
+
+- **Policy Manager**: `docs/policy_manager.html` - Product dashboard with drag-drop PDF → policy compilation
+- **Control Center**: `docs/dashboard.html` - Real-time EKG and adapter toggles
+
 ---
 
 ## Design Patterns
