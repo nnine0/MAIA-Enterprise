@@ -18,6 +18,7 @@
 | **MAIA SDK** | CLI tool: `maia init`, `maia simulate`, `maia certify` |
 | **8 Governance Profiles** | Retail, Marketing, Finance, Healthcare, Legal, Construction, Energy (NERC CIP), Defense (ITAR/CC) |
 | **23+ Hot-swappable Adapters** | Modular - update policy without retraining |
+| **Agentic Gateway** | Transparent proxy - invisible governance for existing AI |
 
 ## About
 
@@ -382,6 +383,7 @@ Single 24GB GPU can run 4 isolated nodes:
 | `app/pvi_airlock.py` | Latent hash validation |
 | `forensics/logger.py` | Immutable audit ledger |
 | `maia.py` | MAIA SDK CLI |
+| `app/agentic_gateway.py` | Transparent proxy (invisible governance) |
 | `server.py` | Kernel Server with governance |
 | `deploy_quad_node.sh` | Quad-node deployment |
 
@@ -489,6 +491,23 @@ Developer tool for governance operations.
 python3 maia.py init --name project --sector finance
 python3 maia.py simulate --scenario sanction
 python3 maia.py certify
+```
+
+### 10. Agentic Gateway (Transparent Proxy)
+Makes governance "invisible" - banks don't rewrite code.
+
+```bash
+# Run gateway
+python3 -m app.agentic_gateway --upstream https://api.bank.com/v1
+# Bank sends traffic to localhost:8080
+# MAIA handles governance transparently
+```
+
+```python
+from app.agentic_gateway import AgenticGateway
+
+gateway = AgenticGateway(upstream="http://bank-ai:8080")
+# Bank AI → localhost:8080 → [Governance] → Upstream Model
 ```
 
 ---
