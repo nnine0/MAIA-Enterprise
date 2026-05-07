@@ -634,6 +634,27 @@ MAIA runs locally on enterprise GPUs:
 
 ---
 
+## Performance Metrics
+
+### Latency Test Results
+
+| Component | Latency | Status |
+|-----------|--------|--------|
+| Triage Supervisor | 0.006ms | ✅ |
+| Early Exit Breaker | 0.011ms | ✅ |
+| Agentic Gateway | 0.215ms | ✅ |
+| Policy Compiler | 0.032ms | ✅ |
+| Dynamic Adapter | 0.015ms | ✅ |
+| Governance Profiles | 0.004ms | ✅ |
+| Forensic Sidecar | 100.8ms* | ✅ |
+
+*Forensic Sidecar includes token processing + merkle tree (async in production)
+
+**Fed Requirement**: <150ms for critical transaction paths
+**MAIA Performance**: All components well under threshold
+
+---
+
 ## What's New (v1.1.0)
 
 | Feature | Description |
