@@ -1,0 +1,42 @@
+{
+  "sector_id": "technology",
+  "sector_name": "Technology & Software",
+  "description": "Software, SaaS, cloud services, IT infrastructure",
+  "regulations": ["SOC2", "ISO27001", "GDPR", "CCPA"],
+  "tier_thresholds": {
+    "critical": 10000,
+    "elevated": 1000,
+    "benign": 0
+  },
+  "materiality_keywords": {
+    "critical": ["production", "database", "customer data", "api key", "secret", "deployment", "migration", "backup"],
+    "elevated": ["policy", "compliance", "audit", "code review", "testing"],
+    "benign": ["query", "status", "docs", "demo"]
+  },
+  "policy_clauses": [
+    {
+      "clause_id": "SEC_001",
+      "text": "Never expose production credentials",
+      "keywords": ["api key", "secret", "password", "token", "credentials"],
+      "severity": "CRITICAL",
+      "action": "BLOCK"
+    },
+    {
+      "clause_id": "SEC_002",
+      "text": "Encrypt sensitive data at rest and in transit",
+      "keywords": ["encrypt", "tls", "ssl", "at rest", "unencrypted"],
+      "severity": "HIGH",
+      "action": "LOG"
+    },
+    {
+      "clause_id": "GDPR_001",
+      "text": "Honor data subject rights (erasure, portability)",
+      "keywords": ["delete", "forget", "erasure", "portability", "export"],
+      "severity": "CRITICAL",
+      "action": "ESCALATE"
+    }
+  ],
+  "requires_dhitl": false,
+  "requires_audit_trail": true,
+  "latent_hash_logging": true
+}

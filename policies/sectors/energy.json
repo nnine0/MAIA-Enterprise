@@ -1,0 +1,61 @@
+{
+  "sector_id": "energy",
+  "sector_name": "Energy & Utilities",
+  "description": "Oil, gas, electric utilities, renewable energy",
+  "regulations": [
+    "FERC",
+    "NERC",
+    "EPA"
+  ],
+  "tier_thresholds": {
+    "critical": 50000,
+    "elevated": 5000,
+    "benign": 0
+  },
+  "materiality_keywords": {
+    "critical": [
+      "pipeline",
+      "grid",
+      "outage",
+      "generation",
+      "transmission"
+    ],
+    "elevated": [
+      "compliance",
+      "report",
+      "audit"
+    ],
+    "benign": [
+      "query",
+      "info"
+    ]
+  },
+  "policy_clauses": [
+    {
+      "clause_id": "ENERGY_001",
+      "text": "Report grid outages within 5 minutes",
+      "keywords": [
+        "outage",
+        "grid",
+        "down",
+        "failure"
+      ],
+      "severity": "CRITICAL",
+      "action": "ESCALATE"
+    },
+    {
+      "clause_id": "ENERGY_002",
+      "text": "Follow EPA emissions reporting",
+      "keywords": [
+        "emissions",
+        "epa",
+        "report",
+        "carbon"
+      ],
+      "severity": "HIGH",
+      "action": "LOG"
+    }
+  ],
+  "requires_dhitl": true,
+  "requires_audit_trail": true
+}

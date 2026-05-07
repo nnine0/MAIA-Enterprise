@@ -19,6 +19,15 @@ from urllib.parse import urlparse, parse_qs
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# Policy registry
+try:
+    from policies.registry import PolicyRegistry
+    policy_registry = PolicyRegistry()
+    policy_registry.load_all_policies()
+except Exception as e:
+    print(f"Warning: Could not load policy registry: {e}")
+    policy_registry = None
+
 # Lazy imports for DME & Security (these work standalone)
 _dme_engine = None
 _security = None
@@ -237,6 +246,18 @@ HTML = """<!DOCTYPE html>
         .security-badge { padding: 3px 8px; border-radius: 10px; font-size: 10px; }
         .security-ok { background: #00ff8833; color: #00ff88; }
         .security-threat { background: #ff444433; color: #ff4444; }
+        
+        .policy-manager { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        .policy-column { flex: 1; min-width: 140px; }
+        .column-header { font-size: 11px; font-weight: bold; color: #00d4ff; margin-bottom: 8px; padding: 5px; background: #1a1a2e; border-radius: 4px; text-align: center; }
+        .policy-list { min-height: 80px; border: 2px dashed #333; border-radius: 8px; padding: 5px; background: #0a0a15; }
+        .policy-list.active-list { border-color: #00ff88; background: #0a150f; }
+        .policy-item { background: #2a2a4e; padding: 6px; margin: 4px 0; border-radius: 4px; cursor: grab; font-size: 11px; transition: all 0.2s; border: 1px solid #444; }
+        .policy-item:hover { background: #3a3a6e; transform: scale(1.02); }
+        .policy-item.dragging { opacity: 0.5; }
+        .policy-item.active-item { background: #1a3a2e; border-color: #00ff88; }
+        .policy-compose { margin-top: 10px; text-align: center; }
+        .composed-result { margin-top: 10px; padding: 8px; background: #1a1a2e; border-radius: 4px; font-size: 10px; max-height: 120px; overflow-y: auto; }
     </style>
 </head>
 <body>
@@ -321,6 +342,34 @@ HTML = """<!DOCTYPE html>
                     </div>
                 </div>
             </div>
+        </div>
+        
+        <!-- Policy Manager -->
+        <div class="controls-card">
+            <div class="controls-title">Policy Manager (Drag & Drop)</div>
+            <div class="policy-manager">
+                <div class="policy-column">
+                    <div class="column-header">Available Sectors</div>
+                    <div class="policy-list" id="sector-list" ondragover="allowDrop(event)" ondrop="drop(event, 'sector')"></div>
+                </div>
+                <div class="policy-column">
+                    <div class="column-header">Active Sectors</div>
+                    <div class="policy-list active-list" id="active-sectors" ondragover="allowDrop(event)" ondrop="remove(event, 'sector')"></div>
+                </div>
+                <div class="policy-column">
+                    <div class="column-header">Available Occupations</div>
+                    <div class="policy-list" id="occupation-list" ondragover="allowDrop(event)" ondrop="drop(event, 'occupation')"></div>
+                </div>
+                <div class="policy-column">
+                    <div class="column-header">Active Occupation</div>
+                    <div class="policy-list active-list" id="active-occupation" ondragover="allowDrop(event)" ondrop="remove(event, 'occupation')"></div>
+                </div>
+            </div>
+            <div class="policy-compose">
+                <button class="btn btn-pass" onclick="composePolicy()">Compose Effective Policy</button>
+                <button class="btn btn-clear" onclick="exportPolicy()">Export Config</button>
+            </div>
+            <div id="composed-policy" class="composed-result"></div>
         </div>
         
         <!-- Transaction Log -->
@@ -414,6 +463,109 @@ HTML = """<!DOCTYPE html>
         }
         
         setInterval(load, 3000);
+        
+        // Policy Manager State
+        const activeSector = { id: null, name: null };
+        const activeOccupation = { id: null, name: null };
+        
+        async function loadPolicies() {
+            try {
+                const r = await fetch('/api/policies');
+                const d = await r.json();
+                
+                // Populate sector list
+                let html = '';
+                for (const s of d.sectors) {
+                    html += '<div class="policy-item" draggable="true" ondragstart="drag(event, \''+s.id+'\', \''+s.name+'\', \'sector\')">'+s.name+'</div>';
+                }
+                document.getElementById('sector-list').innerHTML = html || '<div style="color:#666;font-size:11px">No sectors</div>';
+                
+                // Populate occupation list
+                html = '';
+                for (const o of d.occupations) {
+                    html += '<div class="policy-item" draggable="true" ondragstart="drag(event, \''+o.id+'\', \''+o.name+'\', \'occupation\')">'+o.name+'</div>';
+                }
+                document.getElementById('occupation-list').html = html || '<div style="color:#666;font-size:11px">No occupations</div>';
+                document.getElementById('occupation-list').innerHTML = html || '<div style="color:#666;font-size:11px">No occupations</div>';
+            } catch(e) {
+                console.error('Failed to load policies:', e);
+            }
+        }
+        
+        function allowDrop(ev) { ev.preventDefault(); }
+        
+        function drag(ev, id, name, type) {
+            ev.dataTransfer.setData("policyId", id);
+            ev.dataTransfer.setData("policyName", name);
+            ev.dataTransfer.setData("policyType", type);
+        }
+        
+        function drop(ev, type) {
+            ev.preventDefault();
+            const id = ev.dataTransfer.getData("policyId");
+            const name = ev.dataTransfer.getData("policyName");
+            const ptype = ev.dataTransfer.getData("policyType");
+            
+            if (ptype !== type) return;
+            
+            if (type === 'sector') {
+                activeSector.id = id;
+                activeSector.name = name;
+                document.getElementById('active-sectors').innerHTML = '<div class="policy-item active-item">'+name+'</div>';
+            } else {
+                activeOccupation.id = id;
+                activeOccupation.name = name;
+                document.getElementById('active-occupation').innerHTML = '<div class="policy-item active-item">'+name+'</div>';
+            }
+        }
+        
+        function remove(ev, type) {
+            if (type === 'sector') {
+                activeSector.id = null;
+                activeSector.name = null;
+                document.getElementById('active-sectors').innerHTML = '';
+            } else {
+                activeOccupation.id = null;
+                activeOccupation.name = null;
+                document.getElementById('active-occupation').innerHTML = '';
+            }
+        }
+        
+        async function composePolicy() {
+            if (!activeSector.id || !activeOccupation.id) {
+                document.getElementById('composed-policy').innerHTML = '<span style="color:#ff4444">Please select both a sector and occupation</span>';
+                return;
+            }
+            try {
+                const r = await fetch('/api/compose?sector='+activeSector.id+'&occupation='+activeOccupation.id);
+                const d = await r.json();
+                document.getElementById('composed-policy').innerHTML = '<strong>Effective Policy:</strong> '+d.effective_policy_id+'<br>'+
+                    '<strong>Regulations:</strong> '+d.sector.regulations.join(', ')+'<br>'+
+                    '<strong>Clearance:</strong> '+d.occupation.clearance_level+'<br>'+
+                    '<strong>Clauses:</strong> '+d.combined_clauses.length+'<br>'+
+                    '<strong>DHITL Required:</strong> '+d.settings.requires_dhitl+'<br>'+
+                    '<strong>Audit Trail:</strong> '+d.settings.requires_audit_trail;
+            } catch(e) {
+                document.getElementById('composed-policy').innerHTML = '<span style="color:#ff4444">Error: '+e.message+'</span>';
+            }
+        }
+        
+        async function exportPolicy() {
+            try {
+                const r = await fetch('/api/export');
+                const d = await r.json();
+                const blob = new Blob([JSON.stringify(d, null, 2)], {type: 'application/json'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'maia_policies.json';
+                a.click();
+            } catch(e) {
+                alert('Export failed: '+e.message);
+            }
+        }
+        
+        loadPolicies();
         load();
     </script>
 </body>
@@ -435,6 +587,48 @@ class Handler(BaseHTTPRequestHandler):
                 "summary": metrics.get_summary(),
                 "transactions": metrics.get_transactions(50)
             }).encode())
+        elif self.path == "/api/policies":
+            if policy_registry:
+                self.send_response(200)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    "sectors": policy_registry.list_sectors(),
+                    "occupations": policy_registry.list_occupations()
+                }).encode())
+            else:
+                self.send_response(500)
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": "Policy registry not loaded"}).encode())
+        elif self.path.startswith("/api/compose"):
+            if policy_registry:
+                params = parse_qs(urlparse(self.path).query)
+                sector = params.get("sector", [None])[0]
+                occupation = params.get("occupation", [None])[0]
+                try:
+                    composed = policy_registry.compose_policy(sector, occupation)
+                    self.send_response(200)
+                    self.send_header("Content-type", "application/json")
+                    self.end_headers()
+                    self.wfile.write(json.dumps(composed).encode())
+                except Exception as e:
+                    self.send_response(400)
+                    self.end_headers()
+                    self.wfile.write(json.dumps({"error": str(e)}).encode())
+            else:
+                self.send_response(500)
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": "Policy registry not loaded"}).encode())
+        elif self.path == "/api/export":
+            if policy_registry:
+                self.send_response(200)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps(policy_registry.export_active_config()).encode())
+            else:
+                self.send_response(500)
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": "Policy registry not loaded"}).encode())
         elif self.path.startswith("/api/simulate"):
             params = parse_qs(urlparse(self.path).query)
             scenario = params.get("scenario", ["pass"])[0]

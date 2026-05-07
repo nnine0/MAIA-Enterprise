@@ -1,0 +1,51 @@
+{
+  "occupation_id": "trader",
+  "occupation_name": "Trader / Investment Manager",
+  "description": "Executes trades, manages portfolios, handles client assets",
+  "sector_contexts": ["finance"],
+  "clearance_level": "MEDIUM",
+  "permissions": {
+    "can_escalate": true,
+    "can_override": false,
+    "can_audit": false,
+    "can_view_raw_data": false,
+    "can_export_reports": true
+  },
+  "materiality_keywords": {
+    "critical": ["buy", "sell", "trade", "order", "execute", "wire", "transfer", "client funds", "position", "hedge"],
+    "elevated": ["research", "analysis", "recommendation", "report", "limit"],
+    "benign": ["query", "quote", "price", "market"]
+  },
+  "policy_clauses": [
+    {
+      "clause_id": "TR_001",
+      "text": "Execute only within approved trading limits",
+      "keywords": ["limit", "exceed", "over limit", "authorization"],
+      "severity": "CRITICAL",
+      "action": "BLOCK"
+    },
+    {
+      "clause_id": "TR_002",
+      "text": "No front-running or insider trading",
+      "keywords": ["front run", "insider", "material nonpublic", "tip"],
+      "severity": "CRITICAL",
+      "action": "BLOCK"
+    },
+    {
+      "clause_id": "TR_003",
+      "text": "All client orders must be best execution",
+      "keywords": ["best execution", "priority", "client order"],
+      "severity": "HIGH",
+      "action": "LOG"
+    },
+    {
+      "clause_id": "TR_004",
+      "text": "Escalate unusual trading activity",
+      "keywords": ["unusual", "suspicious", "pattern", "large"],
+      "severity": "HIGH",
+      "action": "ESCALATE"
+    }
+  ],
+  "dhitl_eligible": false,
+  "requires_dual_authorization": true
+}

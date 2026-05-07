@@ -1,0 +1,56 @@
+{
+  "sector_id": "finance",
+  "sector_name": "Finance & Banking",
+  "description": "Banking, capital markets, insurance, and financial services",
+  "regulations": ["SR-26-02", "AML", "KYC", "OFAC", "Basel III"],
+  "tier_thresholds": {
+    "critical": 10000,
+    "elevated": 1000,
+    "benign": 0
+  },
+  "materiality_keywords": {
+    "critical": ["wire", "transfer", "sanction", "fraud", "aml", "kyc", "loan", "credit", "derivatives", "trading", "settlement", "clearing"],
+    "elevated": ["policy", "limit", "approval", "risk", "audit", "report", "compliance", "review", "budget"],
+    "benign": ["query", "status", "info", "hours", "availability"]
+  },
+  "policy_clauses": [
+    {
+      "clause_id": "FIN_001",
+      "text": "No wire transfers to OFAC-sanctioned countries",
+      "keywords": ["russia", "iran", "north korea", "syria", "cuba", "sanction", "embargo"],
+      "severity": "CRITICAL",
+      "action": "BLOCK"
+    },
+    {
+      "clause_id": "FIN_002",
+      "text": "No structuring transactions to evade reporting",
+      "keywords": ["structure", "smurf", "break up", "multiple transactions", "under the limit"],
+      "severity": "CRITICAL",
+      "action": "BLOCK"
+    },
+    {
+      "clause_id": "FIN_003",
+      "text": "Verify customer identity (KYC) before account opening",
+      "keywords": ["new account", "kyc", "verify identity", "onboarding"],
+      "severity": "CRITICAL",
+      "action": "ESCALATE"
+    },
+    {
+      "clause_id": "FIN_004",
+      "text": "Monitor for suspicious activity (AML)",
+      "keywords": ["suspicious", "unusual", "pattern", "large cash", "layering"],
+      "severity": "HIGH",
+      "action": "ESCALATE"
+    },
+    {
+      "clause_id": "FIN_005",
+      "text": "Require dual authorization for large transfers",
+      "keywords": ["dual approval", "two signatures", "large transfer"],
+      "severity": "HIGH",
+      "action": "LOG"
+    }
+  ],
+  "requires_dhitl": true,
+  "requires_audit_trail": true,
+  "latent_hash_logging": true
+}

@@ -1,0 +1,56 @@
+{
+  "sector_id": "healthcare",
+  "sector_name": "Healthcare & Life Sciences",
+  "description": "Hospitals, clinics, pharmaceutical, biotech, medical devices",
+  "regulations": ["HIPAA", "FDA", "GLP", "GCP", "HITECH"],
+  "tier_thresholds": {
+    "critical": 10000,
+    "elevated": 1000,
+    "benign": 0
+  },
+  "materiality_keywords": {
+    "critical": ["patient", "diagnosis", "treatment", "prescription", "medical record", " PHI", "clinical", "drug", "trial", "symptoms", "surgery"],
+    "elevated": ["policy", "compliance", "audit", "report", "research", "protocol"],
+    "benign": ["query", "status", "info", "hours", "scheduling"]
+  },
+  "policy_clauses": [
+    {
+      "clause_id": "HIPAA_001",
+      "text": "Protect protected health information (PHI)",
+      "keywords": ["patient", "diagnosis", "ssn", "medical record", "treatment", "history", "medication"],
+      "severity": "CRITICAL",
+      "action": "BLOCK"
+    },
+    {
+      "clause_id": "HIPAA_002",
+      "text": "Report breaches within 60 days (HIPAA Breach Notification)",
+      "keywords": ["breach", "unauthorized access", "disclosure", "data leak"],
+      "severity": "CRITICAL",
+      "action": "ESCALATE"
+    },
+    {
+      "clause_id": "HIPAA_003",
+      "text": "Minimum necessary - only access PHI needed for task",
+      "keywords": ["excessive access", "full records", "unnecessary"],
+      "severity": "HIGH",
+      "action": "LOG"
+    },
+    {
+      "clause_id": "FDA_001",
+      "text": "Follow FDA good clinical practice for trials",
+      "keywords": ["clinical trial", "gcp", "informed consent", "adverse event"],
+      "severity": "CRITICAL",
+      "action": "ESCALATE"
+    },
+    {
+      "clause_id": "FDA_002",
+      "text": "Report adverse events to FDA",
+      "keywords": ["adverse event", "serious", "death", "life threatening"],
+      "severity": "CRITICAL",
+      "action": "ESCALATE"
+    }
+  ],
+  "requires_dhitl": true,
+  "requires_audit_trail": true,
+  "latent_hash_logging": true
+}
