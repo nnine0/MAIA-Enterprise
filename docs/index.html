@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAIA.io/Sandbox | Industry's First Verifiable AI Safety & Compliance</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0c10;
+            --bg-secondary: #12151c;
+            --bg-tertiary: #1a1f2a;
+            --accent-blue: #3b82f6;
+            --accent-cyan: #06b6d4;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --accent-amber: #f59e0b;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border: #2a3142;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        html { scroll-behavior: smooth; }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+        
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: rgba(10, 12, 16, 0.9);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+        }
+        
+        nav .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 72px;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-weight: 600;
+            font-size: 18px;
+            color: var(--text-primary);
+            text-decoration: none;
+        }
+        
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 32px;
+            list-style: none;
+        }
+        
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        
+        .nav-links a:hover { color: var(--text-primary); }
+        
+        .nav-cta {
+            background: var(--accent-blue);
+            color: white !important;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+        
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            padding-top: 72px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(ellipse 80% 50% at 50% -20%, rgba(59, 130, 246, 0.15), transparent),
+                radial-gradient(ellipse 60% 40% at 80% 60%, rgba(6, 182, 212, 0.1), transparent);
+            pointer-events: none;
+        }
+        
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            max-width: 800px;
+        }
+        
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 100px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+        }
+        
+        .hero-badge .dot {
+            width: 8px;
+            height: 8px;
+            background: var(--accent-green);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .hero h1 {
+            font-size: 56px;
+            font-weight: 700;
+            line-height: 1.1;
+            margin-bottom: 24px;
+            letter-spacing: -0.02em;
+        }
+        
+        .hero h1 .highlight {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .hero-description {
+            font-size: 20px;
+            color: var(--text-secondary);
+            margin-bottom: 48px;
+            max-width: 640px;
+        }
+        
+        .hero-cta {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 16px 32px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: none;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-blue), #2563eb);
+            color: white;
+            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(59, 130, 246, 0.4);
+        }
+        
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+        
+        .btn-secondary:hover {
+            background: var(--bg-secondary);
+            border-color: var(--text-muted);
+        }
+        
+        /* Stats Strip */
+        .stats-strip {
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            padding: 48px 0;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 48px;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 36px;
+            font-weight: 600;
+            color: var(--accent-blue);
+            margin-bottom: 8px;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+        
+        /* Problem Section */
+        .section {
+            padding: 120px 0;
+        }
+        
+        .section-header {
+            max-width: 640px;
+            margin-bottom: 64px;
+        }
+        
+        .section-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--accent-cyan);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 16px;
+        }
+        
+        .section h2 {
+            font-size: 40px;
+            font-weight: 700;
+            margin-bottom: 24px;
+        }
+        
+        .section-description {
+            font-size: 18px;
+            color: var(--text-secondary);
+        }
+        
+        /* Cards */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+        }
+        
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 32px;
+            transition: all 0.3s;
+        }
+        
+        .card:hover {
+            border-color: var(--accent-blue);
+            transform: translateY(-4px);
+        }
+        
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+            font-size: 24px;
+        }
+        
+        .card h3 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        
+        .card p {
+            color: var(--text-secondary);
+            font-size: 15px;
+        }
+        
+        /* Features */
+        .feature-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 64px;
+            align-items: center;
+            padding: 80px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .feature-row:last-child { border-bottom: none; }
+        
+        .feature-content h3 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+        
+        .feature-content p {
+            color: var(--text-secondary);
+            font-size: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .feature-list {
+            list-style: none;
+        }
+        
+        .feature-list li {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 0;
+            color: var(--text-secondary);
+        }
+        
+        .feature-list .check {
+            color: var(--accent-green);
+            font-weight: bold;
+        }
+        
+        .feature-visual {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 32px;
+            min-height: 300px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .layer-diagram {
+            width: 100%;
+        }
+        
+        .layer {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            margin: 8px 0;
+            border-radius: 8px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-weight: 600;
+        }
+        
+        .layer-l9 { background: rgba(59, 130, 246, 0.2); border: 1px solid var(--accent-blue); color: var(--accent-blue); }
+        .layer-l8 { background: rgba(6, 182, 212, 0.2); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); }
+        .layer-l7 { background: rgba(16, 185, 129, 0.2); border: 1px solid var(--accent-green); color: var(--accent-green); }
+        
+        .layer-arrow {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+        
+        /* Code Demo */
+        .code-window {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .code-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 16px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .code-dot { width: 12px; height: 12px; border-radius: 50%; }
+        .code-dot.red { background: #ef4444; }
+        .code-dot.yellow { background: #f59e0b; }
+        .code-dot.green { background: #10b981; }
+        
+        .code-content {
+            padding: 24px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+        
+        .code-line { display: flex; }
+        .code-line .line-num { color: var(--text-muted); width: 40px; flex-shrink: 0; }
+        .code-keyword { color: #c792ea; }
+        .code-string { color: #c3e88d; }
+        .code-comment { color: var(--text-muted); }
+        .code-func { color: #82aaff; }
+        .code-var { color: #f78c6c; }
+        
+        /* Sectors */
+        .sectors-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+        
+        .sector-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 24px;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        
+        .sector-card:hover {
+            border-color: var(--accent-blue);
+        }
+        
+        .sector-icon {
+            font-size: 32px;
+            margin-bottom: 12px;
+        }
+        
+        .sector-name {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .sector-use {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        
+        /* CTA Section */
+        .cta-section {
+            background: linear-gradient(180deg, var(--bg-primary), var(--bg-secondary));
+            padding: 120px 0;
+            text-align: center;
+        }
+        
+        .cta-section h2 {
+            font-size: 48px;
+            margin-bottom: 24px;
+        }
+        
+        .cta-section p {
+            font-size: 20px;
+            color: var(--text-secondary);
+            margin-bottom: 48px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .cta-note {
+            display: inline-block;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 24px;
+        }
+        
+        /* Footer */
+        footer {
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border);
+            padding: 48px 0;
+        }
+        
+        footer .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .footer-links {
+            display: flex;
+            gap: 32px;
+            list-style: none;
+        }
+        
+        .footer-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .footer-links a:hover { color: var(--text-secondary); }
+        
+        .footer-copy {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 36px; }
+            .section h2 { font-size: 28px; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .feature-row { grid-template-columns: 1fr; }
+            .sectors-grid { grid-template-columns: repeat(2, 1fr); }
+            .nav-links { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="container">
+            <a href="/" class="logo">
+                <div class="logo-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                </div>
+                MAIA
+            </a>
+            <ul class="nav-links">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#architecture">Architecture</a></li>
+                <li><a href="#sectors">Sectors</a></li>
+                <li><a href="/dashboard" class="nav-cta">Access Sandbox</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <span class="dot"></span>
+                    SR 26-02 Compliant Architecture
+                </div>
+                <h1>The Industry's First <span class="highlight">Verifiable AI Safety</span> & Compliance Sandbox</h1>
+                <p class="hero-description">
+                    Move from "Prompts" to "Protocols." Solve SR 26-02 in 150ms. 
+                    The first real-time Circuit Breaker for Agentic AI — mathematically ensuring 
+                    your models never drift past regulatory red lines.
+                </p>
+                <div class="hero-cta">
+                    <a href="#sandbox" class="btn btn-primary">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        </svg>
+                        Audit Your First Agent
+                    </a>
+                    <a href="#architecture" class="btn btn-secondary">View Architecture</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="stats-strip">
+        <div class="container">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value">150ms</div>
+                    <div class="stat-label">Airlock Latency</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">9</div>
+                    <div class="stat-label">GDP Sectors</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">51</div>
+                    <div class="stat-label">Tool Adapters</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">70%</div>
+                    <div class="stat-label">VRAM Reduction</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <section class="section" id="features">
+        <div class="container">
+            <div class="section-header">
+                <div class="section-label">The Innovation Gap</div>
+                <h2>Stop Hoping Your Agents Are Safe. Start Mathematically Ensuring They Are.</h2>
+                <p class="section-description">
+                    On April 17, 2026, the Federal Reserve released SR 26-02, mandating "Effective Challenge" 
+                    and "Conceptual Soundness" for AI models. While the industry relies on post-mortem human audits 
+                    and porous text-filters, MAIA provides the first real-time, hardware-efficient Circuit Breaker.
+                </p>
+            </div>
+            
+            <div class="cards-grid">
+                <div class="card">
+                    <div class="card-icon">🛡️</div>
+                    <h3>Trajectory Validation (Layer 8)</h3>
+                    <p>We don't just check what an AI says. We audit the Action Trajectory in latent space. 
+                    Our PVI Airlock intercepts the reasoning path 150ms before tool execution.</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon">📊</div>
+                    <h3>The Materiality Matrix</h3>
+                    <p>Operationalizes the Fed's Tiered Oversight mandate. Dynamic "Airlock Resolution" 
+                    based on task risk: Tier 1 (Critical), Tier 2 (Elevated), Tier 3 (Benign).</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon">🔐</div>
+                    <h3>Sovereignty-as-Code</h3>
+                    <p>100% Compatible with air-gapped Equinix environments and NVIDIA Blackwell clusters. 
+                    70% VRAM reduction through modular LoRA hot-swapping.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section" id="architecture">
+        <div class="container">
+            <div class="feature-row">
+                <div class="feature-content">
+                    <h3>The Neural Stack</h3>
+                    <p>Three-layer architecture ensuring zero-trust between reasoning and action.</p>
+                    <ul class="feature-list">
+                        <li><span class="check">✓</span> L9: Agentic (Gemma 4 + MTP/DFlash)</li>
+                        <li><span class="check">✓</span> L8: Governance (Circuit Breaker + DME)</li>
+                        <li><span class="check">✓</span> L7: Application (Tool-Adapters)</li>
+                    </ul>
+                </div>
+                <div class="feature-visual">
+                    <div class="layer-diagram">
+                        <div class="layer layer-l9">L9: AGENTIC</div>
+                        <div class="layer-arrow">↓ Intent Generation</div>
+                        <div class="layer layer-l8">L8: GOVERNANCE</div>
+                        <div class="layer-arrow">↓ Validation & Signing</div>
+                        <div class="layer layer-l7">L7: APPLICATION</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="feature-row">
+                <div class="feature-content">
+                    <h3>API Payload Example</h3>
+                    <p>Define sector, role, and materiality target. Our kernel handles the rest.</p>
+                </div>
+                <div class="code-window">
+                    <div class="code-header">
+                        <span class="code-dot red"></span>
+                        <span class="code-dot yellow"></span>
+                        <span class="code-dot green"></span>
+                    </div>
+                    <div class="code-content">
+                        <div class="code-line"><span class="line-num">1</span><span class="code-keyword">POST</span> /api/v1/vetted-action</div>
+                        <div class="code-line"><span class="line-num">2</span> {</div>
+                        <div class="code-line"><span class="line-num">3</span>   <span class="code-string">"context"</span>: {</div>
+                        <div class="code-line"><span class="line-num">4</span>     <span class="code-string">"sector"</span>: <span class="code-string">"finance_insurance"</span>,</div>
+                        <div class="code-line"><span class="line-num">5</span>     <span class="code-string">"role"</span>: <span class="code-string">"loan_officer_junior"</span>,</div>
+                        <div class="code-line"><span class="line-num">6</span>     <span class="code-string">"materiality_target"</span>: <span class="code-string">"tier_1"</span></div>
+                        <div class="code-line"><span class="line-num">7</span>   },</div>
+                        <div class="code-line"><span class="line-num">8</span>   <span class="code-string">"instruction"</span>: <span class="code-string">"Evaluate $50M credit"</span></div>
+                        <div class="code-line"><span class="line-num">9</span> }</div>
+                        <div class="code-line"><span class="line-num">10</span><span class="code-comment">// Returns: BLOCKED or CERTIFIED</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section" id="sectors">
+        <div class="container">
+            <div class="section-header">
+                <div class="section-label">Test the Airlock</div>
+                <h2>9 GDP Sectors. 51 Specialized Adapters.</h2>
+                <p class="section-description">
+                    Stress-test our Neural Kernel against real-world GDPVal benchmarks.
+                </p>
+            </div>
+            
+            <div class="sectors-grid">
+                <div class="sector-card">
+                    <div class="sector-icon">🏦</div>
+                    <div class="sector-name">Banking</div>
+                    <div class="sector-use">SR 26-02 Credit Approval</div>
+                </div>
+                <div class="sector-card">
+                    <div class="sector-icon">🏥</div>
+                    <div class="sector-name">Healthcare</div>
+                    <div class="sector-use">HIPAA PHI Containment</div>
+                </div>
+                <div class="sector-card">
+                    <div class="sector-icon">⚖️</div>
+                    <div class="sector-name">Legal</div>
+                    <div class="sector-use">Attorney-Client Privilege</div>
+                </div>
+                <div class="sector-card">
+                    <div class="sector-icon">🏗️</div>
+                    <div class="sector-name">Construction</div>
+                    <div class="sector-use">OSHA Safety Compliance</div>
+                </div>
+                <div class="sector-card">
+                    <div class="sector-icon">⚡</div>
+                    <div class="sector-name">Energy</div>
+                    <div class="sector-use">NERC CIP Infrastructure</div>
+                </div>
+                <div class="sector-card">
+                    <div class="sector-icon">🚛</div>
+                    <div class="sector-name">Logistics</div>
+                    <div class="sector-use">DOT Hazmat Routing</div>
+                </div>
+                <div class="sector-card">
+                    <div class="sector-icon">✈️</div>
+                    <div class="sector-name">Defense</div>
+                    <div class="sector-use">ITAR/DFARS Compliance</div>
+                </div>
+                <div class="sector-card">
+                    <div class="sector-icon">📈</div>
+                    <div class="sector-name">Insurance</div>
+                    <div class="sector-use">Anti-Bias Actuarial</div>
+                </div>
+                <div class="sector-card">
+                    <div class="sector-icon">🔬</div>
+                    <div class="sector-name">Pharma</div>
+                    <div class="sector-use">FDA GCP Protocol</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta-section" id="sandbox">
+        <div class="container">
+            <div class="cta-note">Limited to Global 2000 Strategic Partners</div>
+            <h2>Test the "Airlock" Today</h2>
+            <p>Our External Evaluation API allows Risk and Engineering leads to stress-test our Neural Kernel. 
+            Experience the Circuit Breaker in action.</p>
+            <a href="/api/v1/vetted-action" class="btn btn-primary">
+                Access The Sandbox
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
+            </a>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <a href="/" class="logo">
+                <div class="logo-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                </div>
+                MAIA
+            </a>
+            <ul class="footer-links">
+                <li><a href="/docs/ARCHITECTURE.md">Architecture</a></li>
+                <li><a href="/docs/SR26-02_COMPLIANCE.md">SR 26-02</a></li>
+                <li><a href="https://github.com/nnine0/MAIA-Enterprise">GitHub</a></li>
+            </ul>
+            <div class="footer-copy">© 2026 MAIA Enterprise. Proprietary.</div>
+        </div>
+    </footer>
+</body>
+</html>
