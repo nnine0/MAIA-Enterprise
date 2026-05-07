@@ -618,22 +618,6 @@ MAIA_API_KEY=testing_key_placeholder pytest tests/ -v
 
 ---
 
-## Hardware Requirements
-
-MAIA runs locally on enterprise GPUs:
-- **Minimum**: NVIDIA RTX 3090 (24GB VRAM)
-- **Recommended**: NVIDIA A100 or H100 (80GB+ VRAM)
-
----
-
-## Links
-
-- **Dashboard**: http://localhost:3033
-- **Kernel API**: http://localhost:8000
-- **Implementation**: https://github.com/nnine0/MAIA-Enterprise
-
----
-
 ## Performance Metrics
 
 ### Latency Test Results
@@ -671,3 +655,19 @@ MAIA runs locally on enterprise GPUs:
 | **Policy-to-Physics Compiler** | Compiles legal text into neural weights |
 | **P2W Compiler** | 4-stage automated factory (Consulting → SaaS) |
 | **Forensic Sidecar** | Async audit without inference latency |
+
+---
+
+## Hardware Requirements
+
+MAIA runs locally on enterprise GPUs:
+- **Minimum**: NVIDIA RTX 3090 (24GB VRAM)
+- **Recommended**: NVIDIA A100 or H100 (80GB+ VRAM)
+
+---
+
+## Links
+
+- **Dashboard**: http://localhost:3033
+- **Kernel API**: http://localhost:8000
+- **Implementation**: https://github.com/nnine0/MAIA-Enterprise
