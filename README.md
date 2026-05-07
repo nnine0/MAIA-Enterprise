@@ -6,23 +6,6 @@
 
 ---
 
-## What's New (v1.1.0)
-
-| Feature | Description |
-|---------|-------------|
-| **Triage Supervisor** | Entry-point classification - routes simple queries to fast track |
-| **Governor-Lite** | GL-1/GL-2/GL-3/GL-4 dynamically gates complexity |
-| **Early-Exit Breaker** | Checks speculative tokens BEFORE materialization |
-| **GitOps Pipeline** | Adapter CI/CD with progressive rollout |
-| **Air-gapped Mode** | Offline deployment with USB updates |
-| **MAIA SDK** | CLI tool: `maia init`, `maia simulate`, `maia certify` |
-| **8 Governance Profiles** | Retail, Marketing, Finance, Healthcare, Legal, Construction, Energy (NERC CIP), Defense (ITAR/CC) |
-| **23+ Hot-swappable Adapters** | Modular - update policy without retraining |
-| **Agentic Gateway** | Transparent proxy - invisible governance for existing AI |
-| **Policy-to-Physics Compiler** | Compiles legal text into neural weights |
-| **P2W Compiler** | 4-stage automated factory (Consulting → SaaS) |
-| **P2W Compiler** | 4-stage automated factory (Consulting → SaaS) |
-
 ## About
 
 MAIA (Multi-Adapter Inference Architecture) is an **enterprise AI Governance Operating System**—a neural microkernel running between the reasoning engine and the real world.
@@ -648,3 +631,22 @@ MAIA runs locally on enterprise GPUs:
 - **Dashboard**: http://localhost:3033
 - **Kernel API**: http://localhost:8000
 - **Implementation**: https://github.com/nnine0/MAIA-Enterprise
+
+---
+
+## What's New (v1.1.0)
+
+| Feature | Description |
+|---------|-------------|
+| **Triage Supervisor** | Entry-point classification - routes simple queries to fast track |
+| **Governor-Lite** | GL-1/GL-2/GL-3/GL-4 dynamically gates complexity |
+| **Early-Exit Breaker** | Checks speculative tokens BEFORE materialization |
+| **GitOps Pipeline** | Adapter CI/CD with progressive rollout |
+| **Air-gapped Mode** | Offline deployment with USB updates |
+| **MAIA SDK** | CLI tool: `maia init`, `maia simulate`, `maia certify` |
+| **8 Governance Profiles** | Retail, Marketing, Finance, Healthcare, Legal, Construction, Energy (NERC CIP), Defense (ITAR/CC) |
+| **23+ Hot-swappable Adapters** | Modular - update policy without retraining |
+| **Agentic Gateway** | Transparent proxy - invisible governance for existing AI |
+| **Policy-to-Physics Compiler** | Compiles legal text into neural weights |
+| **P2W Compiler** | 4-stage automated factory (Consulting → SaaS) |
+| **Forensic Sidecar** | Async audit without inference latency |
