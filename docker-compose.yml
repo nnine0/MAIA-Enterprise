@@ -1,6 +1,41 @@
 version: '3.8'
 
 services:
+  # LoRAX Inference Server
+  # Multi-LoRA inference server that hosts base model + all adapters
+  lorax-kernel:
+    image: ghcr.io/predibase/lorax:main
+    container_name: maia-lorax
+    ports:
+      - "8080:80"
+    volumes:
+      - ./adapters:/data/adapters
+    environment:
+      - MODEL_ID=google/gemma-4-26b-a4b-it
+      - NUM_SHARD=1
+      - MAX_BATCH_PREFILL_TOKENS=4096
+      - MAX_TOTAL_TOKENS=8192
+      - HUGGINGFACE_HUB_CACHE=/data/models
+      - PORT=80
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    command: >
+      --model-id google/gemma-4-26b-a4b-it
+      --num-shard 1
+      --max-batch-prefill-tokens 4096
+      --max-total-tokens 8192
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+
   # Quad-Node GPU Cluster
   # Each node runs a governed MAIA kernel on shared GPU
   
@@ -13,16 +48,11 @@ services:
     environment:
       - NODE_ID=estimating
       - NODE_PORT=8001
-      - GPU_MEMORY_UTIL=0.23
-      - LORA_ADAPTER=estimating_lora
+      - LORAX_URL=http://lorax-kernel:80
       - COMPLIANCE_CONFIG=configs/compliance/generic_contractor_v1.json
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+    depends_on:
+      lorax-kernel:
+        condition: service_started
     volumes:
       - ./configs:/app/configs
       - ./logs:/app/logs
@@ -37,16 +67,11 @@ services:
     environment:
       - NODE_ID=legal
       - NODE_PORT=8002
-      - GPU_MEMORY_UTIL=0.23
-      - LORA_ADAPTER=legal_lora
+      - LORAX_URL=http://lorax-kernel:80
       - COMPLIANCE_CONFIG=configs/compliance/generic_contractor_v1.json
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+    depends_on:
+      lorax-kernel:
+        condition: service_started
     volumes:
       - ./configs:/app/configs
       - ./logs:/app/logs
@@ -61,16 +86,11 @@ services:
     environment:
       - NODE_ID=safety
       - NODE_PORT=8003
-      - GPU_MEMORY_UTIL=0.23
-      - LORA_ADAPTER=safety_lora
+      - LORAX_URL=http://lorax-kernel:80
       - COMPLIANCE_CONFIG=configs/compliance/generic_contractor_v1.json
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+    depends_on:
+      lorax-kernel:
+        condition: service_started
     volumes:
       - ./configs:/app/configs
       - ./logs:/app/logs
@@ -85,16 +105,11 @@ services:
     environment:
       - NODE_ID=logistics
       - NODE_PORT=8004
-      - GPU_MEMORY_UTIL=0.23
-      - LORA_ADAPTER=logistics_lora
+      - LORAX_URL=http://lorax-kernel:80
       - COMPLIANCE_CONFIG=configs/compliance/generic_contractor_v1.json
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+    depends_on:
+      lorax-kernel:
+        condition: service_started
     volumes:
       - ./configs:/app/configs
       - ./logs:/app/logs

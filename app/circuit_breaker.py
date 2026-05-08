@@ -20,6 +20,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from openai import AsyncOpenAI
 import config
+from core.adapter_loader import registry
 
 
 class MaterialityTier(Enum):
@@ -113,8 +114,8 @@ class CircuitBreaker:
         
         tier = self.get_materiality_tier(user_query)
         
-        agentic_adapter = self.agentic_adapters.get(domain, "default-expert")
-        validator_adapter = self.validator_adapters.get(domain, "sr26-02-validator")
+        agentic_adapter = registry.get_agentic(domain)
+        validator_adapter = registry.get_validator(domain)
         
         print(f"[{datetime.now()}] [{transaction_id}] LAYER 8: Intercepting Tier {tier.value}")
         
@@ -193,7 +194,7 @@ class CircuitBreaker:
                     {"role": "user", "content": user_query}
                 ],
                 extra_body={
-                    "adapter_id": f"/adapters/{adapter_id}",
+                    "adapter_id": adapter_id,
                     "adapter_source": "local",
                     "fallback_to_base": True
                 },
@@ -216,7 +217,7 @@ class CircuitBreaker:
                 model=config.BASE_MODEL_ID,
                 messages=[{"role": "user", "content": validation_prompt}],
                 extra_body={
-                    "adapter_id": f"/adapters/{validator_adapter}",
+                    "adapter_id": validator_adapter,
                     "adapter_source": "local",
                     "fallback_to_base": True
                 },
@@ -244,9 +245,9 @@ class CircuitBreaker:
         }
 
 
+
+# Global Circuit Breaker instance — uses registry for adapter resolution
 circuit_breaker = CircuitBreaker()
-circuit_breaker.agentic_adapters["finance"] = "citi/finance-expert-v4"
-circuit_breaker.validator_adapters["finance"] = "citi/pvi-airlock-sr2602"
 
 
 async def intercept_and_validate(

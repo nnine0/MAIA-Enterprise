@@ -32,45 +32,52 @@ class AdapterStatus(Enum):
 # Pre-configured adapters (50+)
 DEFAULT_ADAPTERS = [
     # Finance - SR 26-02
-    {"id": "finance-expert-v4", "name": "Finance Expert V4", "role": "analyst", "sector": "finance", "tier": 1},
-    {"id": "credit-risk-v4", "name": "Credit Risk V4", "role": "underwriter", "sector": "finance", "tier": 1},
-    {"id": "pvi-airlock-sr2602", "name": "PVI Airlock SR 26-02", "role": "auditor", "sector": "finance", "tier": 1},
-    {"id": "aml-monitor-v2", "name": "AML Monitor", "role": "monitor", "sector": "finance", "tier": 1},
-    {"id": "kYC-verifier", "name": "KYC Verifier", "role": "verifier", "sector": "finance", "tier": 1},
+    {"id": "finance_expert_v4", "name": "Finance Expert V4", "role": "analyst", "sector": "finance", "tier": 1},
+    {"id": "credit_expert_v4", "name": "Credit Risk V4", "role": "underwriter", "sector": "finance", "tier": 1},
+    {"id": "pvi_airlock_sr2602", "name": "PVI Airlock SR 26-02", "role": "auditor", "sector": "finance", "tier": 1},
+    {"id": "aml_monitor_v2", "name": "AML Monitor", "role": "monitor", "sector": "finance", "tier": 1},
+    {"id": "kyc_verifier", "name": "KYC Verifier", "role": "verifier", "sector": "finance", "tier": 1},
     
     # Healthcare - HIPAA
-    {"id": "hipaa-airlock-v1", "name": "HIPAA Airlock", "role": "auditor", "sector": "healthcare", "tier": 1},
-    {"id": "med-expert-v1", "name": "Medical Expert", "role": "expert", "sector": "healthcare", "tier": 2},
-    {"id": "phi-filter-v1", "name": "PHI Filter", "role": "filter", "sector": "healthcare", "tier": 1},
+    {"id": "hipaa_airlock_v1", "name": "HIPAA Airlock", "role": "auditor", "sector": "healthcare", "tier": 1},
+    {"id": "med_expert_v1", "name": "Medical Expert", "role": "expert", "sector": "healthcare", "tier": 2},
+    {"id": "phi_filter_v1", "name": "PHI Filter", "role": "filter", "sector": "healthcare", "tier": 1},
     
     # Legal
-    {"id": "legal-contract-v1", "name": "Contract Redline", "role": "counsel", "sector": "legal", "tier": 1},
-    {"id": "privileged-redactor", "name": "Privilege Redactor", "role": "filter", "sector": "legal", "tier": 1},
-    {"id": "ethical-wall-v2", "name": "Ethical Wall", "role": "guard", "sector": "legal", "tier": 1},
+    {"id": "legal_contract_v1", "name": "Contract Redline", "role": "counsel", "sector": "legal", "tier": 1},
+    {"id": "privileged_redactor", "name": "Privilege Redactor", "role": "filter", "sector": "legal", "tier": 1},
+    {"id": "ethical_wall_v2", "name": "Ethical Wall", "role": "guard", "sector": "legal", "tier": 1},
     
     # Construction - OSHA
-    {"id": "safety-osha-v1", "name": "OSHA Safety", "role": "inspector", "sector": "construction", "tier": 2},
-    {"id": "estimating-lora", "name": "Estimator", "role": "calculator", "sector": "construction", "tier": 2},
-    {"id": "davis-bacon-v1", "name": "Davis Bacon Wage", "role": "auditor", "sector": "construction", "tier": 2},
+    {"id": "safety_osha_v1", "name": "OSHA Safety", "role": "inspector", "sector": "construction", "tier": 2},
+    {"id": "estimating_lora", "name": "Estimator", "role": "calculator", "sector": "construction", "tier": 2},
+    {"id": "davis_bacon_v1", "name": "Davis Bacon Wage", "role": "auditor", "sector": "construction", "tier": 2},
     
     # SQL/DB
-    {"id": "sql-readonly", "name": "SQL ReadOnly", "role": "query", "sector": "finance", "tier": 2},
-    {"id": "erp-connector", "name": "ERP Connector", "role": "connector", "sector": "finance", "tier": 2},
+    {"id": "sql_readonly", "name": "SQL ReadOnly", "role": "query", "sector": "finance", "tier": 2},
+    {"id": "erp_connector", "name": "ERP Connector", "role": "connector", "sector": "finance", "tier": 2},
     
     # Energy
-    {"id": "nerc-cip-v1", "name": "NERC CIP Compliance", "role": "auditor", "sector": "energy", "tier": 1},
-    {"id": "safety-audit-v1", "name": "Safety Audit", "role": "auditor", "sector": "energy", "tier": 2},
+    {"id": "nerc_cip_v1", "name": "NERC CIP Compliance", "role": "auditor", "sector": "energy", "tier": 1},
+    {"id": "safety_audit_v1", "name": "Safety Audit", "role": "auditor", "sector": "energy", "tier": 2},
     
     # Defense
-    {"id": "itar-compliant-v1", "name": "ITAR Compliant", "role": "guard", "sector": "defense", "tier": 1},
-    {"id": "mil-spec-v1", "name": "Mil-Spec Compliance", "role": "auditor", "sector": "defense", "tier": 1},
+    {"id": "itar_compliant_v1", "name": "ITAR Compliant", "role": "guard", "sector": "defense", "tier": 1},
+    {"id": "mil_spec_v1", "name": "Mil-Spec Compliance", "role": "auditor", "sector": "defense", "tier": 1},
     
     # Logistics
-    {"id": "dot-hazmat-v1", "name": "DOT Hazmat", "role": "filter", "sector": "logistics", "tier": 1},
-    {"id": "freight-optimizer", "name": "Freight Optimizer", "role": "optimizer", "sector": "logistics", "tier": 2},
+    {"id": "dot_hazmat_v1", "name": "DOT Hazmat", "role": "filter", "sector": "logistics", "tier": 1},
+    {"id": "dot_compliance_sme", "name": "DOT Compliance SME", "role": "sme", "sector": "logistics", "tier": 2},
+    {"id": "epa_sme", "name": "EPA SME", "role": "sme", "sector": "logistics", "tier": 2},
+    {"id": "regulatory_auditor", "name": "Regulatory Auditor", "role": "auditor", "sector": "logistics", "tier": 1},
+    {"id": "freight_optimizer", "name": "Freight Optimizer", "role": "optimizer", "sector": "logistics", "tier": 2},
+    
+    # Finance / Governance
+    {"id": "industry_volatility_sme", "name": "Industry Volatility SME", "role": "sme", "sector": "finance", "tier": 2},
+    {"id": "sr26_02_auditor", "name": "SR 26-02 Auditor", "role": "auditor", "sector": "finance", "tier": 1},
     
     # Generic
-    {"id": "default-expert", "name": "Default Expert", "role": "general", "sector": "general", "tier": 3},
+    {"id": "default_expert", "name": "Default Expert", "role": "general", "sector": "general", "tier": 3},
 ]
 
 
@@ -130,21 +137,21 @@ class DynamicAdapterManager:
         """Auto-dispatch query to adapter"""
         query_lower = query.lower()
         
-        # Intent mapping
+        # Intent mapping — all IDs use underscore convention matching adapter directories
         intents = {
-            ("wire", "transfer", "sanction"): "finance-expert-v4",
-            ("credit", "loan", "mortgage"): "credit-risk-v4",
-            ("aml", "money laundering"): "aml-monitor-v2",
-            ("patient", "diagnosis", "medical"): "hipaa-airlock-v1",
-            ("phi", "health record"): "phi-filter-v1",
-            ("contract", "legal"): "legal-contract-v1",
-            ("privileged", "confidential"): "privileged-redactor",
-            ("safety", "inspection", "osha"): "safety-osha-v1",
-            ("sql", "query", "database"): "sql-readonly",
-            ("estimate", "cost", "bid"): "estimating-lora",
-            ("nerc", "utility"): "nerc-cip-v1",
-            ("itar", "export"): "itar-compliant-v1",
-            ("hazmat", "dangerous"): "dot-hazmat-v1",
+            ("wire", "transfer", "sanction"): "finance_expert_v4",
+            ("credit", "loan", "mortgage"): "credit_expert_v4",
+            ("aml", "money laundering"): "aml_monitor_v2",
+            ("patient", "diagnosis", "medical"): "hipaa_airlock_v1",
+            ("phi", "health record"): "phi_filter_v1",
+            ("contract", "legal"): "legal_contract_v1",
+            ("privileged", "confidential"): "privileged_redactor",
+            ("safety", "inspection", "osha"): "safety_osha_v1",
+            ("sql", "query", "database"): "sql_readonly",
+            ("estimate", "cost", "bid"): "estimating_lora",
+            ("nerc", "utility"): "nerc_cip_v1",
+            ("itar", "export"): "itar_compliant_v1",
+            ("hazmat", "dangerous"): "dot_hazmat_v1",
         }
         
         for keywords, adapter_id in intents.items():
@@ -159,8 +166,8 @@ class DynamicAdapterManager:
                 self.add_to_warm(sector_ads[0].id)
                 return sector_ads[0].id
         
-        self.add_to_warm("default-expert")
-        return "default-expert"
+        self.add_to_warm("default_expert")
+        return "default_expert"
     
     def get_manifest(self, adapter_id: str) -> Dict[str, Any]:
         """Get adapter manifest for GitOps"""
@@ -218,10 +225,11 @@ async def demo():
     for query in tests:
         adapter_id = manager.dispatch(query)
         adapter = manager.get(adapter_id)
-        print(f"  '{query[:30]}...' -> {adapter_id} ({adapter.role})")
+        role = adapter.role if adapter else "unknown"
+        print(f"  '{query[:30]}...' -> {adapter_id} ({role})")
     
     print("\n[Manifest Example]")
-    manifest = manager.get_manifest("finance-expert-v4")
+    manifest = manager.get_manifest("finance_expert_v4")
     for k, v in manifest.items():
         print(f"  {k}: {v}")
     

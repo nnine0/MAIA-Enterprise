@@ -12,7 +12,8 @@ build/
 venv/
 .env.local
 *.log
-/adapters/
+/adapters/**/*.safetensors
+/adapters/**/__pycache__/
 /qdrant_data/
 /data_logs/
 .DS_Store

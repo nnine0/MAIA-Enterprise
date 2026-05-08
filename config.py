@@ -31,7 +31,7 @@ REDIS_URL = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0")
 VRAM_TOTAL_MB = int(os.getenv("VRAM_TOTAL_MB", "24576"))
 MAX_RAM_ADAPTERS = int(os.getenv("MAX_RAM_ADAPTERS", "100"))
 
-DEFAULT_AUDITOR = os.getenv("DEFAULT_AUDITOR", "citi/pvi-airlock-sr2602")
+DEFAULT_AUDITOR = os.getenv("DEFAULT_AUDITOR", "pvi_airlock_sr2602")
 SME_VOTES_REQUIRED = int(os.getenv("SME_VOTES_REQUIRED", "3"))
 
 DATA_LOGS_DIR = os.getenv("DATA_LOGS_DIR", "/tmp/maia_logs")
@@ -46,30 +46,10 @@ EXPERT_LIST = [
 ]
 
 EMBEDDINGS_URL = os.getenv("EMBEDDINGS_URL", "http://127.0.0.1:6000")
-MAX_CONTEXT_LENGTH = int(os.getenv("MAX_CONTEXT_LENGTH", "32768"))
 
-DOMAIN_ADAPTERS = {
-    "finance": {
-        "agentic": "citi/finance-expert-v4",
-        "validator": "citi/pvi-airlock-sr2602"
-    },
-    "credit": {
-        "agentic": "citi/credit-expert-v4", 
-        "validator": "citi/pvi-airlock-sr2602"
-    },
-    "compliance": {
-        "agentic": "citi/compliance-expert-v4",
-        "validator": "citi/pvi-airlock-sr2602"
-    },
-    "fraud": {
-        "agentic": "citi/fraud-aml-expert-v4",
-        "validator": "citi/pvi-airlock-sr2602"
-    },
-    "logistics": {
-        "agentic": "logistics/terminal-expert-v4",
-        "validator": "logistics/safety-auditor-v4"
-    }
-}
+# Adapter registry is the single source of truth for all adapter paths.
+# See app/core/adapter_loader.py and adapters/registry.json
+# DOMAIN_ADAPTERS has been removed — use the registry instead:
 
 CRITICAL_KEYWORDS = {
     "credit", "wire", "transfer", "contract", "legal", "loan",
@@ -105,11 +85,4 @@ MODEL_CAPABILITIES = {
     "function_calling": True,
     "multilingual": True,
     "languages": 140,
-}
-
-ADAPTER_TEMPERATURES = {
-    "default": 0.4,
-    "creative": 0.7,
-    "precise": 0.1,
-    "routing": 0.1,
 }

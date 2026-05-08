@@ -1,0 +1,31 @@
+{
+  "peft_type": "LORA",
+  "task_type": "CAUSAL_LM",
+  "base_model_name_or_path": "google/gemma-4-26b-a4b-it",
+  "r": 16,
+  "lora_alpha": 32,
+  "lora_dropout": 0.05,
+  "target_modules": [
+    "q_proj",
+    "v_proj",
+    "k_proj",
+    "o_proj"
+  ],
+  "bias": "none",
+  "fan_in_fan_out": false,
+  "modules_to_save": null,
+  "init_lora_weights": true,
+  "use_rslora": false,
+  "layers_pattern": null,
+  "layers_to_transform": null,
+  "inference_mode": true,
+  "adapter_name": "legal_contract_v1",
+  "maia_metadata": {
+    "sector": "legal",
+    "role": "counsel",
+    "materiality_tier": 1,
+    "description": "Contract redline",
+    "version": "1.0.0",
+    "adapter_name": "legal_contract_v1"
+  }
+}

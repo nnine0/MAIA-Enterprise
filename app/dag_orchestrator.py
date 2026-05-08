@@ -118,13 +118,13 @@ class DAGOrchestrator:
     def _get_adapter_for_node(self, node_id: str) -> str:
         """Map node to adapter"""
         adapter_map = {
-            "kyc_verification": "citi/kyc-verification-sme",
-            "sanctions_screening": "citi/sanctions-list-sme",
-            "income_analysis": "citi/income-analysis-sme",
-            "asset_valuation": "citi/collateral-valuator",
-            "debt_equity_math": "citi/debt-equity-calculator",
-            "policy_validation": "citi/pvi-airlock-sr2602",
-            "credit_decision": "citi/credit-decision-expert"
+            "kyc_verification": "kyc-verifier",
+            "sanctions_screening": "sanctions-list-sme",
+            "income_analysis": "cash-flow-sme",
+            "asset_valuation": "collateral-valuator",
+            "debt_equity_math": "credit-expert-v4",
+            "policy_validation": "pvi-airlock-sr2602",
+            "credit_decision": "credit-expert-v4"
         }
         return adapter_map.get(node_id, "default-expert")
     

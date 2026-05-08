@@ -50,8 +50,8 @@ class MemoryManager:
     # VRAM pinned components (never move)
     PINNED_COMPONENTS = [
         "base-model-gemma-4-26b-a4b-it",
-        "pvi-airlock-auditor",
-        "governance-hub"
+        "pvi-airlock-sr2602",
+        "governance-hub-v1"
     ]
     
     MAX_RAM_ADAPTERS = 100  # Top 100 in warm tier
@@ -76,27 +76,27 @@ class MemoryManager:
         """Initialize default adapter set"""
         default_adapters = [
             # Finance
-            ("citi/finance-expert-v4", "finance", 100),
-            ("citi/credit-expert-v4", "finance", 100),
-            ("citi/commercial-lending-v4", "finance", 120),
-            ("citi/retail-banking-v4", "finance", 100),
-            ("citi/fraud-aml-director", "finance", 110),
-            ("citi/cash-flow-sme", "finance", 80),
-            ("citi/collateral-valuator", "finance", 80),
-            ("citi/sanctions-list-sme", "finance", 90),
+            ("finance-expert-v4", "finance", 100),
+            ("credit-expert-v4", "finance", 100),
+            ("commercial-lending-v4", "finance", 120),
+            ("retail-banking-v4", "finance", 100),
+            ("fraud-aml-director", "finance", 110),
+            ("cash-flow-sme", "finance", 80),
+            ("collateral-valuator", "finance", 80),
+            ("sanctions-list-sme", "finance", 90),
             # Logistics
-            ("logistics/terminal-director-hub", "logistics", 100),
-            ("logistics/terminal-ops-v4", "logistics", 110),
-            ("logistics/hazmat-compliance-v4", "logistics", 90),
-            ("logistics/safety-auditor", "logistics", 100),
+            ("terminal-director-hub", "logistics", 100),
+            ("terminal-ops-v4", "logistics", 110),
+            ("hazmat-compliance-v4", "logistics", 90),
+            ("safety-auditor-v4", "logistics", 100),
             # Legal
-            ("legal/department-head-hub", "legal", 100),
-            ("legal/contract-expert-v4", "legal", 100),
-            ("legal/regulatory-expert-v4", "legal", 110),
+            ("department-head-hub", "legal", 100),
+            ("contract-expert-v4", "legal", 100),
+            ("regulatory-expert-v4", "legal", 110),
             # Governance
-            ("citi/pvi-airlock-sr2602", "governance", 100),
-            ("maia/governance-hub-v1", "governance", 80),
-            ("gemma-4-medusa-head", "medusa", 50),
+            ("pvi-airlock-sr2602", "governance", 100),
+            ("governance-hub-v1", "governance", 80),
+            ("default-expert", "general", 50),
         ]
         
         for adapter_id, domain, size_mb in default_adapters:
@@ -107,7 +107,7 @@ class MemoryManager:
                 last_used=time.time(),
                 tier=MemoryTier.NVME
             )
-            self.nvme_index[adapter_id] = f"/adapters/storage/{adapter_id}.safetensors"
+            self.nvme_index[adapter_id] = f"/data/adapters/{adapter_id}/adapter_model.safetensors"
     
     def get_vram_slack(self) -> int:
         """Calculate available VRAM for additional adapters"""

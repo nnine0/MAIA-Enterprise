@@ -1,0 +1,128 @@
+{
+  "inventory_version": "2026.05.07.2",
+  "base_model": "google/gemma-4-26b-a4b-it",
+  "description": "MAIA Sovereign Adapter Registry — SR 26-02 compliant model inventory. All adapters are local-only. No external network calls.",
+  "audit_contact": "chgbsh1@gmail.com",
+  "registry": {
+    "finance": {
+      "agentic": "/data/adapters/finance_expert_v4",
+      "validator": "/data/adapters/pvi_airlock_sr2602",
+      "materiality_tier": 1,
+      "audit_protocol": "sr2602_strict"
+    },
+    "credit": {
+      "agentic": "/data/adapters/credit_expert_v4",
+      "validator": "/data/adapters/pvi_airlock_sr2602",
+      "materiality_tier": 1,
+      "audit_protocol": "sr2602_strict"
+    },
+    "compliance": {
+      "agentic": "/data/adapters/compliance_expert_v4",
+      "validator": "/data/adapters/pvi_airlock_sr2602",
+      "materiality_tier": 1,
+      "audit_protocol": "sr2602_strict"
+    },
+    "fraud": {
+      "agentic": "/data/adapters/fraud_aml_expert_v4",
+      "validator": "/data/adapters/pvi_airlock_sr2602",
+      "materiality_tier": 1,
+      "audit_protocol": "sr2602_strict"
+    },
+    "logistics": {
+      "agentic": "/data/adapters/terminal_expert_v4",
+      "validator": "/data/adapters/safety_auditor_v4",
+      "materiality_tier": 2,
+      "audit_protocol": "dot_hazmat"
+    },
+    "healthcare": {
+      "agentic": "/data/adapters/med_expert_v1",
+      "validator": "/data/adapters/hipaa_airlock_v1",
+      "materiality_tier": 1,
+      "audit_protocol": "hipaa_strict"
+    },
+    "legal": {
+      "agentic": "/data/adapters/contract_expert_v4",
+      "validator": "/data/adapters/compliance_auditor",
+      "materiality_tier": 1,
+      "audit_protocol": "privilege_protect"
+    },
+    "construction": {
+      "agentic": "/data/adapters/estimating_lora",
+      "validator": "/data/adapters/safety_osha_v1",
+      "materiality_tier": 2,
+      "audit_protocol": "osha_safety"
+    },
+    "energy": {
+      "agentic": "/data/adapters/nerc_cip_v1",
+      "validator": "/data/adapters/safety_audit_v1",
+      "materiality_tier": 1,
+      "audit_protocol": "nerc_cip"
+    },
+    "defense": {
+      "agentic": "/data/adapters/itar_compliant_v1",
+      "validator": "/data/adapters/mil_spec_v1",
+      "materiality_tier": 1,
+      "audit_protocol": "itar_strict"
+    }
+  },
+  "hubs": {
+    "finance_hub": "/data/adapters/credit_risk_manager_hub",
+    "logistics_hub": "/data/adapters/terminal_director_hub",
+    "legal_hub": "/data/adapters/department_head_hub",
+    "governance_hub": "/data/adapters/governance_hub_v1"
+  },
+  "specialists": {
+    "cash_flow_sme": "/data/adapters/cash_flow_sme",
+    "collateral_valuator": "/data/adapters/collateral_valuator",
+    "sanctions_list_sme": "/data/adapters/sanctions_list_sme",
+    "commercial_lending": "/data/adapters/commercial_lending_v4",
+    "retail_banking": "/data/adapters/retail_banking_v4",
+    "fraud_aml": "/data/adapters/fraud_aml_director",
+    "sar_auditor": "/data/adapters/sar_auditor",
+    "hazmat_compliance": "/data/adapters/hazmat_compliance_v4",
+    "terminal_ops": "/data/adapters/terminal_ops_v4",
+    "regulatory_expert": "/data/adapters/regulatory_expert_v4",
+    "sec_auditor": "/data/adapters/sec_auditor",
+    "hazmat_sme": "/data/adapters/hazmat_sme",
+    "fuel_efficiency_sme": "/data/adapters/fuel_efficiency_sme",
+    "route_safety_sme": "/data/adapters/route_safety_sme",
+    "nda_sme": "/data/adapters/nda_sme",
+    "msa_sme": "/data/adapters/msa_sme",
+    "finra_sme": "/data/adapters/finra_sme",
+    "occ_sme": "/data/adapters/occ_sme",
+    "mortgage_sme": "/data/adapters/mortgage_sme",
+    "credit_card_sme": "/data/adapters/credit_card_sme",
+    "pattern_anomaly_sme": "/data/adapters/pattern_anomaly_sme",
+    "sar_drafting_sme": "/data/adapters/sar_drafting_sme",
+    "aml_monitor_v2": "/data/adapters/aml_monitor_v2",
+    "industry_volatility_sme": "/data/adapters/industry_volatility_sme",
+    "dot_compliance_sme": "/data/adapters/dot_compliance_sme",
+    "epa_sme": "/data/adapters/epa_sme",
+    "kyc_verifier": "/data/adapters/kyc_verifier",
+    "legal_contract_v1": "/data/adapters/legal_contract_v1",
+    "davis_bacon_v1": "/data/adapters/davis_bacon_v1",
+    "dot_hazmat_v1": "/data/adapters/dot_hazmat_v1",
+    "phi_filter_v1": "/data/adapters/phi_filter_v1",
+    "regulatory_auditor": "/data/adapters/regulatory_auditor",
+    "sr26_02_auditor": "/data/adapters/sr26_02_auditor"
+  },
+  "tool_adapters": {
+    "sql_ledger": "/data/adapters/sql_ledger",
+    "swift_wire": "/data/adapters/swift_wire_v4",
+    "contract_redline": "/data/adapters/contract_expert_v4",
+    "kafka_dispatch": "/data/adapters/freight_optimizer",
+    "aibom_inventory": "/data/adapters/aibom_inventory_v4",
+    "bias_audit": "/data/adapters/bias_audit_v4",
+    "cyber_fortress": "/data/adapters/cyber_fortress_v4",
+    "ofac_gateway": "/data/adapters/ofac_gateway_v4",
+    "disclosure_governor": "/data/adapters/disclosure_governor_v4",
+    "erp_connector": "/data/adapters/erp_connector",
+    "sql_readonly": "/data/adapters/sql_readonly",
+    "privileged_redactor": "/data/adapters/privileged_redactor",
+    "ethical_wall": "/data/adapters/ethical_wall_v2"
+  },
+  "defaults": {
+    "agentic": "/data/adapters/default_expert",
+    "validator": "/data/adapters/pvi_airlock_sr2602"
+  }
+}

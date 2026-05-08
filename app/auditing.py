@@ -25,7 +25,7 @@ async def audit_response(draft_response: str, general_adapter: str) -> str:
     audit_completion = await client.chat.completions.create(
         model="google/gemma-4-26b-a4b-it",
         messages=[{"role": "user", "content": audit_prompt}],
-        extra_body={"adapter_id": f"/adapters/{general_adapter}", "adapter_source": "local", "fallback_to_base": True}
+        extra_body={"adapter_id": f"/data/adapters/{general_adapter}", "adapter_source": "local", "fallback_to_base": True}
     )
 
     response = audit_completion.choices[0].message.content

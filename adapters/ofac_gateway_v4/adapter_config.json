@@ -1,0 +1,22 @@
+{
+  "peft_type": "LORA",
+  "task_type": "CAUSAL_LM",
+  "base_model_name_or_path": "google/gemma-4-26b-a4b-it",
+  "r": 8,
+  "lora_alpha": 16,
+  "lora_dropout": 0.05,
+  "target_modules": [
+    "q_proj",
+    "v_proj"
+  ],
+  "bias": "none",
+  "inference_mode": true,
+  "adapter_name": "ofac_gateway_v4",
+  "maia_metadata": {
+    "sector": "governance",
+    "role": "specialist",
+    "materiality_tier": 1,
+    "description": "ofac_gateway_v4 adapter",
+    "version": "1.0.0"
+  }
+}

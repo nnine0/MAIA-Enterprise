@@ -30,6 +30,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from openai import AsyncOpenAI
 from config import LORAX_URL, LORAX_API_KEY
+from core.adapter_loader import registry
 
 
 class MaterialityTier(Enum):
@@ -578,7 +579,7 @@ class PVIAirlock:
                     {"role": "user", "content": user_query}
                 ],
                 extra_body={
-                    "adapter_id": f"/adapters/{adapter_id}",
+                    "adapter_id": adapter_id,
                     "adapter_source": "local",
                     "fallback_to_base": True
                 },
@@ -609,7 +610,7 @@ class PVIAirlock:
                 model="google/gemma-4-26b-a4b-it",
                 messages=[{"role": "user", "content": audit_prompt}],
                 extra_body={
-                    "adapter_id": f"/adapters/{auditor_adapter}",
+                    "adapter_id": auditor_adapter,
                     "adapter_source": "local",
                     "fallback_to_base": True
                 },
@@ -643,15 +644,9 @@ class PVIAirlock:
         }
 
 
-# Global Airlock instance
+# Default adapters are resolved from the Neural Registry (adapters/registry.json)
+# at runtime. See core.adapter_loader.py for resolution logic.
 airlock = PVIAirlock()
-
-# Register default adapters
-airlock.set_adapter("finance", "citi/finance-expert-v4", "citi/pvi-airlock-sr2602")
-airlock.set_adapter("credit", "citi/credit-expert-v4", "citi/pvi-airlock-sr2602")
-airlock.set_adapter("compliance", "citi/compliance-expert-v4", "citi/pvi-airlock-sr2602")
-airlock.set_adapter("fraud", "citi/fraud-aml-expert-v4", "citi/pvi-airlock-sr2602")
-airlock.set_adapter("logistics", "logistics/terminal-expert-v4", "logistics/safety-auditor-v4")
 
 
 async def execute_vetted_transaction(

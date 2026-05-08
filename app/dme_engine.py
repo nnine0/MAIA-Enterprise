@@ -231,7 +231,7 @@ class ToolAdapter:
         # "Read-Only/Append-Only" weight-set
         # The weights are trained ONLY on SELECT and INSERT - model "forgets" DELETE/DROP
         "sql_ledger": {
-            "adapter_id": "finance/ledger-audit-v4",
+            "adapter_id": "sql_ledger",
             "allowed_actions": ["SELECT", "INSERT", "SHOW", "DESCRIBE"],
             "blocked_actions": ["DROP", "DELETE", "TRUNCATE", "ALTER", "CREATE", "UPDATE", "GRANT", "REVOKE"],
             "requires_audit_trail": True,
@@ -246,7 +246,7 @@ class ToolAdapter:
         # =================================================================
         # Tier 1 "Money Hand" - generates MT103/Fedwire ISO 20022
         "swift_adapter": {
-            "adapter_id": "finance/swift-wire-v4",
+            "adapter_id": "swift_wire_v4",
             "allowed_actions": ["MT103", "ISO20022", "wire_initiation"],
             "message_format": "MT103",
             "requires_dual_approval": True,
@@ -261,7 +261,7 @@ class ToolAdapter:
         # =================================================================
         # Reviews/edits DOCX/PDF - identifies Force Majeure, Indemnification, Liability Caps
         "contract_redline": {
-            "adapter_id": "legal/contract-redline-v4",
+            "adapter_id": "contract_expert_v4",
             "allowed_actions": ["review", "redline", "annotate", "identify_clause"],
             "blocked_actions": ["delete_indemnification", "remove_liability", "waive_protection"],
             "critical_clauses": ["Force Majeure", "Indemnification", "Liability Cap", "Indemnity"],
@@ -275,13 +275,13 @@ class ToolAdapter:
         # =================================================================
         # Real-time freight matching and autonomous routing
         "kafka_dispatch": {
-            "adapter_id": "logistics/kafka-dispatch-v4",
+            "adapter_id": "freight_optimizer",
             "allowed_actions": ["publish", "subscribe", "route", "match_load"],
             "kafka_topics": ["truck_location", "fuel_level", "load_status", "hazmat_alert"],
             "blocked_actions": ["delete", "purge_topic"],
             "auto_swap_on": ["hazmat_flag", "safety_incident"],
             "safety_compliance": "hazmat_regulations",
-            "swaps_to": "logistics/safety-auditor-v4",
+            "swaps_to": "safety_auditor_v4",
             "red_line": "Auto-swap to Safety-Auditor on Hazmat"
         },
         
@@ -291,7 +291,7 @@ class ToolAdapter:
         # "Tool that watches the Tools" - required by SR 26-02
         # Logs adapter lineage, version, training data hash
         "aibom_inventory": {
-            "adapter_id": "governance/aibom-inventory-v4",
+            "adapter_id": "aibom_inventory_v4",
             "allowed_actions": ["register", "log_lineage", "version", "update_registry"],
             "requires_audit_trail": True,
             "tracks": ["adapter_id", "version", "training_data_hash", "lineage", "created_at"],
@@ -305,7 +305,7 @@ class ToolAdapter:
         # Monitors all people-decisions (hiring, loan, insurance) for implicit bias
         # "Anonymized Reasoning" - cannot see protected classes or proxies
         "bias_adapter": {
-            "adapter_id": "governance/bias-audit-v4",
+            "adapter_id": "bias_audit_v4",
             "allowed_actions": ["audit_decision", "check_fairness", "anonymize"],
             "blocked_actions": ["infer_race", "infer_gender", "infer_age", "proxy_infer"],
             "protected_classes": ["race", "gender", "age", "national_origin", "disability"],
@@ -320,7 +320,7 @@ class ToolAdapter:
         # Real-time auditing of code - Negative-Logic Adapter
         # Trained on CVEs, SQL injection, buffer overflows
         "cyber_audit": {
-            "adapter_id": "it/cyber-fortress-v4",
+            "adapter_id": "cyber_fortress_v4",
             "allowed_actions": ["scan_code", "detect_cve", "check_injection"],
             "blocked_actions": ["write_code", "execute", "modify"],
             "cve_patterns": ["SQL_injection", "buffer_overflow", "XSS", "path_traversal"],
@@ -335,7 +335,7 @@ class ToolAdapter:
         # Fuzzy-matching against OFAC, UN, EU sanctions lists
         # Trained on shell company structures and high-risk routing
         "sanctions_gateway": {
-            "adapter_id": "finance/ofac-gateway-v4",
+            "adapter_id": "ofac_gateway_v4",
             "allowed_actions": ["check_sanctions", "verify_entity", "fuzzy_match"],
             "blocked_actions": ["approve_transaction", "clear_shipment"],
             "sanctions_lists": ["OFAC", "UN", "EU", "UK_HMT"],
@@ -350,7 +350,7 @@ class ToolAdapter:
         # Prevents MNPI leaks or unauthorized PR statements
         # Audits outgoing for SEC (Reg FD) or HIPAA violations
         "disclosure_governor": {
-            "adapter_id": "governance/disclosure-governor-v4",
+            "adapter_id": "disclosure_governor_v4",
             "allowed_actions": ["audit_communication", "redact_mnpi", "check_reg_fd"],
             "blocked_actions": ["send_forecast", "leak_mnpi", "unauthorized_pr"],
             "document_types": ["press_release", "earnings_forecast", "material_disclosure"],

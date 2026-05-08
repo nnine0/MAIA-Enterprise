@@ -150,7 +150,7 @@ async def demo():
     
     print("\n[4] Simulating model/adapter load...")
     deployment.local_models["gemma-4-4b"] = "/models/gemma-4-4b"
-    deployment.local_adapters["finance-expert"] = "/adapters/finance-expert"
+    deployment.local_adapters["finance-expert"] = "/data/adapters/finance-expert-v4"
     
     print("\n[5] Final status:")
     status = deployment.get_status()

@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from enum import Enum
 from openai import AsyncOpenAI
 from config import LORAX_URL
+from core.adapter_loader import registry
 
 
 class IndustryLevel(Enum):
@@ -59,52 +60,52 @@ class DispatchToken:
 # Hub configurations - Department-in-a-Box
 HUB_CONFIGS = {
     "finance": {
-        "hub_adapter": "citi/credit-risk-manager-hub",
+        "hub_adapter": "credit-risk-manager-hub",
         "spokes": {
             "commercial_credit": {
-                "expert": "citi/commercial-lending-v4",
-                "auditor": "citi/sr26-02-auditor",
-                "experts": ["citi/cash-flow-sme", "citi/collateral-valuator", "citi/industry-volatility-sme"]
+                "expert": "commercial-lending-v4",
+                "auditor": "sr26-02-auditor",
+                "experts": ["cash-flow-sme", "collateral-valuator", "industry-volatility-sme"]
             },
             "retail_banking": {
-                "expert": "citi/retail-banking-v4",
-                "auditor": "citi/sr26-02-auditor",
-                "experts": ["citi/mortgage-sme", "citi/credit-card-sme"]
+                "expert": "retail-banking-v4",
+                "auditor": "sr26-02-auditor",
+                "experts": ["mortgage-sme", "credit-card-sme"]
             },
             "fraud_aml": {
-                "expert": "citi/fraud-aml-director",
-                "auditor": "citi/sar-auditor",
-                "experts": ["citi/sanctions-list-sme", "citi/pattern-anomaly-sme", "citi/sar-drafting-sme"]
+                "expert": "fraud-aml-director",
+                "auditor": "sar-auditor",
+                "experts": ["sanctions-list-sme", "pattern-anomaly-sme", "sar-drafting-sme"]
             }
         }
     },
     "logistics": {
-        "hub_adapter": "logistics/terminal-director-hub",
+        "hub_adapter": "terminal-director-hub",
         "spokes": {
             "terminal_operations": {
-                "expert": "logistics/terminal-ops-v4",
-                "auditor": "logistics/safety-auditor",
-                "experts": ["logistics/hazmat-sme", "logistics/fuel-efficiency-sme", "logistics/route-safety-sme"]
+                "expert": "terminal-ops-v4",
+                "auditor": "safety-auditor-v4",
+                "experts": ["hazmat-sme", "fuel-efficiency-sme", "route-safety-sme"]
             },
             "hazmat_compliance": {
-                "expert": "logistics/hazmat-compliance-v4",
-                "auditor": "logistics/regulatory-auditor",
-                "experts": ["logistics/ dot-compliance-sme", "logistics/epa-sme"]
+                "expert": "hazmat-compliance-v4",
+                "auditor": "regulatory-auditor",
+                "experts": ["dot-compliance-sme", "epa-sme"]
             }
         }
     },
     "legal": {
-        "hub_adapter": "legal/department-head-hub",
+        "hub_adapter": "department-head-hub",
         "spokes": {
             "contract_drafting": {
-                "expert": "legal/contract-expert-v4",
-                "auditor": "legal/compliance-auditor",
-                "experts": ["legal/nda-sme", "legal/msa-sme"]
+                "expert": "contract-expert-v4",
+                "auditor": "compliance-auditor",
+                "experts": ["nda-sme", "msa-sme"]
             },
             "regulatory_compliance": {
-                "expert": "legal/regulatory-expert-v4",
-                "auditor": "legal/sec-auditor",
-                "experts": ["legal/finra-sme", "legal/occ-sme"]
+                "expert": "regulatory-expert-v4",
+                "auditor": "sec-auditor",
+                "experts": ["finra-sme", "occ-sme"]
             }
         }
     }
@@ -122,7 +123,7 @@ class SupervisorRouter:
     
     def __init__(self, lorax_url: str = LORAX_URL):
         self.client = AsyncOpenAI(base_url=f"{lorax_url}/v1", api_key=os.getenv("LORAX_API_KEY", "not-needed"))
-        self.default_hub = "maia/governance-hub-v1"
+        self.default_hub = registry.get_hub("governance_hub") or "/data/adapters/governance_hub_v1"
         
     async def route(self, user_query: str) -> DispatchToken:
         """
@@ -173,7 +174,7 @@ Query: {query}"""
                 max_tokens=20,
                 temperature=0.1,
                 extra_body={
-                    "adapter_id": f"/adapters/{self.default_hub}",
+                    "adapter_id": self.default_hub,
                     "adapter_source": "local"
                 }
             )
@@ -184,22 +185,22 @@ Query: {query}"""
         except Exception as e:
             print(f"Industry routing error: {e}")
         return IndustryLevel.FINANCE
-    
+
     async def _identify_subdomain(self, query: str, industry: IndustryLevel) -> SubDomainLevel:
         """Level 2: Manager LoRA identifies sub-domain"""
         prompt = f"""Given the industry '{industry.value}', classify this query into a sub-domain.
 Respond ONLY with the sub-domain name.
 Query: {query}"""
-        
+
         # Map industry to valid sub-domains
         subdomain_map = {
             IndustryLevel.FINANCE: ["commercial_credit", "retail_banking", "wealth_management", "fraud_aml"],
             IndustryLevel.LOGISTICS: ["terminal_operations", "hazmat_compliance", "route_optimization"],
             IndustryLevel.LEGAL: ["contract_drafting", "regulatory_compliance", "litigation"]
         }
-        
+
         valid_subdomains = subdomain_map.get(industry, ["commercial_credit"])
-        
+
         try:
             response = await self.client.completions.create(
                 model="google/gemma-4-26b-a4b-it",
@@ -207,7 +208,7 @@ Query: {query}"""
                 max_tokens=30,
                 temperature=0.1,
                 extra_body={
-                    "adapter_id": f"/adapters/{self.default_hub}",
+                    "adapter_id": self.default_hub,
                     "adapter_source": "local"
                 }
             )

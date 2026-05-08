@@ -58,6 +58,7 @@ from dag_orchestrator import (
 from dispatcher import NeuralToolDispatcher, DispatchResult
 from kernel_manifest import create_kernel_manifest
 from tool_router import create_tool_router
+from core.adapter_loader import registry
 
 from config import (
     MAIA_API_KEY,
@@ -207,7 +208,7 @@ async def execute_maia_protocol(user_query: str, session_id: str = None) -> dict
                 {"role": "user", "content": user_query}
             ],
             extra_body={
-                "adapter_id": f"/adapters/{adapter_id}",
+                "adapter_id": adapter_id,
                 "adapter_source": "local",
                 "fallback_to_base": True
             },
@@ -217,7 +218,7 @@ async def execute_maia_protocol(user_query: str, session_id: str = None) -> dict
         # Emit telemetry for execution
         await emit_signature(
             session_id, layer=2,
-            adapter_id=dispatch.expert_adapter,
+            adapter_id=adapter_id,
             reasoning=completion.choices[0].message.content[:200],
             inputs=["user_query", "context"],
             outputs=["response"]
@@ -477,7 +478,7 @@ async def rollback_adapter(expert: str, version: str, api_key: str = Depends(ver
         metadata[expert] = version
         with open(config.METADATA_FILE, 'w') as f:
             json.dump(metadata, f)
-        httpx.post(f"{config.LORAX_URL}/adapters/refresh", json={"adapter_id": f"/adapters/{version}"})
+        httpx.post(f"{config.LORAX_URL}/adapters/refresh", json={"adapter_id": version})
         return {"status": "rolled back"}
     return {"error": "metadata not found"}
 

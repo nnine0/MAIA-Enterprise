@@ -12,12 +12,24 @@ import sys
 import os
 import json
 import uuid
+import shutil
+import urllib.request
+import urllib.error
+import mimetypes
 from datetime import datetime
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
+from pathlib import Path
 
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# Adapter registry
+try:
+    from app.core.adapter_loader import registry as adapter_registry
+except Exception as e:
+    print(f"Warning: Could not load adapter registry: {e}")
+    adapter_registry = None
 
 # Policy registry
 try:
@@ -109,6 +121,144 @@ class DashboardMetrics:
 
 
 metrics = DashboardMetrics()
+
+
+# Imported document store
+IMPORTED_DOCS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "policies", "imported")
+
+
+class DocumentStore:
+    def __init__(self):
+        self.docs = []
+        os.makedirs(IMPORTED_DOCS_DIR, exist_ok=True)
+        self._load_existing()
+
+    def _load_existing(self):
+        if not os.path.isdir(IMPORTED_DOCS_DIR):
+            return
+        for f in sorted(os.listdir(IMPORTED_DOCS_DIR)):
+            fp = os.path.join(IMPORTED_DOCS_DIR, f)
+            if os.path.isfile(fp):
+                stat = os.stat(fp)
+                self.docs.append({
+                    "id": f,
+                    "filename": f,
+                    "path": fp,
+                    "size": stat.st_size,
+                    "imported_at": datetime.fromtimestamp(stat.st_ctime).isoformat(),
+                    "source": "filesystem",
+                    "source_hint": "",
+                })
+
+    def import_file(self, file_path):
+        path = Path(file_path)
+        if not path.is_file():
+            raise FileNotFoundError(f"File not found: {file_path}")
+        dest = os.path.join(IMPORTED_DOCS_DIR, path.name)
+        shutil.copy2(str(path), dest)
+        stat = os.stat(dest)
+        doc = {
+            "id": path.name,
+            "filename": path.name,
+            "path": dest,
+            "size": stat.st_size,
+            "imported_at": datetime.now().isoformat(),
+            "source": "filesystem",
+            "source_hint": str(path),
+        }
+        self.docs.append(doc)
+        return doc
+
+    def import_url(self, url, filename=None):
+        if not filename:
+            filename = url.rstrip("/").split("/")[-1] or f"import_{uuid.uuid4().hex[:8]}"
+        dest = os.path.join(IMPORTED_DOCS_DIR, filename)
+        try:
+            urllib.request.urlretrieve(url, dest)
+        except Exception as e:
+            raise RuntimeError(f"Failed to download {url}: {e}")
+        stat = os.stat(dest)
+        doc = {
+            "id": filename,
+            "filename": filename,
+            "path": dest,
+            "size": stat.st_size,
+            "imported_at": datetime.now().isoformat(),
+            "source": "url",
+            "source_hint": url,
+        }
+        self.docs.append(doc)
+        return doc
+
+    def list_docs(self):
+        return sorted(self.docs, key=lambda d: d["imported_at"], reverse=True)
+
+    def remove(self, doc_id):
+        self.docs[:] = [d for d in self.docs if d["id"] != doc_id]
+        fp = os.path.join(IMPORTED_DOCS_DIR, doc_id)
+        if os.path.isfile(fp):
+            os.remove(fp)
+
+
+doc_store = DocumentStore()
+
+
+ADAPTERS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "adapters")
+
+
+def _read_adapter_meta(adapter_id):
+    """Read sector/role/tier from adapter_config.json maia_metadata."""
+    config_path = os.path.join(ADAPTERS_DIR, adapter_id, "adapter_config.json")
+    if os.path.isfile(config_path):
+        try:
+            with open(config_path) as f:
+                c = json.load(f)
+            m = c.get("maia_metadata", {})
+            return m.get("sector", "unknown"), m.get("role", "unknown"), m.get("materiality_tier", 3)
+        except (OSError, json.JSONDecodeError):
+            pass
+    return "unknown", "unknown", 3
+
+
+def _make_item(adapter_id, path, default_sector, default_role, default_tier):
+    """Build an adapter item dict, merging config metadata with defaults."""
+    s, r, t = _read_adapter_meta(adapter_id)
+    return {
+        "id": adapter_id,
+        "path": path,
+        "sector": s or default_sector,
+        "role": r or default_role,
+        "tier": t or default_tier,
+    }
+
+
+def get_all_adapters():
+    """Return a flat deduplicated list of all adapters from the registry."""
+    items = []
+    if not adapter_registry:
+        return items
+    try:
+        data = adapter_registry._data
+        for sector, entry in data.get("registry", {}).items():
+            items.append(_make_item(entry["agentic"].split("/")[-1], entry["agentic"], sector, "agentic", entry.get("materiality_tier", 3)))
+            items.append(_make_item(entry["validator"].split("/")[-1], entry["validator"], sector, "validator", entry.get("materiality_tier", 3)))
+        for section, default_tier, default_role in [
+            ("hubs", 1, "hub"), ("specialists", 2, "specialist"), ("tool_adapters", 2, "tool")
+        ]:
+            for key, path in data.get(section, {}).items():
+                items.append(_make_item(path.split("/")[-1], path, key, default_role, default_tier))
+        for role, path in data.get("defaults", {}).items():
+            items.append(_make_item(path.split("/")[-1], path, "default", role, 3))
+        seen = set()
+        unique = []
+        for item in items:
+            if item["id"] not in seen:
+                seen.add(item["id"])
+                unique.append(item)
+        return sorted(unique, key=lambda x: (x["sector"], x["role"]))
+    except Exception as e:
+        print(f"Error listing adapters: {e}")
+        return []
 
 
 def create_test_transaction(scenario, dme_enabled=True, security_enabled=True):
@@ -258,6 +408,18 @@ HTML = """<!DOCTYPE html>
         .policy-item.active-item { background: #1a3a2e; border-color: #00ff88; }
         .policy-compose { margin-top: 10px; text-align: center; }
         .composed-result { margin-top: 10px; padding: 8px; background: #1a1a2e; border-radius: 4px; font-size: 10px; max-height: 120px; overflow-y: auto; }
+        .import-status-ok { color: #00ff88; font-size: 11px; margin-top: 4px; }
+        .import-status-err { color: #ff4444; font-size: 11px; margin-top: 4px; }
+        .doc-item { display: flex; justify-content: space-between; align-items: center; padding: 4px 8px; margin: 2px 0; background: #1a1a2e; border-radius: 4px; font-size: 12px; }
+        .doc-item:hover { background: #2a2a4e; }
+        .doc-icon { margin-right: 6px; }
+        .doc-size { color: #666; }
+        .doc-source { color: #888; font-size: 10px; margin-right: 8px; }
+        .doc-remove { background: none; border: none; color: #ff4444; cursor: pointer; font-size: 14px; }
+        .doc-remove:hover { color: #ff6666; }
+        .adapter-info { padding: 8px 12px; background: #1a3a2e; border: 1px solid #00ff8866; border-radius: 6px; }
+        .adapter-info strong { color: #00ff88; }
+        .adapter-meta { color: #888; margin: 0 12px; }
     </style>
 </head>
 <body>
@@ -338,7 +500,7 @@ HTML = """<!DOCTYPE html>
                         <button class="btn btn-fail" onclick="run('fail')">FAIL (T1)</button>
                         <button class="btn btn-fail" onclick="run('security')">SECURITY</button>
                         <button class="btn btn-sme" onclick="run('sme_review')">SME</button>
-                        <button class="btn btn-clear" onclick="clear()">Clear</button>
+                        <button class="btn btn-clear" onclick="clearDashboard()">Clear</button>
                     </div>
                 </div>
             </div>
@@ -372,6 +534,62 @@ HTML = """<!DOCTYPE html>
             <div id="composed-policy" class="composed-result"></div>
         </div>
         
+        <!-- Adapter Selector -->
+        <div class="controls-card">
+            <div class="controls-title">Adapter Selector <span class="badge" id="adapter-count">0</span></div>
+            <div class="controls-row">
+                <div class="control-group" style="flex:2">
+                    <div class="control-label">Active Adapter</div>
+                    <select class="select-input" id="adapter-select" style="width:100%" onchange="activateAdapter(this.value)">
+                        <option value="">-- Select Adapter --</option>
+                    </select>
+                </div>
+                <div class="control-group" style="flex:1">
+                    <div class="control-label">Sector</div>
+                    <select class="select-input" id="sector-filter" style="width:100%" onchange="filterAdapters()">
+                        <option value="all">All Sectors</option>
+                    </select>
+                </div>
+                <div class="control-group" style="flex:1">
+                    <div class="control-label">Role</div>
+                    <select class="select-input" id="role-filter" style="width:100%" onchange="filterAdapters()">
+                        <option value="all">All Roles</option>
+                    </select>
+                </div>
+            </div>
+            <div class="controls-row" id="active-adapter-info" style="display:none">
+                <div class="adapter-info">
+                    <strong id="active-adapter-name"></strong>
+                    <span class="adapter-meta" id="active-adapter-sector"></span>
+                    <span class="adapter-meta" id="active-adapter-role"></span>
+                    <span class="adapter-meta" id="active-adapter-path" style="font-size:10px"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Document Import -->
+        <div class="controls-card">
+            <div class="controls-title">Document Import <span class="badge" id="doc-count">0</span></div>
+            <div class="controls-row">
+                <div class="control-group" style="flex:3">
+                    <div class="control-label">File Path or URL</div>
+                    <input class="select-input" id="doc-source-input" type="text" style="width:100%" placeholder="/path/to/sop.pdf or https://example.com/policy.pdf">
+                </div>
+                <div class="control-group" style="flex:1">
+                    <div class="control-label">Filename (optional)</div>
+                    <input class="select-input" id="doc-filename-input" type="text" style="width:100%" placeholder="auto-detect">
+                </div>
+                <div class="control-group" style="justify-content:flex-end">
+                    <div class="control-label">&nbsp;</div>
+                    <button class="btn btn-pass" onclick="importDoc()">Import</button>
+                </div>
+            </div>
+            <div id="imported-doc-list" style="margin-top:8px;max-height:160px;overflow-y:auto">
+                <div style="color:#666;font-size:12px;padding:8px;text-align:center">No imported documents</div>
+            </div>
+            <div id="import-status" style="font-size:11px;margin-top:4px;min-height:18px"></div>
+        </div>
+
         <!-- Transaction Log -->
         <div class="table-card">
             <div class="table-title">Transaction Log</div>
@@ -453,7 +671,7 @@ HTML = """<!DOCTYPE html>
             load();
         }
         
-        async function clear() {
+        async function clearDashboard() {
             try {
                 await fetch('/api/clear', {method: 'POST'});
             } catch(e) {
@@ -565,7 +783,140 @@ HTML = """<!DOCTYPE html>
             }
         }
         
+        // Adapter Selector
+        const allAdapters = [];
+        let activeAdapterId = localStorage.getItem('maia_active_adapter') || '';
+
+        async function loadAdapters() {
+            try {
+                const r = await fetch('/api/adapters');
+                const d = await r.json();
+                allAdapters.length = 0;
+                allAdapters.push(...d.adapters);
+                document.getElementById('adapter-count').textContent = d.total;
+
+                // Build sector and role filters
+                const sectors = [...new Set(d.adapters.map(a => a.sector))].sort();
+                const roles = [...new Set(d.adapters.map(a => a.role))].sort();
+                const sectorSelect = document.getElementById('sector-filter');
+                const roleSelect = document.getElementById('role-filter');
+                sectorSelect.innerHTML = '<option value="all">All Sectors</option>' + sectors.map(s => '<option value="'+s+'">'+s+'</option>').join('');
+                roleSelect.innerHTML = '<option value="all">All Roles</option>' + roles.map(r => '<option value="'+r+'">'+r+'</option>').join('');
+
+                filterAdapters();
+                if (activeAdapterId) {
+                    document.getElementById('adapter-select').value = activeAdapterId;
+                    showActiveAdapter(activeAdapterId);
+                }
+            } catch(e) {
+                console.error('Failed to load adapters:', e);
+            }
+        }
+
+        function filterAdapters() {
+            const sector = document.getElementById('sector-filter').value;
+            const role = document.getElementById('role-filter').value;
+            const select = document.getElementById('adapter-select');
+            const filtered = allAdapters.filter(a =>
+                (sector === 'all' || a.sector === sector) &&
+                (role === 'all' || a.role === role)
+            );
+            select.innerHTML = '<option value="">-- Select Adapter --</option>' +
+                filtered.map(a => '<option value="'+a.id+'">'+a.id+' ['+a.sector+' / '+a.role+']</option>').join('');
+        }
+
+        function activateAdapter(adapterId) {
+            activeAdapterId = adapterId;
+            if (adapterId) {
+                localStorage.setItem('maia_active_adapter', adapterId);
+                showActiveAdapter(adapterId);
+            } else {
+                localStorage.removeItem('maia_active_adapter');
+                document.getElementById('active-adapter-info').style.display = 'none';
+            }
+        }
+
+        function showActiveAdapter(adapterId) {
+            const a = allAdapters.find(x => x.id === adapterId);
+            if (!a) return;
+            document.getElementById('active-adapter-name').textContent = a.id;
+            document.getElementById('active-adapter-sector').textContent = 'Sector: ' + a.sector;
+            document.getElementById('active-adapter-role').textContent = 'Role: ' + a.role + ' | Tier ' + a.tier;
+            document.getElementById('active-adapter-path').textContent = a.path;
+            document.getElementById('active-adapter-info').style.display = '';
+        }
+
+        // Document Import
+        async function loadImportedDocs() {
+            try {
+                const r = await fetch('/api/imported-docs');
+                const d = await r.json();
+                document.getElementById('doc-count').textContent = d.total;
+                const list = document.getElementById('imported-doc-list');
+                if (d.documents.length === 0) {
+                    list.innerHTML = '<div style="color:#666;font-size:12px;padding:8px;text-align:center">No imported documents</div>';
+                    return;
+                }
+                list.innerHTML = d.documents.map(doc => {
+                    const size = doc.size > 1024 ? (doc.size/1024).toFixed(1)+'KB' : doc.size+'B';
+                    const icon = doc.filename.endsWith('.pdf') ? '📄' : doc.filename.endsWith('.md') ? '📝' : '📋';
+                    return '<div class="doc-item">' +
+                        '<span><span class="doc-icon">'+icon+'</span> '+doc.filename+' <span class="doc-size">('+size+')</span></span>' +
+                        '<span><span class="doc-source">'+doc.source+'</span>' +
+                        '<button class="doc-remove" data-id="'+doc.id+'" onclick="removeDoc(this.dataset.id)">&times;</button></span>' +
+                        '</div>';
+                }).join('');
+            } catch(e) {
+                console.error('Failed to load docs:', e);
+            }
+        }
+
+        async function importDoc() {
+            const input = document.getElementById('doc-source-input');
+            const filename = document.getElementById('doc-filename-input').value;
+            const raw = input.value.trim();
+            if (!raw) { document.getElementById('import-status').innerHTML = '<span class="import-status-err">Enter a file path or URL</span>'; return; }
+
+            const isUrl = raw.startsWith('http://') || raw.startsWith('https://');
+            const source = isUrl ? 'url' : 'file';
+            const status = document.getElementById('import-status');
+
+            try {
+                const r = await fetch('/api/import-doc', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({source: source, url: raw, filename: filename || undefined})
+                });
+                const d = await r.json();
+                if (d.status === 'ok') {
+                    status.innerHTML = '<span class="import-status-ok">Imported: '+d.doc.filename+' ('+(d.doc.size/1024).toFixed(1)+'KB)</span>';
+                    input.value = '';
+                    document.getElementById('doc-filename-input').value = '';
+                    loadImportedDocs();
+                } else {
+                    status.innerHTML = '<span class="import-status-err">Error: '+d.message+'</span>';
+                }
+            } catch(e) {
+                status.innerHTML = '<span class="import-status-err">Error: '+e.message+'</span>';
+            }
+        }
+
+        async function removeDoc(docId) {
+            try {
+                await fetch('/api/remove-doc', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({id: docId})
+                });
+                loadImportedDocs();
+            } catch(e) {
+                console.error('Failed to remove doc:', e);
+            }
+        }
+
         loadPolicies();
+        loadAdapters();
+        loadImportedDocs();
         load();
     </script>
 </body>
@@ -629,6 +980,23 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_response(500)
                 self.end_headers()
                 self.wfile.write(json.dumps({"error": "Policy registry not loaded"}).encode())
+        elif self.path == "/api/adapters":
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({
+                "adapters": get_all_adapters(),
+                "total": len(get_all_adapters()),
+                "inventory_version": adapter_registry.inventory_version if adapter_registry else "unknown",
+            }).encode())
+        elif self.path == "/api/imported-docs":
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({
+                "documents": doc_store.list_docs(),
+                "total": len(doc_store.list_docs()),
+            }).encode())
         elif self.path.startswith("/api/simulate"):
             params = parse_qs(urlparse(self.path).query)
             scenario = params.get("scenario", ["pass"])[0]
@@ -663,6 +1031,40 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header("Content-type", "application/json")
             self.end_headers()
             self.wfile.write(json.dumps({"status": "cleared"}).encode())
+        elif self.path.startswith("/api/import-doc"):
+            content_len = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_len) if content_len else b"{}"
+            params = json.loads(body) if body else {}
+            source = params.get("source", "")
+            url = params.get("url", "")
+            filename = params.get("filename", "")
+            result = {}
+            try:
+                if source == "url" and url:
+                    doc = doc_store.import_url(url, filename or None)
+                    result = {"status": "ok", "doc": doc}
+                elif source == "file" and url:
+                    doc = doc_store.import_file(url)
+                    result = {"status": "ok", "doc": doc}
+                else:
+                    result = {"status": "error", "message": "Provide source='file'|'url' and a path/url"}
+                self.send_response(200)
+            except Exception as e:
+                result = {"status": "error", "message": str(e)}
+                self.send_response(400)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps(result).encode())
+        elif self.path.startswith("/api/remove-doc"):
+            content_len = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_len) if content_len else b"{}"
+            params = json.loads(body) if body else {}
+            doc_id = params.get("id", "")
+            doc_store.remove(doc_id)
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"status": "removed", "id": doc_id}).encode())
         else:
             self.send_response(404)
             self.end_headers()
