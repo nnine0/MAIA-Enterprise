@@ -6,30 +6,6 @@
 
 ---
 
-## Quick Start
-
-```bash
-# Run governance tests
-python3 test.py
-
-# Run kernel CLI
-python3 kernel/maia_kernel.py govern "Wire $50,000 to Russia"
-
-# Run adapter policy enforcement tests
-python3 adapters/test_policy.py
-
-# Run SR 26-02 compliance test suite
-python3 adapters/test_sr26_02.py
-
-# Run compliance surface scan
-python3 adapters/compliance_scan.py
-
-# Start production FastAPI server
-python3 production/server_prod.py
-```
-
----
-
 ## About
 
 MAIA (Multi-Adapter Inference Architecture) is an **enterprise AI Governance Operating System**—a neural microkernel running between the reasoning engine and the real world.
@@ -625,3 +601,27 @@ MEDIUM: ["delayed_reporting", "incomplete_audit"]
 ## License
 
 See [LICENSE](LICENSE) file.
+
+---
+
+## Quick Start
+
+```bash
+# Run governance tests
+python3 test.py
+
+# Run kernel CLI
+python3 kernel/maia_kernel.py govern "Wire $50,000 to Russia"
+
+# Run adapter policy enforcement tests
+python3 adapters/test_policy.py
+
+# Run SR 26-02 compliance test suite
+python3 adapters/test_sr26_02.py
+
+# Run compliance surface scan
+python3 adapters/compliance_scan.py
+
+# Start production FastAPI server
+python3 production/server_prod.py
+```
