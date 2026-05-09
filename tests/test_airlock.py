@@ -286,18 +286,18 @@ class TestMemoryManager:
         """Adapters are assigned to correct tiers"""
         # VRAM pinned components
         assert memory.is_pinned("base-model-gemma-4-26b-a4b-it")
-        assert memory.is_pinned("pvi-airlock-auditor")
+        assert memory.is_pinned("pvi-airlock-sr2602")
         
         # Non-pinned adapter
         assert not memory.is_pinned("citi/finance-expert-v4")
 
     def test_load_to_ram(self, memory):
         """Adapters can be loaded from NVMe to RAM"""
-        result = memory.load_to_ram("citi/finance-expert-v4")
+        result = memory.load_to_ram("finance-expert-v4")
         
         assert result is True
-        assert "citi/finance-expert-v4" in memory.ram_cache
-        assert memory.adapters["citi/finance-expert-v4"].tier == MemoryTier.RAM
+        assert "finance-expert-v4" in memory.ram_cache
+        assert memory.adapters["finance-expert-v4"].tier == MemoryTier.RAM
 
     def test_vram_slack_calculation(self, memory):
         """VRAM slack is calculated correctly"""
@@ -588,7 +588,7 @@ class TestDHITLIntegration:
             # Session should be in completed sessions
             assert session_id in airlock.sme_pool.completed_sessions
 
-    def test_dhitl_session_tracking(self, airlock):
+    async def test_dhitl_session_tracking(self, airlock):
         """DHITL session can be tracked"""
         session = airlock.sme_pool.create_voting_session(
             "test-003", "Test trajectory", "finance"

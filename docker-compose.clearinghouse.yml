@@ -1,0 +1,359 @@
+version: '3.9'
+
+services:
+  # ========================================================================
+  # LAYER 7: Global Switchboard (The Toll Booth)
+  # ========================================================================
+  # Routes 16 banks to 4 governance cells (4 banks per cell).
+  # Executes cross-bank contagion detection before routing.
+  # 1ms handoff to designated 20GB MIG partition.
+  #
+  # Cell allocation:
+  #   Cell 0: Citi, BofA, Wells, Chase
+  #   Cell 1: JPM, Goldman, MS, UBS
+  #   Cell 2: HSBC, Barclays, DB, Citi Europe
+  #   Cell 3: BNP, SG, TD, Scotiabank
+
+  global-switchboard:
+    build: .
+    image: maia-enterprise:latest
+    container_name: maia-switchboard
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+      - "9090:9090"
+    ipc: host
+    ulimits:
+      memlock: -1
+    environment:
+      - NODE_ID=global-switchboard
+      - CELLS=4
+      - BANKS_PER_CELL=4
+      - TOTAL_BANKS=16
+      - CROSS_BANK_CONTAGION_CHECK=true
+      - CONTAGION_THRESHOLD=0.85
+      - IPC_MODE=shared_memory
+    volumes:
+      - ./adapters:/data/adapters
+      - ./configs:/app/configs
+      - ./logs:/app/logs
+      - /dev/shm:/dev/shm
+    command: python3 -c "
+import sys; sys.path.insert(0, 'app')
+from routing import GlobalSwitchboard
+sb = GlobalSwitchboard(cells=4, banks_per_cell=4)
+print('L7 Global Switchboard: 16 banks → 4 cells')
+print(sb.get_routing_table())
+"
+
+  # ========================================================================
+  # CELL 0: Partition 0 — Citi, BofA, Wells, Chase
+  # ========================================================================
+  # VRAM: 20 GB (Gemma 26B A4B + Nemotron Sheriff + Granite Sentinel)
+  # Capacity: ~20 TPS per bank × 4 = 80 TPS total
+  # Isolation: SR 26-02 Section VI compliant (no logic leaks)
+
+  cell-0-sglang:
+    image: ghcr.io/sglang/sglang:latest
+    container_name: maia-cell0-sglang
+    ipc: host
+    ulimits:
+      memlock: -1
+      nofile: 65536
+    volumes:
+      - /models:/models
+      - ./adapters:/data/adapters
+      - /dev/shm:/dev/shm
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+              minor: 0
+    command: >
+      python -m sglang.launch_server
+      --model-path google/gemma-4-26B-A4B
+      --draft-model z-lab/gemma-4-E4B-it-DFlash
+      --enable-dflash
+      --dflash-block-size 16
+      --port 3000
+      --enable-torch-compile
+      --enable-radix-cache
+      --mem-fraction-static 0.88
+
+  cell-0-lorax:
+    image: ghcr.io/predibase/lorax:latest
+    container_name: maia-cell0-lorax
+    ports:
+      - "8080:80"
+    ipc: host
+    ulimits:
+      memlock: -1
+    environment:
+      - CELL_ID=0
+      - BANKS=citi,bofa,wells,chase
+      - ADAPTERS=citi-finance-expert-v4,bofa-credit-risk-v4,wells-fraud-aml-v4,chase-legal-v1
+    volumes:
+      - /models:/models
+      - ./adapters:/data/adapters
+      - /dev/shm:/dev/shm
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+              minor: 0
+    depends_on:
+      - cell-0-sglang
+    command: >
+      --model-id google/gemma-4-26B-A4B
+      --quantize nvfp4
+      --sgmv
+
+  # ========================================================================
+  # CELL 1: Partition 1 — JPM, Goldman, MS, UBS
+  # ========================================================================
+
+  cell-1-sglang:
+    image: ghcr.io/sglang/sglang:latest
+    container_name: maia-cell1-sglang
+    ipc: host
+    ulimits:
+      memlock: -1
+      nofile: 65536
+    volumes:
+      - /models:/models
+      - ./adapters:/data/adapters
+      - /dev/shm:/dev/shm
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+              minor: 1
+    command: >
+      python -m sglang.launch_server
+      --model-path google/gemma-4-26B-A4B
+      --draft-model z-lab/gemma-4-E4B-it-DFlash
+      --enable-dflash
+      --dflash-block-size 16
+      --port 3001
+      --enable-torch-compile
+      --enable-radix-cache
+      --mem-fraction-static 0.88
+
+  cell-1-lorax:
+    image: ghcr.io/predibase/lorax:latest
+    container_name: maia-cell1-lorax
+    ports:
+      - "8081:80"
+    ipc: host
+    ulimits:
+      memlock: -1
+    environment:
+      - CELL_ID=1
+      - BANKS=jpm,gs,ms,ubs
+    volumes:
+      - /models:/models
+      - ./adapters:/data/adapters
+      - /dev/shm:/dev/shm
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+              minor: 1
+    depends_on:
+      - cell-1-sglang
+    command: >
+      --model-id google/gemma-4-26B-A4B
+      --quantize nvfp4
+      --sgmv
+
+  # ========================================================================
+  # CELL 2: Partition 2 — HSBC, Barclays, DB, Citi Europe
+  # ========================================================================
+
+  cell-2-sglang:
+    image: ghcr.io/sglang/sglang:latest
+    container_name: maia-cell2-sglang
+    ipc: host
+    ulimits:
+      memlock: -1
+      nofile: 65536
+    volumes:
+      - /models:/models
+      - ./adapters:/data/adapters
+      - /dev/shm:/dev/shm
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+              minor: 2
+    command: >
+      python -m sglang.launch_server
+      --model-path google/gemma-4-26B-A4B
+      --draft-model z-lab/gemma-4-E4B-it-DFlash
+      --enable-dflash
+      --dflash-block-size 16
+      --port 3002
+      --enable-torch-compile
+      --enable-radix-cache
+      --mem-fraction-static 0.88
+
+  cell-2-lorax:
+    image: ghcr.io/predibase/lorax:latest
+    container_name: maia-cell2-lorax
+    ports:
+      - "8082:80"
+    ipc: host
+    ulimits:
+      memlock: -1
+    environment:
+      - CELL_ID=2
+      - BANKS=hsbc,barclays,db,citi2
+    volumes:
+      - /models:/models
+      - ./adapters:/data/adapters
+      - /dev/shm:/dev/shm
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+              minor: 2
+    depends_on:
+      - cell-2-sglang
+    command: >
+      --model-id google/gemma-4-26B-A4B
+      --quantize nvfp4
+      --sgmv
+
+  # ========================================================================
+  # CELL 3: Partition 3 — BNP, SG, TD, Scotiabank
+  # ========================================================================
+
+  cell-3-sglang:
+    image: ghcr.io/sglang/sglang:latest
+    container_name: maia-cell3-sglang
+    ipc: host
+    ulimits:
+      memlock: -1
+      nofile: 65536
+    volumes:
+      - /models:/models
+      - ./adapters:/data/adapters
+      - /dev/shm:/dev/shm
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+              minor: 3
+    command: >
+      python -m sglang.launch_server
+      --model-path google/gemma-4-26B-A4B
+      --draft-model z-lab/gemma-4-E4B-it-DFlash
+      --enable-dflash
+      --dflash-block-size 16
+      --port 3003
+      --enable-torch-compile
+      --enable-radix-cache
+      --mem-fraction-static 0.88
+
+  cell-3-lorax:
+    image: ghcr.io/predibase/lorax:latest
+    container_name: maia-cell3-lorax
+    ports:
+      - "8083:80"
+    ipc: host
+    ulimits:
+      memlock: -1
+    environment:
+      - CELL_ID=3
+      - BANKS=bnp,sg,td,scotia
+    volumes:
+      - /models:/models
+      - ./adapters:/data/adapters
+      - /dev/shm:/dev/shm
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+              minor: 3
+    depends_on:
+      - cell-3-sglang
+    command: >
+      --model-id google/gemma-4-26B-A4B
+      --quantize nvfp4
+      --sgmv
+
+  # ========================================================================
+  # CROSS-BANK CONTAGION DETECTOR (Layer 8 Shared)
+  # ========================================================================
+  # Monitors latent-space intersections between banks.
+  # If Bank A's trajectory will cause liquidity crisis at Bank B,
+  # Circuit Breaker trips for BOTH banks.
+  contagion-detector:
+    build: .
+    image: maia-enterprise:latest
+    container_name: maia-contagion-detector
+    ports:
+      - "9091:9091"
+    ipc: host
+    environment:
+      - NODE_ID=contagion-detector
+      - THRESHOLD=0.85
+      - SCAN_INTERVAL_MS=500
+      - CIRCUIT_BREAKER_TRIGGER=true
+    volumes:
+      - ./logs:/app/logs
+      - /dev/shm:/dev/shm
+    command: python3 -c "
+import sys; sys.path.insert(0, 'app')
+from contagion_detector import ContagionMonitor
+monitor = ContagionMonitor(threshold=0.85)
+print('Cross-Bank Contagion Monitor active')
+print('Scanning 16 banks for latent trajectory intersections...')
+"
+
+  # ========================================================================
+  # Dashboard: Real-time EKG for All 16 Banks
+  # ========================================================================
+  dashboard:
+    image: python:3.11-slim
+    container_name: maia-dashboard-clearinghouse
+    ports:
+      - "3033:3033"
+    environment:
+      - NODE_ID=dashboard
+    volumes:
+      - ./logs:/app/logs
+    command: >
+      sh -c "pip install streamlit pandas plotly &&
+      streamlit run docs/dashboard.py --server.port 3033 --server.address 0.0.0.0"
+
+networks:
+  default:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.32.0.0/16

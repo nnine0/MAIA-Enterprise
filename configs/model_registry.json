@@ -1,0 +1,74 @@
+{
+  "manifest_version": "2.0.0",
+  "kernel_type": "sglang_lorax_hybrid",
+  "gemma4_spec": {
+    "family": "Gemma 4",
+    "vendor": "Google DeepMind",
+    "modalities": ["text", "image", "audio"],
+    "languages": 140,
+    "context_window": "128K (E4B)",
+    "thinking_mode": true,
+    "system_prompt_support": true
+  },
+  "models": {
+    "base_engine": {
+      "name": "google/gemma-4-E4B",
+      "local_path": "/models/base_engine",
+      "role": "base_engine",
+      "architecture": "Dense with PLE (Per-Layer Embeddings)",
+      "total_params": "8B with embeddings",
+      "effective_params": "4.5B",
+      "layers": 42,
+      "sliding_window": "512 tokens",
+      "context_length": "128K",
+      "vocab_size": "262K",
+      "quantization": "fp8",
+      "vram_mb": 8192,
+      "status": "ready"
+    },
+    "speculator": {
+      "name": "google/gemma-4-E4B-it-assistant",
+      "local_path": "/models/speculator",
+      "role": "speculator",
+      "purpose": "DFlash drafter for speculative decoding",
+      "architecture": "Dense with PLE",
+      "instruction_tuned": true,
+      "quantization": "fp8",
+      "vram_mb": 2048,
+      "status": "ready"
+    },
+    "sheriff": {
+      "name": "nvidia/Nemotron-3-8B-Safety",
+      "local_path": "/models/sheriff",
+      "role": "sheriff",
+      "purpose": "L8 safety auditor",
+      "quantization": "int4",
+      "vram_mb": 2253,
+      "status": "ready"
+    },
+    "sentinel": {
+      "name": "ibm/granite-4.1-3b",
+      "local_path": "/models/sentinel",
+      "role": "sentinel",
+      "purpose": "L8 compliance guardian",
+      "quantization": "fp8",
+      "vram_mb": 1229,
+      "status": "ready"
+    }
+  },
+  "vram_budget": {
+    "base_engine_mb": 8192,
+    "speculator_mb": 2048,
+    "sheriff_mb": 2253,
+    "sentinel_mb": 1229,
+    "total_mb": 13722,
+    "rtx_3090_total_mb": 24576,
+    "remaining_for_kv_cache_mb": 10854,
+    "note": "Gemma 4 E4B: 4.5B effective params via PLE, 128K context, native thinking mode"
+  },
+  "sampling_config": {
+    "temperature": 1.0,
+    "top_p": 0.95,
+    "top_k": 64
+  }
+}

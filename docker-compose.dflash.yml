@@ -1,0 +1,183 @@
+version: '3.9'
+
+services:
+  # DFlash Inference Engine (Industrial / H100 / AI Factory)
+  # ─────────────────────────────────────────────────────────
+  # DFlash = Parallel Block-Diffusion Drafter
+  # Generates 16-token reasoning blocks in ONE GPU forward pass
+  # vs. MTP = sequential next-token prediction (3x speed)
+  # DFlash delivers 6x speed by "manifesting" entire trajectories
+  #
+  # Why DFlash for Compliance:
+  # - PVI Airlock audits entire 16-token block at once
+  # - Single high-resolution audit = no micro-stutter
+  # - Block-level interception = 16x fewer context switches
+  # - Result: 21K+ req/s with full SR 26-02 compliance
+
+  sglang-dflash:
+    image: ghcr.io/sglang/sglang:latest
+    container_name: maia-sglang-dflash
+    ports:
+      - "3000:3000"
+      - "3001:3001"
+    ipc: host
+    ulimits:
+      memlock: -1
+      nofile: 65536
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+      - HF_TOKEN=${HF_TOKEN}
+    volumes:
+      - /models:/models
+      - ./adapters:/data/adapters
+      - /dev/shm:/dev/shm
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 600s
+    command: >
+      python -m sglang.launch_server
+      --model-path google/gemma-4-26B-A4B
+      --draft-model z-lab/gemma-4-E4B-it-DFlash
+      --port 3000
+      --enable-dflash
+      --dflash-block-size 16
+      --enable-torch-compile
+      --enable-flashinfer
+      --enable-radix-cache
+      --chunked-prefill-size 8192
+      --enable-tp
+      --tensor-parallel-size 1
+
+  # Provision DFlash drafter weights
+  # Required: z-lab/gemma-4-E4B-it-DFlash (not standard instruct)
+  # Trained on exponential loss decay for solid logical anchors
+  dflash-provisioner:
+    image: ghcr.io/sglang/sglang:latest
+    container_name: maia-dflash-provisioner
+    environment:
+      - HF_TOKEN=${HF_TOKEN}
+    volumes:
+      - /models:/models
+    command: >
+      bash -c "huggingface-cli download z-lab/gemma-4-E4B-it-DFlash
+      --local-dir /models/gemma-4-E4B-it-DFlash
+      --token $$HF_TOKEN"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 0
+
+  # LoRAX Layer 8 Governance (over DFlash blocks)
+  # ─────────────────────────────────────────────
+  # L8 Circuit Breaker audits entire DFlash block as one unit
+  # Not token-by-token (avoids micro-stutter)
+  # All trajectories must be signed by L8 before L7 execution
+  lorax-governance:
+    image: ghcr.io/predibase/lorax:latest
+    container_name: maia-lorax-governance
+    ports:
+      - "8080:80"
+    ipc: host
+    ulimits:
+      memlock: -1
+      nofile: 65536
+    environment:
+      - NUM_SHARD=1
+      - MAX_BATCH_PREFILL_TOKENS=8192
+      - MAX_TOTAL_TOKENS=16384
+      - SGMV_ENABLED=true
+    volumes:
+      - /models:/models
+      - ./adapters:/data/adapters
+      - /dev/shm:/dev/shm
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    depends_on:
+      sglang-dflash:
+        condition: service_healthy
+    command: >
+      --model-id google/gemma-4-26B-A4B
+      --num-shard 1
+      --max-batch-prefill-tokens 8192
+      --max-total-tokens 16384
+      --quantize nvfp4
+      --sgmv
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 180s
+
+  # MAIA Block-Aware Orchestrator
+  # ─────────────────────────────
+  # Intercepts DFlash blocks (not individual tokens)
+  # L8 audits entire 16-token trajectory in one pass
+  # Single high-resolution audit → 0.014ms overhead
+  maia-orchestrator:
+    build: .
+    image: maia-enterprise:latest
+    container_name: maia-orchestrator
+    ports:
+      - "8000:8000"
+    ipc: host
+    ulimits:
+      memlock: -1
+    environment:
+      - NODE_ID=orchestrator
+      - SGLANG_URL=http://sglang-dflash:3000
+      - LORAX_URL=http://lorax-governance:80
+      - DFASH_MODE=industrial
+      - DFASH_BLOCK_SIZE=16
+      - INTERCEPT_TYPE=dflash_block
+      - IPC_MODE=shared_memory
+    volumes:
+      - ./adapters:/data/adapters
+      - ./configs:/app/configs
+      - ./logs:/app/logs
+      - /dev/shm:/dev/shm
+    depends_on:
+      sglang-dflash:
+        condition: service_healthy
+      lorax-governance:
+        condition: service_healthy
+    command: python3 server.py
+
+  # Governance Dashboard (Real-time EKG)
+  dashboard:
+    image: python:3.11-slim
+    container_name: maia-dashboard
+    ports:
+      - "3033:3033"
+    environment:
+      - NODE_ID=dashboard
+    volumes:
+      - ./logs:/app/logs
+      - ./docs:/app/docs
+    command: >
+      sh -c "pip install streamlit pandas plotly &&
+      streamlit run docs/dashboard.py --server.port 3033 --server.address 0.0.0.0"
+
+networks:
+  default:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/16

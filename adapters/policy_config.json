@@ -1,0 +1,694 @@
+{
+  "version": "1.0.0",
+  "description": "MAIA Adapter Policy Constraints - SR 26-02 compliant",
+  "adapter_policies": {
+    "sql_readonly": {
+      "adapter_id": "sql_readonly",
+      "description": "SQL read-only queries",
+      "operation_mode": "read_only",
+      "sql_constraints": {
+        "allowed_operations": ["SELECT", "SHOW", "DESCRIBE", "EXPLAIN", "USE", "WITH"],
+        "forbidden_operations": ["INSERT", "UPDATE", "DELETE", "DROP", "TRUNCATE", "ALTER", "CREATE", "GRANT", "REVOKE", "CALL", "MERGE"]
+      },
+      "alert_config": { "channels": ["compliance"], "severity": "CRITICAL" }
+    },
+    "sql_ledger": {
+      "adapter_id": "sql_ledger",
+      "description": "SQL ledger with limited write",
+      "operation_mode": "append_only",
+      "sql_constraints": {
+        "allowed_operations": ["SELECT", "INSERT", "SHOW"],
+        "forbidden_operations": ["UPDATE", "DELETE", "DROP", "TRUNCATE", "ALTER", "CREATE", "GRANT", "REVOKE"]
+      },
+      "alert_config": { "channels": ["compliance"], "severity": "CRITICAL" }
+    },
+    "swift_wire_v4": {
+      "adapter_id": "swift_wire_v4",
+      "description": "SWIFT wire transfers - single tx only",
+      "operation_mode": "financial_transaction",
+      "api_constraints": {
+        "allowed_operations": ["mt103_send", "wire_initiate", "status_check"],
+        "forbidden_operations": ["bulk_transfer", "delete_wire", "modify_routing", "cancel_pending"]
+      },
+      "alert_config": { "channels": ["finance-ops", "compliance"], "severity": "CRITICAL" }
+    },
+    "ofac_gateway_v4": {
+      "adapter_id": "ofac_gateway_v4",
+      "description": "OFAC sanctions screening",
+      "operation_mode": "screening_only",
+      "api_constraints": {
+        "allowed_operations": ["screen_entity", "check_sanctions", "verify_list"],
+        "forbidden_operations": ["modify_list", "delete_entry", "add_entry", "bypass_screen", "export_list"]
+      },
+      "alert_config": { "channels": ["compliance", "legal"], "severity": "CRITICAL" }
+    },
+    "erp_connector": {
+      "adapter_id": "erp_connector",
+      "description": "ERP system connector - read only",
+      "operation_mode": "read_only",
+      "file_constraints": {
+        "allowed_operations": ["read", "query", "list"],
+        "forbidden_operations": ["write", "delete", "execute", "chmod", "rename", "symlink"]
+      },
+      "api_constraints": {
+        "allowed_operations": ["get_record", "search", "export_report"],
+        "forbidden_operations": ["delete_record", "update_record", "create_record", "bulk_delete", "admin_action"]
+      },
+      "alert_config": { "channels": ["it-ops"], "severity": "HIGH" }
+    },
+    "privileged_redactor": {
+      "adapter_id": "privileged_redactor",
+      "description": "Privileged document redaction",
+      "operation_mode": "redact_only",
+      "file_constraints": {
+        "allowed_operations": ["read", "redact", "mask"],
+        "forbidden_operations": ["delete", "write_raw", "export_unredacted", "share", "modify_permissions"]
+      },
+      "alert_config": { "channels": ["legal", "compliance"], "severity": "CRITICAL" }
+    },
+    "cyber_fortress_v4": {
+      "adapter_id": "cyber_fortress_v4",
+      "description": "Cybersecurity scanning",
+      "operation_mode": "scan_only",
+      "api_constraints": {
+        "allowed_operations": ["scan", "detect", "report", "list_vulnerabilities"],
+        "forbidden_operations": ["execute_patch", "modify_firewall", "delete_logs", "disable_monitoring", "elevate_privileges"]
+      },
+      "alert_config": { "channels": ["security-ops"], "severity": "CRITICAL" }
+    },
+    "bias_audit_v4": {
+      "adapter_id": "bias_audit_v4",
+      "description": "AI bias auditing",
+      "operation_mode": "audit_only",
+      "api_constraints": {
+        "allowed_operations": ["audit", "check", "report", "analyze"],
+        "forbidden_operations": ["modify_results", "delete_audit", "bypass_check", "suppress_finding"]
+      },
+      "alert_config": { "channels": ["compliance"], "severity": "HIGH" }
+    },
+    "aibom_inventory_v4": {
+      "adapter_id": "aibom_inventory_v4",
+      "description": "AIBOM inventory management",
+      "operation_mode": "inventory_only",
+      "api_constraints": {
+        "allowed_operations": ["list", "search", "check_version", "verify"],
+        "forbidden_operations": ["delete_entry", "modify_entry", "bulk_delete", "import_unverified"]
+      },
+      "alert_config": { "channels": ["it-ops"], "severity": "HIGH" }
+    },
+    "disclosure_governor_v4": {
+      "adapter_id": "disclosure_governor_v4",
+      "description": "Disclosure governance",
+      "operation_mode": "governance",
+      "api_constraints": {
+        "allowed_operations": ["review", "flag", "report", "escalate"],
+        "forbidden_operations": ["approve_disclosure", "bypass_review", "delete_flag", "modify_classification"]
+      },
+      "alert_config": { "channels": ["legal", "compliance"], "severity": "CRITICAL" }
+    },
+    "ethical_wall_v2": {
+      "adapter_id": "ethical_wall_v2",
+      "description": "Ethical wall enforcement",
+      "operation_mode": "enforcement",
+      "api_constraints": {
+        "allowed_operations": ["check_access", "verify_wall", "log_query"],
+        "forbidden_operations": ["bypass_wall", "remove_restriction", "share_across_wall", "disable_monitoring"]
+      },
+      "alert_config": { "channels": ["legal", "compliance"], "severity": "CRITICAL" }
+    },
+    "contract_expert_v4": {
+      "adapter_id": "contract_expert_v4",
+      "description": "Contract review and redlining",
+      "operation_mode": "review_only",
+      "file_constraints": {
+        "allowed_operations": ["read", "review", "redline", "suggest"],
+        "forbidden_operations": ["sign", "execute", "delete", "modify_metadata", "share_external"]
+      },
+      "alert_config": { "channels": ["legal"], "severity": "HIGH" }
+    },
+    "freight_optimizer": {
+      "adapter_id": "freight_optimizer",
+      "description": "Freight logistics optimization",
+      "operation_mode": "optimization",
+      "api_constraints": {
+        "allowed_operations": ["optimize_route", "schedule_dispatch", "track_shipment"],
+        "forbidden_operations": ["modify_pricing", "cancel_all", "reroute_all", "delete_manifest"]
+      },
+      "alert_config": { "channels": ["operations"], "severity": "HIGH" }
+    },
+    "finance_expert_v4": {
+      "adapter_id": "finance_expert_v4",
+      "description": "Finance sector expert",
+      "operation_mode": "analysis",
+      "api_constraints": {
+        "allowed_operations": ["analyze", "forecast", "report", "query"],
+        "forbidden_operations": ["execute_transaction", "modify_record", "approve_loan", "override_limit"]
+      },
+      "alert_config": { "channels": ["finance-ops"], "severity": "HIGH" }
+    },
+    "credit_expert_v4": {
+      "adapter_id": "credit_expert_v4",
+      "description": "Credit analysis",
+      "operation_mode": "analysis",
+      "api_constraints": {
+        "allowed_operations": ["assess", "score", "report", "analyze"],
+        "forbidden_operations": ["approve_credit", "modify_score", "delete_history", "override_decision"]
+      },
+      "alert_config": { "channels": ["finance-ops"], "severity": "HIGH" }
+    },
+    "compliance_expert_v4": {
+      "adapter_id": "compliance_expert_v4",
+      "description": "Compliance expert",
+      "operation_mode": "audit",
+      "api_constraints": {
+        "allowed_operations": ["audit", "check", "report", "flag"],
+        "forbidden_operations": ["modify_audit", "suppress_flag", "delete_log", "bypass_check"]
+      },
+      "alert_config": { "channels": ["compliance"], "severity": "CRITICAL" }
+    },
+    "fraud_aml_expert_v4": {
+      "adapter_id": "fraud_aml_expert_v4",
+      "description": "Fraud/AML detection",
+      "operation_mode": "detection",
+      "api_constraints": {
+        "allowed_operations": ["detect", "screen", "report", "flag"],
+        "forbidden_operations": ["clear_flag", "modify_sar", "delete_alert", "bypass_aml"]
+      },
+      "alert_config": { "channels": ["compliance", "finance-ops"], "severity": "CRITICAL" }
+    },
+    "med_expert_v1": {
+      "adapter_id": "med_expert_v1",
+      "description": "Healthcare expert",
+      "operation_mode": "consultation",
+      "api_constraints": {
+        "allowed_operations": ["diagnose", "recommend", "report", "analyze"],
+        "forbidden_operations": ["prescribe", "modify_record", "delete_phi", "share_patient_data"]
+      },
+      "file_constraints": {
+        "allowed_operations": ["read", "anonymize"],
+        "forbidden_operations": ["write", "delete", "export_phi"]
+      },
+      "alert_config": { "channels": ["hipaa-compliance"], "severity": "CRITICAL" }
+    },
+    "nerc_cip_v1": {
+      "adapter_id": "nerc_cip_v1",
+      "description": "Energy sector NERC CIP",
+      "operation_mode": "compliance",
+      "api_constraints": {
+        "allowed_operations": ["check", "report", "audit", "verify"],
+        "forbidden_operations": ["modify_compliance", "delete_evidence", "disable_monitoring", "override_alert"]
+      },
+      "alert_config": { "channels": ["security-ops"], "severity": "CRITICAL" }
+    },
+    "itar_compliant_v1": {
+      "adapter_id": "itar_compliant_v1",
+      "description": "Defense ITAR compliance",
+      "operation_mode": "compliance",
+      "api_constraints": {
+        "allowed_operations": ["check", "verify", "report", "flag"],
+        "forbidden_operations": ["export_data", "share_external", "modify_classification", "bypass_itar"]
+      },
+      "file_constraints": {
+        "allowed_operations": ["read", "tag"],
+        "forbidden_operations": ["export", "share", "delete"]
+      },
+      "alert_config": { "channels": ["security-ops", "legal"], "severity": "CRITICAL" }
+    },
+    "regulatory_expert_v4": {
+      "adapter_id": "regulatory_expert_v4",
+      "description": "Regulatory compliance expert",
+      "operation_mode": "advisory",
+      "api_constraints": {
+        "allowed_operations": ["analyze", "advise", "report", "flag"],
+        "forbidden_operations": ["approve_noncompliant", "modify_regulation", "delete_report", "bypass_regulation"]
+      },
+      "alert_config": { "channels": ["compliance", "legal"], "severity": "HIGH" }
+    },
+    "sec_auditor": {
+      "adapter_id": "sec_auditor",
+      "description": "SEC auditing",
+      "operation_mode": "audit_only",
+      "api_constraints": {
+        "allowed_operations": ["audit", "review", "report", "flag"],
+        "forbidden_operations": ["modify_filing", "delete_audit", "approve_premature", "suppress_finding"]
+      },
+      "alert_config": { "channels": ["compliance", "legal"], "severity": "CRITICAL" }
+    },
+    "terminal_expert_v4": {
+      "adapter_id": "terminal_expert_v4",
+      "description": "Logistics terminal operations",
+      "operation_mode": "advisory",
+      "api_constraints": {
+        "allowed_operations": ["analyze", "report", "optimize", "schedule"],
+        "forbidden_operations": ["modify_manifest", "delete_schedule", "release_containers", "override_safety"]
+      },
+      "alert_config": { "channels": ["operations"], "severity": "HIGH" }
+    },
+    "estimating_lora": {
+      "adapter_id": "estimating_lora",
+      "description": "Construction cost estimating",
+      "operation_mode": "analysis",
+      "api_constraints": {
+        "allowed_operations": ["estimate", "analyze", "report", "compare"],
+        "forbidden_operations": ["approve_bid", "modify_estimate", "release_payment", "sign_contract"]
+      },
+      "alert_config": { "channels": ["operations"], "severity": "HIGH" }
+    },
+    "pvi_airlock_sr2602": {
+      "adapter_id": "pvi_airlock_sr2602",
+      "description": "PVI Airlock validator - SR 26-02",
+      "operation_mode": "audit_only",
+      "api_constraints": {
+        "allowed_operations": ["validate", "audit", "verify", "flag"],
+        "forbidden_operations": ["execute_tool", "modify_trajectory", "bypass_airlock", "skip_validation"]
+      },
+      "alert_config": { "channels": ["compliance", "security-ops"], "severity": "CRITICAL" }
+    },
+    "safety_auditor_v4": {
+      "adapter_id": "safety_auditor_v4",
+      "description": "Logistics safety auditor",
+      "operation_mode": "audit",
+      "api_constraints": {
+        "allowed_operations": ["audit", "check", "report", "flag"],
+        "forbidden_operations": ["override_safety", "bypass_inspection", "delete_violation", "modify_report"]
+      },
+      "file_constraints": {
+        "allowed_operations": ["read", "review"],
+        "forbidden_operations": ["write", "delete", "modify"]
+      },
+      "alert_config": { "channels": ["safety-ops"], "severity": "HIGH" }
+    },
+    "safety_audit_v1": {
+      "adapter_id": "safety_audit_v1",
+      "description": "Energy safety auditor",
+      "operation_mode": "audit",
+      "api_constraints": {
+        "allowed_operations": ["audit", "check", "report", "verify"],
+        "forbidden_operations": ["override_alert", "disable_monitoring", "delete_evidence", "bypass_inspection"]
+      },
+      "alert_config": { "channels": ["safety-ops", "security-ops"], "severity": "CRITICAL" }
+    },
+    "hipaa_airlock_v1": {
+      "adapter_id": "hipaa_airlock_v1",
+      "description": "HIPAA compliance airlock",
+      "operation_mode": "enforcement",
+      "api_constraints": {
+        "allowed_operations": ["check_phi", "verify_compliance", "audit_access", "flag_violation"],
+        "forbidden_operations": ["release_phi", "bypass_hipaa", "modify_audit_log", "disable_monitoring"]
+      },
+      "file_constraints": {
+        "allowed_operations": ["read", "audit"],
+        "forbidden_operations": ["export_phi", "share_patient_data", "delete_audit"]
+      },
+      "alert_config": { "channels": ["hipaa-compliance", "security-ops"], "severity": "CRITICAL" }
+    },
+    "compliance_auditor": {
+      "adapter_id": "compliance_auditor",
+      "description": "Legal compliance auditor",
+      "operation_mode": "audit",
+      "api_constraints": {
+        "allowed_operations": ["audit", "verify", "report", "flag"],
+        "forbidden_operations": ["modify_compliance", "delete_audit", "suppress_flag", "bypass_privilege"]
+      },
+      "alert_config": { "channels": ["legal", "compliance"], "severity": "CRITICAL" }
+    },
+    "safety_osha_v1": {
+      "adapter_id": "safety_osha_v1",
+      "description": "OSHA safety validator",
+      "operation_mode": "audit",
+      "api_constraints": {
+        "allowed_operations": ["check_osha", "audit_safety", "report", "flag"],
+        "forbidden_operations": ["override_safety", "bypass_osha", "delete_violation", "modify_inspection"]
+      },
+      "alert_config": { "channels": ["safety-ops"], "severity": "HIGH" }
+    },
+    "mil_spec_v1": {
+      "adapter_id": "mil_spec_v1",
+      "description": "Military specification validator",
+      "operation_mode": "audit",
+      "api_constraints": {
+        "allowed_operations": ["verify_spec", "check_compliance", "audit", "report"],
+        "forbidden_operations": ["modify_classification", "bypass_itar", "delete_audit", "release_sensitive"]
+      },
+      "alert_config": { "channels": ["security-ops"], "severity": "CRITICAL" }
+    },
+    "credit_risk_manager_hub": {
+      "adapter_id": "credit_risk_manager_hub",
+      "description": "Credit risk management hub",
+      "operation_mode": "advisory",
+      "api_constraints": {
+        "allowed_operations": ["assess", "review", "report", "escalate"],
+        "forbidden_operations": ["approve_credit", "modify_limit", "delete_assessment", "override_decision"]
+      },
+      "alert_config": { "channels": ["finance-ops"], "severity": "HIGH" }
+    },
+    "terminal_director_hub": {
+      "adapter_id": "terminal_director_hub",
+      "description": "Terminal operations hub",
+      "operation_mode": "advisory",
+      "api_constraints": {
+        "allowed_operations": ["review", "report", "direct", "escalate"],
+        "forbidden_operations": ["release_containers", "modify_crew", "override_safety", "cancel_dispatch"]
+      },
+      "alert_config": { "channels": ["operations"], "severity": "HIGH" }
+    },
+    "department_head_hub": {
+      "adapter_id": "department_head_hub",
+      "description": "Legal department hub",
+      "operation_mode": "advisory",
+      "api_constraints": {
+        "allowed_operations": ["review", "assign", "report", "escalate"],
+        "forbidden_operations": ["sign_contract", "modify_privilege", "delete_case", "bypass_approval"]
+      },
+      "alert_config": { "channels": ["legal"], "severity": "HIGH" }
+    },
+    "governance_hub_v1": {
+      "adapter_id": "governance_hub_v1",
+      "description": "Governance hub",
+      "operation_mode": "advisory",
+      "api_constraints": {
+        "allowed_operations": ["review", "monitor", "report", "escalate"],
+        "forbidden_operations": ["override_policy", "disable_governance", "modify_audit", "bypass_controls"]
+      },
+      "alert_config": { "channels": ["compliance"], "severity": "CRITICAL" }
+    },
+    "cash_flow_sme": {
+      "adapter_id": "cash_flow_sme",
+      "description": "Cash flow SME",
+      "operation_mode": "advisory",
+      "api_constraints": {
+        "allowed_operations": ["analyze", "forecast", "report", "advise"],
+        "forbidden_operations": ["execute_transfer", "approve_loan", "modify_balance"]
+      },
+      "alert_config": { "channels": ["finance-ops"], "severity": "LOW" }
+    },
+    "collateral_valuator": {
+      "adapter_id": "collateral_valuator",
+      "description": "Collateral valuation SME",
+      "operation_mode": "advisory",
+      "api_constraints": {
+        "allowed_operations": ["value", "assess", "report", "analyze"],
+        "forbidden_operations": ["approve_valuation", "modify_value", "delete_history"]
+      },
+      "alert_config": { "channels": ["finance-ops"], "severity": "LOW" }
+    },
+    "sanctions_list_sme": {
+      "adapter_id": "sanctions_list_sme",
+      "description": "Sanctions list SME",
+      "operation_mode": "advisory",
+      "api_constraints": {
+        "allowed_operations": ["check_list", "verify_entity", "report", "flag"],
+        "forbidden_operations": ["modify_list", "add_entry", "delete_entry", "bypass_screen"]
+      },
+      "alert_config": { "channels": ["compliance"], "severity": "CRITICAL" }
+    },
+    "commercial_lending_v4": {
+      "adapter_id": "commercial_lending_v4",
+      "description": "Commercial lending specialist",
+      "operation_mode": "analysis",
+      "api_constraints": {
+        "allowed_operations": ["analyze", "assess", "report", "recommend"],
+        "forbidden_operations": ["approve_loan", "modify_terms", "disburse_funds", "override_decision"]
+      },
+      "alert_config": { "channels": ["finance-ops"], "severity": "HIGH" }
+    },
+    "retail_banking_v4": {
+      "adapter_id": "retail_banking_v4",
+      "description": "Retail banking specialist",
+      "operation_mode": "analysis",
+      "api_constraints": {
+        "allowed_operations": ["analyze", "assess", "report", "advise"],
+        "forbidden_operations": ["approve_account", "modify_balance", "execute_transfer", "override_limit"]
+      },
+      "alert_config": { "channels": ["finance-ops"], "severity": "HIGH" }
+    },
+    "fraud_aml_director": {
+      "adapter_id": "fraud_aml_director",
+      "description": "Fraud/AML director",
+      "operation_mode": "advisory",
+      "api_constraints": {
+        "allowed_operations": ["review", "direct", "report", "flag"],
+        "forbidden_operations": ["clear_flag", "modify_sar", "override_aml", "disable_monitoring"]
+      },
+      "alert_config": { "channels": ["compliance"], "severity": "CRITICAL" }
+    },
+    "sar_auditor": {
+      "adapter_id": "sar_auditor",
+      "description": "SAR auditor",
+      "operation_mode": "audit",
+      "api_constraints": {
+        "allowed_operations": ["audit", "review", "report", "flag"],
+        "forbidden_operations": ["modify_sar", "delete_sar", "suppress_filing", "bypass_aml"]
+      },
+      "alert_config": { "channels": ["compliance"], "severity": "CRITICAL" }
+    },
+    "hazmat_compliance_v4": {
+      "adapter_id": "hazmat_compliance_v4",
+      "description": "Hazmat compliance specialist",
+      "operation_mode": "compliance",
+      "api_constraints": {
+        "allowed_operations": ["check", "verify", "report", "flag"],
+        "forbidden_operations": ["override_safety", "bypass_inspection", "delete_certification", "modify_manifest"]
+      },
+      "alert_config": { "channels": ["hazmat-ops"], "severity": "HIGH" }
+    },
+    "terminal_ops_v4": {
+      "adapter_id": "terminal_ops_v4",
+      "description": "Terminal operations specialist",
+      "operation_mode": "advisory",
+      "api_constraints": {
+        "allowed_operations": ["monitor", "report", "schedule", "optimize"],
+        "forbidden_operations": ["release_containers", "modify_crew", "override_safety", "delete_manifest"]
+      },
+      "alert_config": { "channels": ["operations"], "severity": "LOW" }
+    },
+    "hazmat_sme": {
+      "adapter_id": "hazmat_sme",
+      "description": "Hazmat subject matter expert",
+      "operation_mode": "advisory",
+      "api_constraints": {
+        "allowed_operations": ["advise", "assess", "report", "flag"],
+        "forbidden_operations": ["override_safety", "bypass_hazmat", "delete_cert"]
+      },
+      "alert_config": { "channels": ["hazmat-ops"], "severity": "HIGH" }
+    },
+    "fuel_efficiency_sme": {
+      "adapter_id": "fuel_efficiency_sme",
+      "description": "Fuel efficiency SME",
+      "operation_mode": "advisory",
+      "api_constraints": {
+        "allowed_operations": ["analyze", "optimize", "report", "advise"],
+        "forbidden_operations": ["modify_fleet", "override_routes", "delete_data"]
+      },
+      "alert_config": { "channels": ["operations"], "severity": "LOW" }
+    },
+    "route_safety_sme": {
+      "adapter_id": "route_safety_sme",
+      "description": "Route safety SME",
+      "operation_mode": "advisory",
+      "api_constraints": {
+        "allowed_operations": ["assess", "report", "flag", "advise"],
+        "forbidden_operations": ["override_route", "bypass_safety", "delete_assessment"]
+      },
+      "alert_config": { "channels": ["safety-ops"], "severity": "HIGH" }
+    },
+    "nda_sme": {
+      "adapter_id": "nda_sme",
+      "description": "NDA review SME",
+      "operation_mode": "advisory",
+      "api_constraints": {
+        "allowed_operations": ["review", "analyze", "report", "flag"],
+        "forbidden_operations": ["sign_nda", "modify_terms", "share_external", "bypass_review"]
+      },
+      "file_constraints": {
+        "allowed_operations": ["read", "redline"],
+        "forbidden_operations": ["export", "delete", "modify"]
+      },
+      "alert_config": { "channels": ["legal"], "severity": "LOW" }
+    },
+    "msa_sme": {
+      "adapter_id": "msa_sme",
+      "description": "MSA review SME",
+      "operation_mode": "advisory",
+      "api_constraints": {
+        "allowed_operations": ["review", "analyze", "report", "flag"],
+        "forbidden_operations": ["sign_msa", "modify_terms", "share_external", "bypass_review"]
+      },
+      "alert_config": { "channels": ["legal"], "severity": "LOW" }
+    },
+    "finra_sme": {
+      "adapter_id": "finra_sme",
+      "description": "FINRA compliance SME",
+      "operation_mode": "advisory",
+      "api_constraints": {
+        "allowed_operations": ["check", "report", "flag", "advise"],
+        "forbidden_operations": ["modify_filing", "suppress_violation", "bypass_finra"]
+      },
+      "alert_config": { "channels": ["compliance"], "severity": "HIGH" }
+    },
+    "occ_sme": {
+      "adapter_id": "occ_sme",
+      "description": "OCC compliance SME",
+      "operation_mode": "advisory",
+      "api_constraints": {
+        "allowed_operations": ["review", "report", "flag", "advise"],
+        "forbidden_operations": ["modify_compliance", "suppress_finding", "bypass_occ"]
+      },
+      "alert_config": { "channels": ["compliance"], "severity": "HIGH" }
+    },
+    "mortgage_sme": {
+      "adapter_id": "mortgage_sme",
+      "description": "Mortgage SME",
+      "operation_mode": "advisory",
+      "api_constraints": {
+        "allowed_operations": ["analyze", "assess", "report", "advise"],
+        "forbidden_operations": ["approve_mortgage", "modify_rate", "release_funds", "override_decision"]
+      },
+      "alert_config": { "channels": ["finance-ops"], "severity": "HIGH" }
+    },
+    "credit_card_sme": {
+      "adapter_id": "credit_card_sme",
+      "description": "Credit card SME",
+      "operation_mode": "advisory",
+      "api_constraints": {
+        "allowed_operations": ["analyze", "assess", "report", "advise"],
+        "forbidden_operations": ["approve_limit", "modify_rate", "release_credit", "override_decision"]
+      },
+      "alert_config": { "channels": ["finance-ops"], "severity": "HIGH" }
+    },
+    "pattern_anomaly_sme": {
+      "adapter_id": "pattern_anomaly_sme",
+      "description": "Pattern anomaly detection SME",
+      "operation_mode": "detection",
+      "api_constraints": {
+        "allowed_operations": ["detect", "analyze", "report", "flag"],
+        "forbidden_operations": ["clear_flag", "modify_report", "suppress_finding", "bypass_detection"]
+      },
+      "alert_config": { "channels": ["compliance"], "severity": "HIGH" }
+    },
+    "sar_drafting_sme": {
+      "adapter_id": "sar_drafting_sme",
+      "description": "SAR drafting SME",
+      "operation_mode": "advisory",
+      "api_constraints": {
+        "allowed_operations": ["draft", "review", "report", "flag"],
+        "forbidden_operations": ["submit_sar", "modify_sar", "delete_sar", "bypass_review"]
+      },
+      "alert_config": { "channels": ["compliance"], "severity": "HIGH" }
+    },
+    "aml_monitor_v2": {
+      "adapter_id": "aml_monitor_v2",
+      "description": "AML monitoring specialist",
+      "operation_mode": "detection",
+      "api_constraints": {
+        "allowed_operations": ["monitor", "detect", "report", "flag"],
+        "forbidden_operations": ["clear_alert", "modify_sar", "bypass_aml", "disable_monitoring"]
+      },
+      "alert_config": { "channels": ["compliance"], "severity": "CRITICAL" }
+    },
+    "industry_volatility_sme": {
+      "adapter_id": "industry_volatility_sme",
+      "description": "Industry volatility SME",
+      "operation_mode": "advisory",
+      "api_constraints": {
+        "allowed_operations": ["analyze", "forecast", "report", "advise"],
+        "forbidden_operations": ["modify_risk_model", "override_threshold", "delete_data"]
+      },
+      "alert_config": { "channels": ["finance-ops"], "severity": "LOW" }
+    },
+    "dot_compliance_sme": {
+      "adapter_id": "dot_compliance_sme",
+      "description": "DOT compliance SME",
+      "operation_mode": "compliance",
+      "api_constraints": {
+        "allowed_operations": ["check", "verify", "report", "flag"],
+        "forbidden_operations": ["override_dot", "bypass_inspection", "delete_record", "modify_hos"]
+      },
+      "alert_config": { "channels": ["compliance"], "severity": "HIGH" }
+    },
+    "epa_sme": {
+      "adapter_id": "epa_sme",
+      "description": "EPA compliance SME",
+      "operation_mode": "compliance",
+      "api_constraints": {
+        "allowed_operations": ["check", "verify", "report", "flag"],
+        "forbidden_operations": ["override_epa", "bypass_inspection", "delete_record", "modify_emissions"]
+      },
+      "alert_config": { "channels": ["compliance"], "severity": "HIGH" }
+    },
+    "kyc_verifier": {
+      "adapter_id": "kyc_verifier",
+      "description": "KYC verification specialist",
+      "operation_mode": "advisory",
+      "api_constraints": {
+        "allowed_operations": ["verify", "check", "report", "flag"],
+        "forbidden_operations": ["approve_kyc", "modify_identity", "delete_record", "bypass_verification"]
+      },
+      "alert_config": { "channels": ["compliance"], "severity": "HIGH" }
+    },
+    "legal_contract_v1": {
+      "adapter_id": "legal_contract_v1",
+      "description": "Legal contract reviewer",
+      "operation_mode": "review_only",
+      "file_constraints": {
+        "allowed_operations": ["read", "review", "redline"],
+        "forbidden_operations": ["sign", "execute", "delete", "modify", "share_external"]
+      },
+      "api_constraints": {
+        "allowed_operations": ["review", "analyze", "report", "flag"],
+        "forbidden_operations": ["approve", "execute", "modify_terms", "bypass_review"]
+      },
+      "alert_config": { "channels": ["legal"], "severity": "HIGH" }
+    },
+    "davis_bacon_v1": {
+      "adapter_id": "davis_bacon_v1",
+      "description": "Davis-Bacon wage compliance",
+      "operation_mode": "compliance",
+      "api_constraints": {
+        "allowed_operations": ["check", "verify", "report", "flag"],
+        "forbidden_operations": ["modify_wage", "override_prevailing", "delete_record", "bypass_compliance"]
+      },
+      "alert_config": { "channels": ["compliance"], "severity": "HIGH" }
+    },
+    "dot_hazmat_v1": {
+      "adapter_id": "dot_hazmat_v1",
+      "description": "DOT hazmat compliance",
+      "operation_mode": "compliance",
+      "api_constraints": {
+        "allowed_operations": ["check", "verify", "report", "flag"],
+        "forbidden_operations": ["override_hazmat", "bypass_inspection", "delete_cert", "modify_manifest"]
+      },
+      "alert_config": { "channels": ["hazmat-ops"], "severity": "HIGH" }
+    },
+    "phi_filter_v1": {
+      "adapter_id": "phi_filter_v1",
+      "description": "PHI filter for healthcare",
+      "operation_mode": "redact_only",
+      "file_constraints": {
+        "allowed_operations": ["read", "redact", "mask", "anonymize"],
+        "forbidden_operations": ["export_phi", "write_raw", "delete", "share", "modify"]
+      },
+      "alert_config": { "channels": ["hipaa-compliance"], "severity": "CRITICAL" }
+    },
+    "regulatory_auditor": {
+      "adapter_id": "regulatory_auditor",
+      "description": "Regulatory auditor",
+      "operation_mode": "audit",
+      "api_constraints": {
+        "allowed_operations": ["audit", "verify", "report", "flag"],
+        "forbidden_operations": ["modify_finding", "suppress_violation", "delete_audit", "bypass_audit"]
+      },
+      "alert_config": { "channels": ["compliance"], "severity": "CRITICAL" }
+    },
+    "sr26_02_auditor": {
+      "adapter_id": "sr26_02_auditor",
+      "description": "SR 26-02 compliance auditor",
+      "operation_mode": "audit",
+      "api_constraints": {
+        "allowed_operations": ["audit", "verify", "report", "flag"],
+        "forbidden_operations": ["modify_compliance", "suppress_violation", "delete_audit", "bypass_sr2602"]
+      },
+      "alert_config": { "channels": ["compliance", "security-ops"], "severity": "CRITICAL" }
+    }
+  }
+}

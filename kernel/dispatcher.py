@@ -17,8 +17,8 @@ from typing import Optional, Dict, List, Any, Generator
 from dataclasses import dataclass, field
 from enum import Enum
 
-from kernel.registry import ToolRegistry, ToolDefinition
-from kernel.exceptions import ToolExecutionError, PolicyViolationInterrupt
+from .registry import ToolRegistry, ToolDefinition
+from .exceptions import ToolExecutionError, PolicyViolationInterrupt
 
 
 class DispatchState(Enum):

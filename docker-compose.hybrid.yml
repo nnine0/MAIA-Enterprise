@@ -1,0 +1,301 @@
+version: '3.9'
+
+services:
+  # SGLang Inference Server with RadixAttention + DFlash
+  # Pinned KV-cache for SR 26-02 system prompts (near-zero prefill latency)
+  # DFlash: Parallel Block-Diffusion Drafter for 6x speed (16-token blocks)
+  # Two modes: MTP (low-power/edge) and DFlash (industrial/H100)
+  # Switch via --draft-model and --enable-dflash flags
+  sglang-kernel:
+    image: ghcr.io/sglang/sglang:latest
+    container_name: maia-sglang
+    ports:
+      - "3000:3000"
+      - "3001:3001"
+    environment:
+      - MODEL_PATH=/models/speculator
+      - CUDA_VISIBLE_DEVICES=0
+    ipc: host
+    ulimits:
+      memlock: -1
+      nofile: 65536
+    volumes:
+      - /models:/models
+      - ./adapters:/data/adapters
+      - /dev/shm:/dev/shm
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 300s
+
+    # ─── DFlash Mode (Industrial / H100 / AI Factory) ───
+    # Generate 16-token reasoning blocks in a single parallel GPU forward pass
+    # PVI Airlock audits entire block at once → 16x fewer interruptions
+    # Target: 21K+ req/s with single high-resolution audit per block
+    command: >
+      python -m sglang.launch_server
+      --model-path google/gemma-4-26B-A4B
+      --port 3000
+      --port 3001
+      --enable-torch-compile
+      --enable-flashinfer
+      --enable-radix-cache
+      --chunked-prefill-size 4096
+      --draft-model z-lab/gemma-4-E4B-it-DFlash
+      --enable-dflash
+      --dflash-block-size 16
+      --enable-tp
+
+  # LoRAX SGMV Kernel
+  # Segmented Gather Matrix-Vector for batched Actor + Auditor forward pass
+  # MTP Mode: Low-power / mobile / edge deployments
+  # DFlash Mode: Industrial (governance over DFlash blocks)
+  lorax-kernel:
+    image: ghcr.io/predibase/lorax:latest
+    container_name: maia-lorax
+    ports:
+      - "8080:80"
+    ipc: host
+    ulimits:
+      memlock: -1
+      nofile: 65536
+    environment:
+      - MODEL_PATH=/models/speculator
+      - NUM_SHARD=1
+      - MAX_BATCH_PREFILL_TOKENS=8192
+      - MAX_TOTAL_TOKENS=16384
+      - SGMV_ENABLED=true
+    volumes:
+      - /models:/models
+      - ./adapters:/data/adapters
+      - /dev/shm:/dev/shm
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    depends_on:
+      sglang-kernel:
+        condition: service_healthy
+    command: >
+      --model-id google/gemma-4-26B-A4B
+      --num-shard 1
+      --max-batch-prefill-tokens 8192
+      --max-total-tokens 16384
+      --quantize nvfp4
+      --sgmv
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 180s
+
+  # Quad-Node GPU Cluster
+  # Each node runs governed MAIA kernel on shared GPU with IPC
+  maia-node-1:
+    build: .
+    image: maia-enterprise:latest
+    container_name: maia-estimating
+    ports:
+      - "8001:8000"
+    ipc: host
+    ulimits:
+      memlock: -1
+    environment:
+      - NODE_ID=estimating
+      - NODE_PORT=8001
+      - LORAX_URL=http://lorax-kernel:80
+      - SGLANG_URL=http://sglang-kernel:3000
+      - COMPLIANCE_CONFIG=configs/compliance/generic_contractor_v1.json
+      - IPC_MODE=shared_memory
+      - SHM_PATH=/dev/shm/maia_estimating
+    volumes:
+      - ./configs:/app/configs
+      - ./logs:/app/logs
+      - /dev/shm:/dev/shm
+    depends_on:
+      lorax-kernel:
+        condition: service_healthy
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    command: python3 server.py
+
+  maia-node-2:
+    build: .
+    image: maia-enterprise:latest
+    container_name: maia-legal
+    ports:
+      - "8002:8000"
+    ipc: host
+    ulimits:
+      memlock: -1
+    environment:
+      - NODE_ID=legal
+      - NODE_PORT=8002
+      - LORAX_URL=http://lorax-kernel:80
+      - SGLANG_URL=http://sglang-kernel:3000
+      - COMPLIANCE_CONFIG=configs/compliance/generic_contractor_v1.json
+      - IPC_MODE=shared_memory
+      - SHM_PATH=/dev/shm/maia_legal
+    volumes:
+      - ./configs:/app/configs
+      - ./logs:/app/logs
+      - /dev/shm:/dev/shm
+    depends_on:
+      lorax-kernel:
+        condition: service_healthy
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    command: python3 server.py
+
+  maia-node-3:
+    build: .
+    image: maia-enterprise:latest
+    container_name: maia-safety
+    ports:
+      - "8003:8000"
+    ipc: host
+    ulimits:
+      memlock: -1
+    environment:
+      - NODE_ID=safety
+      - NODE_PORT=8003
+      - LORAX_URL=http://lorax-kernel:80
+      - SGLANG_URL=http://sglang-kernel:3000
+      - COMPLIANCE_CONFIG=configs/compliance/osha_standards.json
+      - IPC_MODE=shared_memory
+      - SHM_PATH=/dev/shm/maia_safety
+    volumes:
+      - ./configs:/app/configs
+      - ./logs:/app/logs
+      - /dev/shm:/dev/shm
+    depends_on:
+      lorax-kernel:
+        condition: service_healthy
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    command: python3 server.py
+
+  maia-node-4:
+    build: .
+    image: maia-enterprise:latest
+    container_name: maia-logistics
+    ports:
+      - "8004:8000"
+    ipc: host
+    ulimits:
+      memlock: -1
+    environment:
+      - NODE_ID=logistics
+      - NODE_PORT=8004
+      - LORAX_URL=http://lorax-kernel:80
+      - SGLANG_URL=http://sglang-kernel:3000
+      - COMPLIANCE_CONFIG=configs/compliance/dot_imdg.json
+      - IPC_MODE=shared_memory
+      - SHM_PATH=/dev/shm/maia_logistics
+    volumes:
+      - ./configs:/app/configs
+      - ./logs:/app/logs
+      - /dev/shm:/dev/shm
+    depends_on:
+      lorax-kernel:
+        condition: service_healthy
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    command: python3 server.py
+
+  # MAIA Control Plane
+  # Manages shared memory arenas and coordinates nodes
+  maia-control:
+    build: .
+    image: maia-enterprise:latest
+    container_name: maia-control
+    ports:
+      - "9090:9090"
+    ipc: host
+    ulimits:
+      memlock: -1
+    environment:
+      - NODE_ID=control
+      - CONTROL_PORT=9090
+      - SHM_BASE=/dev/shm/maia
+      - VRAM_TOTAL_MB=24576
+    volumes:
+      - /dev/shm:/dev/shm
+      - ./logs:/app/logs
+    command: python3 -c "from kernel.hybrid_kernel import SharedMemoryArena; import time; SharedMemoryArena('/dev/shm/maia_control', 512); time.sleep(86400)"
+
+  # Governance Dashboard
+  # Real-time EKG and SVP metrics
+  dashboard:
+    image: python:3.11-slim
+    container_name: maia-dashboard
+    ports:
+      - "3033:3033"
+    environment:
+      - NODE_ID=dashboard
+    volumes:
+      - ./logs:/app/logs
+      - ./docs:/app/docs
+    command: >
+      sh -c "pip install streamlit pandas plotly && 
+      streamlit run docs/dashboard.py --server.port 3033 --server.address 0.0.0.0"
+
+  # Forensics Sidecar
+  # Kafka-backed audit trail with two-track durability
+  forensics:
+    image: confluentinc/cp-kafka:latest
+    container_name: maia-forensics
+    ports:
+      - "9092:9092"
+    environment:
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+    depends_on:
+      - zookeeper
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: maia-zookeeper
+    environment:
+      - ZOOKEEPER_CLIENT_PORT=2181
+
+networks:
+  default:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16

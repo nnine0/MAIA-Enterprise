@@ -16,4 +16,4 @@ venv/
 /adapters/**/__pycache__/
 /qdrant_data/
 /data_logs/
-.DS_Store
+.DS_Store__pycache__/
