@@ -543,10 +543,10 @@ class TestRLHFTrainingData:
         assert "rejected" in dpo_data[0]
 
 
-@pytest.mark.asyncio
 class TestDHITLIntegration:
     """Test DHITL integration with PVI Airlock"""
 
+    @pytest.mark.asyncio
     async def test_tier1_escalates_to_sme_review(self, airlock):
         """Tier 1 trajectory escalates to DHITL SME review"""
         user_query = "Approve $50M commercial loan"
@@ -564,6 +564,7 @@ class TestDHITLIntegration:
             assert record.dhitl_session_id is not None
             assert record.dhitl_session_id.startswith("dhitl-")
 
+    @pytest.mark.asyncio
     async def test_sme_vote_creates_rlhf_data(self, airlock):
         """SME vote generates RLHF training data"""
         user_query = "Wire transfer $1M to account 12345"

@@ -51,6 +51,7 @@ class MemoryManager:
     PINNED_COMPONENTS = [
         "base-model-gemma-4-26b-a4b-it",
         "pvi-airlock-sr2602",
+        "pvi-airlock-auditor",
         "governance-hub-v1"
     ]
     
@@ -76,6 +77,7 @@ class MemoryManager:
         """Initialize default adapter set"""
         default_adapters = [
             # Finance
+            ("citi/finance-expert-v4", "finance", 100),
             ("finance-expert-v4", "finance", 100),
             ("credit-expert-v4", "finance", 100),
             ("commercial-lending-v4", "finance", 120),

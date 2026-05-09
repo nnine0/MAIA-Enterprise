@@ -18,24 +18,21 @@ import uuid
 from pathlib import Path
 from typing import Generator, AsyncGenerator, Optional, Dict, Any
 
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
+from pydantic import BaseModel
 
 from kernel.matrix import MaterialityMatrix, MaterialityTier
 from kernel.airlock import Gemma4ThinkingAirlock
 from kernel.dispatcher import NeuralToolDispatcher, DispatchRequest
 from kernel.registry import ToolRegistry
 from kernel.exceptions import PolicyViolationInterrupt, DHITLRequired
+from app.airlock_gateway import AirlockGateway, create_gateway
 
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("MAIA-Kernel")
-
-
-app = FastAPI(
-    title="MAIA Enterprise Kernel",
-    description="Governed AI OS for regulated industries"
-)
 
 
 class MAIAKernel:
@@ -159,15 +156,29 @@ class MAIAKernel:
         }
 
 
-# Global kernel instance
+# Global instances
 kernel: Optional[MAIAKernel] = None
+airlock_gateway: Optional[AirlockGateway] = None
 
 
-@app.on_event("startup")
-async def startup():
-    global kernel
+@asynccontextmanager
+async def lifespan(app):
+    global kernel, airlock_gateway
     kernel = MAIAKernel()
-    logger.info("MAIA Kernel started")
+    airlock_gateway = create_gateway(
+        api_base="",
+        sector="finance",
+        demo=True
+    )
+    logger.info("MAIA Kernel + Airlock Gateway initialized")
+    yield
+
+
+app = FastAPI(
+    title="MAIA Enterprise Kernel",
+    description="Governed AI OS for regulated industries",
+    lifespan=lifespan
+)
 
 
 @app.get("/health")
@@ -258,6 +269,117 @@ async def governance_tools():
     return {
         "tools": kernel.registry.list_tools(),
         "total": len(kernel.registry.tools)
+    }
+
+
+# ─── Airlock Gateway Endpoints ─────────────────────────────────────────────
+
+class AirlockConfig(BaseModel):
+    messages: List[Dict] = []
+    prompt: str = ""
+    sector: str = "finance"
+    max_tokens: int = 1024
+    temperature: float = 0.7
+
+
+@app.post("/v1/airlock/gateway")
+async def airlock_gateway_endpoint(config: AirlockConfig):
+    """
+    Parallel Airlock Gateway.
+    
+    Dispatches to Sheriff (Nemotron) + Sentinel (Granite) in parallel
+    with the base model. Pre-flight kills the cloud call if violation found.
+    Egress intercepts tool calls before they reach customer data.
+    """
+    global airlock_gateway
+    if not airlock_gateway:
+        raise HTTPException(status_code=503, detail="Airlock Gateway not ready")
+
+    prompt = config.prompt or (config.messages[-1].get("content", "") if config.messages else "")
+    if not prompt:
+        raise HTTPException(status_code=400, detail="No prompt provided")
+
+    # Update sector if different
+    if config.sector != airlock_gateway.sector:
+        airlock_gateway.sector = config.sector
+        airlock_gateway.egress = __import__("app.airlock_gateway", fromlist=["EgressInterceptor"]).EgressInterceptor(config.sector)
+        airlock_gateway.policy = __import__("app.airlock_gateway", fromlist=["PolicyManifest"]).PolicyManifest(config.sector)
+
+    try:
+        tx = await airlock_gateway.process(
+            prompt=prompt,
+            messages=config.messages if config.messages else None,
+            max_tokens=config.max_tokens,
+            temperature=config.temperature,
+        )
+    except Exception as e:
+        logger.error(f"Airlock gateway error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+    status_code = 403 if "BLOCKED" in tx.final_status else 200
+
+    from app.airlock_gateway import Verdict
+
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "transaction_id": tx.transaction_id,
+            "final_status": tx.final_status,
+            "latency_ms": round(tx.latency_ms, 2),
+            "sector": tx.sector,
+            "preflight": {
+                "result": tx.preflight.result.value if tx.preflight else "SKIPPED",
+                "findings": [
+                    {
+                        "auditor": f.auditor,
+                        "verdict": f.verdict.value,
+                        "reason": f.reason,
+                        "categories": f.categories,
+                        "latency_ms": round(f.latency_ms, 2),
+                    }
+                    for f in (tx.preflight.findings if tx.preflight else [])
+                ],
+                "total_latency_ms": round(tx.preflight.total_latency_ms, 2) if tx.preflight else 0,
+            } if tx.preflight else None,
+            "egress": {
+                "action": tx.egress_decision.action.value if tx.egress_decision else "NONE",
+                "tool_id": tx.egress_decision.tool_id if tx.egress_decision else None,
+                "reason": tx.egress_decision.reason if tx.egress_decision else "",
+            } if tx.egress_decision else None,
+            "response": tx.base_model_response if tx.final_status in ("PASSED", "ESCALATED", "ESCALATED_EGRESS") else None,
+            "timestamp": tx.timestamp,
+        }
+    )
+
+
+@app.get("/v1/airlock/stats")
+async def airlock_stats():
+    """Airlock Gateway statistics"""
+    global airlock_gateway
+    if not airlock_gateway:
+        raise HTTPException(status_code=503, detail="Airlock Gateway not ready")
+    return airlock_gateway.get_stats()
+
+
+@app.get("/v1/airlock/transactions")
+async def airlock_transactions(limit: int = 20):
+    """Recent airlock transactions"""
+    global airlock_gateway
+    if not airlock_gateway:
+        raise HTTPException(status_code=503, detail="Airlock Gateway not ready")
+    recent = airlock_gateway.transactions[-limit:]
+    return {
+        "transactions": [
+            {
+                "transaction_id": t.transaction_id,
+                "final_status": t.final_status,
+                "latency_ms": round(t.latency_ms, 2),
+                "prompt": t.prompt[:80],
+                "timestamp": t.timestamp,
+            }
+            for t in recent
+        ],
+        "total": len(airlock_gateway.transactions),
     }
 
 
