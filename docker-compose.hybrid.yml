@@ -1,13 +1,17 @@
 version: '3.9'
 
 services:
-  # SGLang Inference Server with RadixAttention
+  # SGLang Inference Server with RadixAttention + DFlash
   # Pinned KV-cache for SR 26-02 system prompts (near-zero prefill latency)
+  # DFlash: Parallel Block-Diffusion Drafter for 6x speed (16-token blocks)
+  # Two modes: MTP (low-power/edge) and DFlash (industrial/H100)
+  # Switch via --draft-model and --enable-dflash flags
   sglang-kernel:
     image: ghcr.io/sglang/sglang:latest
     container_name: maia-sglang
     ports:
       - "3000:3000"
+      - "3001:3001"
     environment:
       - MODEL_PATH=/models/speculator
       - CUDA_VISIBLE_DEVICES=0
@@ -32,17 +36,29 @@ services:
       timeout: 10s
       retries: 5
       start_period: 300s
+
+    # ─── DFlash Mode (Industrial / H100 / AI Factory) ───
+    # Generate 16-token reasoning blocks in a single parallel GPU forward pass
+    # PVI Airlock audits entire block at once → 16x fewer interruptions
+    # Target: 21K+ req/s with single high-resolution audit per block
     command: >
       python -m sglang.launch_server
       --model-path google/gemma-4-26B-A4B
       --port 3000
+      --port 3001
       --enable-torch-compile
       --enable-flashinfer
       --enable-radix-cache
       --chunked-prefill-size 4096
+      --draft-model z-lab/gemma-4-E4B-it-DFlash
+      --enable-dflash
+      --dflash-block-size 16
+      --enable-tp
 
   # LoRAX SGMV Kernel
   # Segmented Gather Matrix-Vector for batched Actor + Auditor forward pass
+  # MTP Mode: Low-power / mobile / edge deployments
+  # DFlash Mode: Industrial (governance over DFlash blocks)
   lorax-kernel:
     image: ghcr.io/predibase/lorax:latest
     container_name: maia-lorax
