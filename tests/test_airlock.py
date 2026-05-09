@@ -588,6 +588,7 @@ class TestDHITLIntegration:
             # Session should be in completed sessions
             assert session_id in airlock.sme_pool.completed_sessions
 
+    @pytest.mark.asyncio
     async def test_dhitl_session_tracking(self, airlock):
         """DHITL session can be tracked"""
         session = airlock.sme_pool.create_voting_session(
