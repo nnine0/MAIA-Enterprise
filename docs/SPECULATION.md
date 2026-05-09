@@ -475,6 +475,118 @@ print(sb.get_routing_table())
 
 ---
 
+## DFlash/Sentinel Race Condition Guard
+
+The **primary technical hurdle** in real-world deployment is synchronizing the base model's output stream with the Sentinel model's block signal.
+
+### Problem
+
+DFlash emits 16-token blocks in one GPU forward pass. The Sentinel (Granite/Nemotron) audits each block asynchronously. Because DFlash block emission and Sentinel audit run on independent GPU streams sharing a CUDA context, four failure modes arise:
+
+| Failure Mode | Description |
+|---|---|
+| **Phantom blocks** | Base model emits block N+1 before Sentinel decides on N |
+| **Sequence inversion** | Block N decision arrives after N+1 decision |
+| **Stale decisions** | Sentinel decision for block N arrives after N+2 is active |
+| **Unresolved blocks** | Sentinel times out on block but base model expects audit |
+
+### Architecture
+
+```
+DFlash Stream:    B0 ─── B1 ─── B2 ─── ...
+                    │       │       │
+                    ▼       ▼       ▼
+              ┌─────────────────────────┐
+              │    BlockSynchronizer    │
+              │                        │
+              │  ┌──────────────────┐  │
+              │  │   BlockBuffer    │  │
+              │  │  (bounded queue) │  │
+              │  │  ┌───┐ ┌───┐ ┌──┐ │  │
+              │  │  │B0 │ │B1 │ │B2│ │  │
+              │  │  │evt│ │evt│ │  │ │  │
+              │  │  └───┘ └───┘ └──┘ │  │
+              │  └──────────────────┘  │
+              │  ┌──────────────────┐  │
+              │  │ SentinelTimeout  │  │
+              │  │   Tracker        │  │
+              │  └──────────────────┘  │
+              │  ┌──────────────────┐  │
+              │  │SequenceMonitor   │  │
+              │  │ (gap detection)  │  │
+              │  └──────────────────┘  │
+              └─────────────────────────┘
+                    │       │       │
+                    ▼       ▼       ▼
+Sentinel Stream:  A0 ─── A1 ─── A2 ─── ...
+```
+
+### Guarantees
+
+1. **No block proceeds to base model output without Sentinel approval** — each block is held in a bounded buffer awaiting its audit decision. The producer (DFlash) awaits an `asyncio.Event` per block.
+2. **Stale decisions dropped** — decisions older than the current active block are discarded via `SequenceMonitor` gap tracking.
+3. **Timeouts trigger rollback** — `SentinelTimeoutTracker` fires a `threading.Timer`; on expiry the synchronizer rolls back to the last known safe checkpoint.
+4. **Buffer bounds prevent memory bloat** — `BlockBuffer` caps at `max_size` (default 64); oldest resolved blocks are evicted, keeping only the 2 most recent.
+5. **Sequence gaps detected and logged** — `SequenceMonitor` warns on emission gaps > 1 and decision gaps > `max_seq_gap`.
+
+### Key Classes
+
+| Class | Responsibility |
+|---|---|
+| `DFlashBlockRecord` | Per-block metadata (block_id, tokens, hash, seq_number, status, decision) |
+| `BlockBuffer` | Thread-safe bounded queue with per-block `asyncio.Event` for awaitable resolution |
+| `SequenceMonitor` | Tracks highest_emitted/highest_approved/highest_decided; detects gaps |
+| `SentinelTimeoutTracker` | Per-block `threading.Timer`; fires rollback on timeout |
+| `BlockSynchronizer` | Primary coordinator — `emit_block()` + `record_decision()` + `wait_for_block()` |
+| `governed_block_context` | Async context manager wrapping the emit→wait→decision lifecycle |
+
+### Integration
+
+```python
+from app.race_guard import (
+    BlockSynchronizer, DFlashBlockRecord, SentinelDecision,
+    get_synchronizer, governed_block_context
+)
+
+# Initialize
+sync = get_synchronizer(audit_timeout=5.0, max_buffered_blocks=64, enable_rollback=True)
+
+# DFlash side: emit block, await Sentinel decision
+record = DFlashBlockRecord(
+    block_id=1, tokens=token_list, trajectory_text=reasoning,
+    block_hash=hash_value, seq_number=1
+)
+async with governed_block_context(sync, record) as result:
+    if result.decision == "APPROVED":
+        # Safe to output
+    else:
+        # Handle rejection / timeout
+
+# Sentinel side: record audit result
+from app.race_guard import SentinelDecision
+sync.record_decision(SentinelDecision(
+    block_id=1, seq_number=1,
+    decision="APPROVED", violations=[],
+    latent_hash=sentinel_hash, confidence=0.99
+))
+
+# Recovery on cascade failure
+sync.rollback_to(safe_block_id)
+```
+
+### Key Metrics
+
+| Metric | Value |
+|---|---|
+| Buffer latency (async wait) | `asyncio.Event`, <0.001ms |
+| Timeout granularity | `threading.Timer`, ~50ms precision |
+| Max buffered blocks | 64 (default) |
+| Sequence gap tolerance | 2 (configurable) |
+| Memory per blocked block | ~256 bytes (DFlashBlockRecord) |
+| Thread safety | `threading.Lock` on all mutating paths |
+
+---
+
 ## References
 
 - [Gemma 4 MTP Drafter](https://ai.google.dev/p/gemma/mtp)

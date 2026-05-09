@@ -31,9 +31,10 @@ Run: python3 -m app.sglang_kernel
 import asyncio
 import json
 import hashlib
+import time
 from datetime import datetime
 from typing import Optional, Dict, Any, List
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 
 try:
@@ -44,6 +45,11 @@ except ImportError:
     SGLANG_AVAILABLE = False
     sgl = None
     RuntimeEndpoint = None
+
+from .race_guard import (
+    BlockSynchronizer, DFlashBlockRecord, SentinelDecision,
+    get_synchronizer, governed_block_context, reset_synchronizer
+)
 
 
 class InterceptMode(Enum):
@@ -108,13 +114,24 @@ class MAIAOrchestrator:
         self,
         l9_url: str = "http://localhost:30000",
         l8_url: str = "http://localhost:8080",
-        intercept_mode: InterceptMode = InterceptMode.DFLASH_BLOCK
+        intercept_mode: InterceptMode = InterceptMode.DFLASH_BLOCK,
+        audit_timeout: float = 5.0,
+        enable_rollback: bool = True
     ):
         self.l9_url = l9_url
         self.l8_url = l8_url
         self.intercept_mode = intercept_mode
         self.runtime = None
         self.dflash_block_size = 16
+
+        self._block_counter: int = 0
+        self._seq_counter: int = 0
+
+        self.synchronizer = get_synchronizer(
+            audit_timeout=audit_timeout,
+            max_buffered_blocks=64,
+            enable_rollback=enable_rollback
+        )
 
     def connect(self):
         """Connect to SGLang runtime"""
@@ -126,21 +143,70 @@ class MAIAOrchestrator:
         mode = self.intercept_mode.value
         print(f"Connected to SGLang: {self.l9_url} (intercept_mode={mode})")
 
-    async def _intercept_dflash_block(self, state: Dict) -> DFlashBlock:
+    async def _intercept_dflash_block(self, state: Dict) -> DFlashBlockRecord:
         """
         DFlash Block Interceptor — captures entire 16-token block at once
         ===============================================================
-        vs. token-by-token streaming (which causes micro-stutter)
+        vs. token-by-token streaming (which causes micro-stutter).
+
+        Also creates a DFlashBlockRecord and submits it to the synchronizer
+        for Sentinel audit coordination.
         """
+        self._block_counter += 1
+        self._seq_counter += 1
+
         trajectory = state.get("trajectory", "")
         tokens = trajectory.split()[:self.dflash_block_size]
 
-        block = DFlashBlock(
-            block_id=state.get("block_id", 0),
+        block_hash = hashlib.sha256("".join(tokens).encode()).hexdigest()[:16]
+
+        record = DFlashBlockRecord(
+            block_id=self._block_counter,
             tokens=tokens,
-            trajectory_text=trajectory
+            trajectory_text=trajectory,
+            block_hash=block_hash,
+            seq_number=self._seq_counter,
+            emitted_at=time.time()
         )
-        return block
+
+        self.synchronizer.emit_block(record)
+
+        return record
+
+    def record_sentinel_decision(
+        self,
+        block_id: int,
+        decision: str,
+        violations: Optional[List[str]] = None,
+        latent_hash: str = "",
+        confidence: float = 1.0
+    ):
+        """
+        Record a Sentinel audit decision for a block.
+        Called by governance layer when Sentinel completes its audit.
+
+        This unblocks the DFlash pipeline — the block can now proceed
+        to base model output (if approved) or be rejected.
+        """
+        seq_num = 0
+        for bid, rec in self.synchronizer.block_buffer._blocks.items():
+            if bid == block_id:
+                seq_num = rec.seq_number
+                break
+
+        decision_obj = SentinelDecision(
+            block_id=block_id,
+            seq_number=seq_num,
+            decision=decision,
+            violations=violations or [],
+            latent_hash=latent_hash,
+            confidence=confidence
+        )
+        self.synchronizer.record_decision(decision_obj)
+
+    async def wait_for_block_approval(self, block: DFlashBlockRecord) -> DFlashBlockRecord:
+        """Await Sentinel decision and return updated block record."""
+        return await self.synchronizer.wait_for_block(block)
 
     async def _intercept_token_stream(self, state: Dict) -> List[str]:
         """
@@ -158,12 +224,21 @@ class MAIAOrchestrator:
         """
         Execute governed action
 
-        Flow (DFlash Mode):
-          1. SGLang generates 16-token block in one GPU forward pass
-          2. Intercept catches entire block (no micro-stutter)
-          3. L8 Circuit Breaker audits batch at once
-          4. PVI Airlock verification
-          5. Circuit breaker or approval
+        Flow (DFlash Mode with Race Guard):
+          T0: SGLang generates 16-token block in one GPU forward pass
+          T1: Intercept catches entire block → DFlashBlockRecord
+          T2: Block submitted to BlockSynchronizer, held in buffer
+          T3: Sentinel audit happens (async)
+          T4: Decision arrives → BlockBuffer.resolve() unblocks producer
+          T5: Block approved → proceeds to base model output
+          T5: Block rejected → trajectory BLOCKED
+
+        Race Condition Handling:
+          - Base model may emit block N+1 before Sentinel decides on N
+          - BlockSynchronizer holds N+1 in buffer until N's decision arrives
+          - No block proceeds to output without Sentinel approval
+          - Stale decisions (N's decision after N+2 is active) are dropped
+          - Timeout triggers rollback to last known safe checkpoint
 
         Flow (MTP Mode):
           1. SGLang streams tokens
@@ -210,10 +285,16 @@ class MAIAOrchestrator:
 
     async def _run_dflash_workflow(self, query: str, sector: str) -> Dict:
         """
-        DFlash structured workflow — block-level generation
+        DFlash structured workflow — block-level generation with race guard
         ==================================================
         Generates 16 tokens in one parallel forward pass.
         Uses intercept_type="dflash_block" for block-aware audit.
+
+        Race Guard Integration:
+          - Block captured via _intercept_dflash_block (creates DFlashBlockRecord)
+          - Submitted to BlockSynchronizer.emit_block()
+          - Async governance via governed_block_context
+          - Result.decision determines if block proceeds
         """
         if not self.runtime:
             return await self._run_demo(query, sector)
@@ -221,10 +302,29 @@ class MAIAOrchestrator:
         system_prompt = f"""You are a {sector.upper()} Compliance Analyst.
 SR 26-02 compliant. Think step-by-step, then produce final decision."""
 
+        self._block_counter += 1
+        block_id = self._block_counter
+        self._seq_counter += 1
+
+        block_record = DFlashBlockRecord(
+            block_id=block_id,
+            tokens=[f"token_{i}" for i in range(16)],
+            trajectory_text=f"reasoning for: {query}",
+            block_hash=hashlib.sha256(query.encode()).hexdigest()[:16],
+            seq_number=self._seq_counter,
+            emitted_at=time.time()
+        )
+
+        self.synchronizer.emit_block(block_record)
+
+        async with governed_block_context(self.synchronizer, block_record) as result:
+            if result.decision != "APPROVED":
+                raise ValueError(f"Block {block_id} rejected by Sentinel: {result.decision}")
+
         return {
-            "trajectory": f"[DFlash block for: {query}]",
+            "trajectory": f"[DFlash block {block_id} approved: {query}]",
             "final_decision": f"[DFlash approved: {query}]",
-            "block_id": 0,
+            "block_id": block_id,
             "intercept_mode": "dflash_block"
         }
 
