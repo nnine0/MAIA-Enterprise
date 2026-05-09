@@ -222,7 +222,7 @@ class Gemma4ThinkingAirlock:
         )
         
         if self.enable_interrupt:
-            from kernel.exceptions import PolicyViolationInterrupt
+            from .exceptions import PolicyViolationInterrupt
             raise PolicyViolationInterrupt(
                 message=f"Policy violation in reasoning: {violation}",
                 violation_type=violation,

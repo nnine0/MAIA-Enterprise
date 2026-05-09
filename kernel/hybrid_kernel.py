@@ -38,15 +38,15 @@ try:
 except ImportError:
     NUMPY_AVAILABLE = False
 
-from kernel.hybrid_config import (
+from .hybrid_config import (
     ModelStratifier, ModelRole, VRAMBudget, KernelIPCConfig,
     SpeculativeConfig, SVPMetrics, create_stratifier
 )
-from kernel.matrix import MaterialityMatrix, MaterialityTier
-from kernel.airlock import Gemma4ThinkingAirlock
-from kernel.dispatcher import NeuralToolDispatcher, DispatchRequest
-from kernel.registry import ToolRegistry
-from kernel.exceptions import PolicyViolationInterrupt, DHITLRequired
+from .matrix import MaterialityMatrix, MaterialityTier
+from .airlock import Gemma4ThinkingAirlock
+from .dispatcher import NeuralToolDispatcher, DispatchRequest
+from .registry import ToolRegistry
+from .exceptions import PolicyViolationInterrupt, DHITLRequired
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("MAIA-Hybrid-Kernel")
