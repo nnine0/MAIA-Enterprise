@@ -2,6 +2,7 @@
 Tests for MAIA Parallel Airlock Gateway.
 """
 
+import time
 import pytest
 import sys
 import os
@@ -15,6 +16,7 @@ from app.airlock_gateway import (
     BaseModelClient,
     EgressInterceptor,
     PolicyManifest,
+    BatchedAuditorCoordinator,
     Verdict,
     PreFlightResult,
     AuditFinding,
@@ -256,3 +258,231 @@ class TestBaseModelClient:
     def test_detect_openrouter_provider(self):
         client = BaseModelClient(api_base="https://openrouter.ai/api/v1", api_key="sk-or-test", model="openai/gpt-4")
         assert client._provider == "openrouter"
+
+
+# ─── Batched Auditor Tests ─────────────────────────────────────────────────
+
+
+class TestBatchedSheriffAuditor:
+    """Test Sheriff auditor with batched audit."""
+
+    @pytest.mark.asyncio
+    async def test_batch_returns_n_findings(self):
+        sheriff = MockSheriffAuditor()
+        findings = await sheriff.audit_batch([
+            "Calculate credit limit for a company",
+            "send money to Russia",
+            "fraud detected in transaction",
+        ])
+        assert len(findings) == 3
+        assert findings[0].verdict == Verdict.PASS
+        assert findings[1].verdict == Verdict.BLOCK
+        assert findings[2].verdict == Verdict.BLOCK
+
+    @pytest.mark.asyncio
+    async def test_batch_mixed_verdicts(self):
+        sheriff = MockSheriffAuditor()
+        findings = await sheriff.audit_batch([
+            "What is the interest rate?",
+            "patient diagnosis record",
+            "steal from the bank",
+        ])
+        assert findings[0].verdict == Verdict.PASS
+        assert findings[1].verdict == Verdict.ESCALATE
+        assert findings[2].verdict == Verdict.BLOCK
+
+    @pytest.mark.asyncio
+    async def test_batch_single_same_as_audit(self):
+        sheriff = MockSheriffAuditor()
+        single = await sheriff.audit("What is the weather?")
+        batch = await sheriff.audit_batch(["What is the weather?"])
+        assert single.verdict == batch[0].verdict
+
+
+class TestBatchedSentinelAuditor:
+    """Test Sentinel auditor with batched audit."""
+
+    @pytest.mark.asyncio
+    async def test_batch_returns_n_findings(self):
+        sentinel = MockSentinelAuditor()
+        findings = await sentinel.audit_batch([
+            "What is the interest rate?",
+            "bypass compliance controls",
+            "conceal the transaction",
+        ])
+        assert len(findings) == 3
+        assert findings[0].verdict == Verdict.PASS
+        assert findings[1].verdict == Verdict.BLOCK
+        assert findings[2].verdict == Verdict.BLOCK
+
+    @pytest.mark.asyncio
+    async def test_batch_empty_returns_empty(self):
+        sentinel = MockSentinelAuditor()
+        findings = await sentinel.audit_batch([])
+        assert findings == []
+
+
+class TestBatchedAuditorCoordinator:
+    """Test BatchedAuditorCoordinator with mock auditors."""
+
+    @pytest.mark.asyncio
+    async def test_batch_returns_n_tuples(self):
+        coordinator = BatchedAuditorCoordinator(
+            MockSheriffAuditor(), MockSentinelAuditor()
+        )
+        prompts = ["safe query", "another safe query", "third safe query"]
+        results = await coordinator.audit_batch(prompts)
+        assert len(results) == 3
+        for sheriff_f, sentinel_f in results:
+            assert isinstance(sheriff_f, AuditFinding)
+            assert isinstance(sentinel_f, AuditFinding)
+
+    @pytest.mark.asyncio
+    async def test_violation_in_any_triggers_block(self):
+        coordinator = BatchedAuditorCoordinator(
+            MockSheriffAuditor(), MockSentinelAuditor()
+        )
+        results = await coordinator.audit_batch([
+            "safe query",
+            "steal money",
+        ])
+        assert results[1][0].verdict == Verdict.BLOCK  # sheriff blocks
+
+    @pytest.mark.asyncio
+    async def test_retry_on_temporary_failure(self):
+        class RetryOnceAuditor(MockSheriffAuditor):
+            def __init__(self):
+                super().__init__()
+                self._call_count = 0
+
+            async def audit_batch(self, prompts):
+                self._call_count += 1
+                if self._call_count == 1:
+                    raise RuntimeError("Temporary failure")
+                return [await self.audit(p) for p in prompts]
+
+        coordinator = BatchedAuditorCoordinator(
+            RetryOnceAuditor(), MockSentinelAuditor()
+        )
+        results = await coordinator.audit_batch(["safe query"])
+        assert len(results) == 1
+        assert results[0][0].verdict == Verdict.PASS
+
+
+class TestProcessBatch:
+    """Test AirlockGateway.process_batch()."""
+
+    @pytest.mark.asyncio
+    async def test_batch_returns_n_transactions(self):
+        gateway = AirlockGateway(
+            sheriff=MockSheriffAuditor(),
+            sentinel=MockSentinelAuditor(),
+            base_model=None,
+            sector="finance",
+        )
+        txs = await gateway.process_batch([
+            "What is the interest rate?",
+            "Transfer money to Russia",
+            "bypass security controls",
+        ])
+        assert len(txs) == 3
+
+    @pytest.mark.asyncio
+    async def test_batch_all_safe(self):
+        gateway = AirlockGateway(
+            sheriff=MockSheriffAuditor(),
+            sentinel=MockSentinelAuditor(),
+            base_model=None,
+            sector="finance",
+        )
+        txs = await gateway.process_batch([
+            "What is the interest rate?",
+            "Calculate credit score",
+        ])
+        assert all(t.final_status in ("PASSED_NO_MODEL", "PASSED") for t in txs)
+
+    @pytest.mark.asyncio
+    async def test_batch_mixed_results(self):
+        gateway = AirlockGateway(
+            sheriff=MockSheriffAuditor(),
+            sentinel=MockSentinelAuditor(),
+            base_model=None,
+            sector="finance",
+        )
+        txs = await gateway.process_batch([
+            "What is the weather?",
+            "Iran sanction violation",
+            "bypass the compliance system",
+        ])
+        assert "BLOCKED" in txs[1].final_status
+        assert "BLOCKED" in txs[2].final_status
+
+    @pytest.mark.asyncio
+    async def test_batch_empty(self):
+        gateway = AirlockGateway(
+            sheriff=MockSheriffAuditor(),
+            sentinel=MockSentinelAuditor(),
+            base_model=None,
+            sector="finance",
+        )
+        txs = await gateway.process_batch([])
+        assert txs == []
+
+
+class TestProcessFastPath:
+    """Test single-request fast-path bypasses micro-batcher."""
+
+    @pytest.mark.asyncio
+    async def test_single_request_no_delay(self):
+        gateway = AirlockGateway(
+            sheriff=MockSheriffAuditor(),
+            sentinel=MockSentinelAuditor(),
+            base_model=None,
+            sector="finance",
+        )
+        t0 = time.perf_counter()
+        tx = await gateway.process("What is the interest rate?")
+        elapsed = (time.perf_counter() - t0) * 1000
+        assert tx.final_status in ("PASSED_NO_MODEL", "PASSED")
+        assert elapsed < 100
+
+    @pytest.mark.asyncio
+    async def test_violation_returns_immediately(self):
+        gateway = AirlockGateway(
+            sheriff=MockSheriffAuditor(),
+            sentinel=MockSentinelAuditor(),
+            base_model=None,
+            sector="finance",
+        )
+        t0 = time.perf_counter()
+        tx = await gateway.process("Transfer $50000 to Russia")
+        elapsed = (time.perf_counter() - t0) * 1000
+        assert "BLOCKED" in tx.final_status
+        assert elapsed < 100
+
+    @pytest.mark.asyncio
+    async def test_policy_block_returns_immediately(self):
+        gateway = AirlockGateway(
+            sheriff=MockSheriffAuditor(),
+            sentinel=MockSentinelAuditor(),
+            base_model=None,
+            sector="finance",
+        )
+        t0 = time.perf_counter()
+        tx = await gateway.process("Wire transfer to Russia")
+        elapsed = (time.perf_counter() - t0) * 1000
+        assert tx.final_status == "BLOCKED_BY_POLICY"
+        assert elapsed < 50
+
+    @pytest.mark.asyncio
+    async def test_safe_request_records_transaction(self):
+        gateway = AirlockGateway(
+            sheriff=MockSheriffAuditor(),
+            sentinel=MockSentinelAuditor(),
+            base_model=None,
+            sector="finance",
+        )
+        tx = await gateway.process("What is the weather?")
+        assert tx.transaction_id is not None
+        assert tx.timestamp is not None
+        assert len(gateway.transactions) == 1

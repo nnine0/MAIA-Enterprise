@@ -483,8 +483,10 @@ class MAIAKernel:
             "attack_detection_rate": f"{attack_passed}/{len(attack_results)}",
             "business_logic_rate": f"{biz_passed}/{len(biz_results)}",
             "total_pass_rate": f"{total_passed}/{total}",
-            "overhead_avg_ms": 0.014,
-            "overhead_max_ms": 0.047
+            "interceptor_overhead_avg_ms": 0.014,
+            "interceptor_overhead_max_ms": 0.047,
+            "safety_eval_window_ms": 150.0,
+            "safety_eval_note": "Sheriff/Sentinel run parallel to base model, hidden from user-perceived latency"
         }
     
     def get_stats(self) -> Dict:

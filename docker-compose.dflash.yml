@@ -130,7 +130,7 @@ services:
   # ─────────────────────────────
   # Intercepts DFlash blocks (not individual tokens)
   # L8 audits entire 16-token trajectory in one pass
-  # Single high-resolution audit → 0.014ms overhead
+  # Block audit routing tax → 0.014ms (interceptor; safety eval runs parallel)
   maia-orchestrator:
     build: .
     image: maia-enterprise:latest

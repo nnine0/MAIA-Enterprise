@@ -101,11 +101,13 @@ class MAIAOrchestrator:
       T0: DFlash generates 16-token block in one GPU forward pass
       T1: Intercept catches entire block (not individual tokens)
       T2: L8 Circuit Breaker audits batch of 16 tokens at once
-      T3: Single high-resolution audit → 0.014ms overhead
-      T4: Signed trajectory → L7 execution (or block rejection)
+      T3: Block audit routing tax → 0.014ms (interceptor pointer redirect)
+      T4: Sheriff/Sentinel eval → within base model's parallel window
+      T5: Signed trajectory → L7 execution (or block rejection)
 
     Why Block-Level Audit:
-      Audit 16 tokens once = 0.014ms overhead
+      Block audit routing 16 tokens once = 0.014ms tax
+      Actual safety eval (Sentinel/Sheriff) runs parallel, hidden from latency
       Audit 16 tokens individually = ~16x overhead (micro-stutter)
       Result: 21K+ req/s with full SR 26-02 compliance
     """

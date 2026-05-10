@@ -33,7 +33,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Optional, Dict, Any, List, AsyncGenerator, Callable, Awaitable
+from typing import Optional, Dict, Any, List, Tuple, AsyncGenerator, Callable, Awaitable
 
 logger = logging.getLogger("MAIA-AirlockGateway")
 
@@ -149,6 +149,10 @@ class BaseAuditor:
     async def audit(self, prompt: str) -> AuditFinding:
         raise NotImplementedError
 
+    async def audit_batch(self, prompts: List[str]) -> List[AuditFinding]:
+        """Default: sequential. Override with real batched GPU forward pass."""
+        return [await self.audit(p) for p in prompts]
+
 
 class MockSheriffAuditor(BaseAuditor):
     """Mock Nemotron Sheriff for demo/testing."""
@@ -193,6 +197,9 @@ class MockSheriffAuditor(BaseAuditor):
             latency_ms=latency
         )
 
+    async def audit_batch(self, prompts: List[str]) -> List[AuditFinding]:
+        return [await self.audit(p) for p in prompts]
+
 
 class MockSentinelAuditor(BaseAuditor):
     """Mock Granite Sentinel for demo/testing."""
@@ -224,6 +231,9 @@ class MockSentinelAuditor(BaseAuditor):
             reason="No policy violations",
             latency_ms=latency
         )
+
+    async def audit_batch(self, prompts: List[str]) -> List[AuditFinding]:
+        return [await self.audit(p) for p in prompts]
 
 
 # ─── Base Model Client ─────────────────────────────────────────────────────
@@ -318,6 +328,69 @@ class BaseModelClient:
                 "tool_calls": msg.get("tool_calls", []),
                 "finish_reason": choice.get("finish_reason", "stop"),
             }
+
+    async def stream_with_breaker(
+        self,
+        messages: List[Dict],
+        egress: "EgressInterceptor",
+        max_tokens: int = 1024,
+        temperature: float = 0.7,
+    ) -> AsyncGenerator[str, None]:
+        """Stream response, kill mid-stream if egress blocks a tool call.
+
+        Even when preflight passes, the base model may emit a blocked tool call
+        mid-generation. This generator yields tokens one-by-one, checks accumulated
+        text against EgressInterceptor after each token, and aborts the stream if
+        a BLOCK verdict fires.
+
+        Yields (token_text, is_final) tuples. is_final=True when stream ends or is killed.
+        """
+        import httpx
+        accumulated = ""
+        headers = {"Content-Type": "application/json"}
+        if self.api_key:
+            headers["Authorization"] = f"Bearer {self.api_key}"
+
+        payload = {
+            "model": self.model,
+            "messages": messages,
+            "stream": True,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+        }
+
+        url = f"{self.api_base}/chat/completions"
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            async with client.stream("POST", url, json=payload, headers=headers) as response:
+                async for line in response.aiter_lines():
+                    if not line.startswith("data: "):
+                        continue
+                    data = line[6:]
+                    if data.strip() == "[DONE]":
+                        yield ("", True)
+                        return
+
+                    try:
+                        chunk = json.loads(data)
+                    except json.JSONDecodeError:
+                        continue
+
+                    delta = chunk.get("choices", [{}])[0].get("delta", {})
+                    token = delta.get("content", "")
+                    if token:
+                        accumulated += token
+                        yield (token, False)
+
+                        egress_result = await egress.intercept(accumulated)
+                        if egress_result.action == Verdict.BLOCK:
+                            logger.info(
+                                f"Streaming circuit breaker: blocked tool call detected "
+                                f"mid-stream — {egress_result.tool_id}"
+                            )
+                            yield ("[STREAM INTERRUPTED: BLOCKED BY GOVERNANCE]", True)
+                            return
+
+                yield ("", True)
 
 
 # ─── Egress Interceptor ────────────────────────────────────────────────────
@@ -431,18 +504,17 @@ class AirlockGateway:
         self.policy = PolicyManifest(sector)
         self.logger = logging.getLogger("MAIA-AirlockGateway")
         self.transactions: List[GatewayTransaction] = []
+        self._coordinator = BatchedAuditorCoordinator(self.sheriff, self.sentinel)
 
-    async def process(
+    async def _process_single(
         self,
         prompt: str,
         messages: Optional[List[Dict]] = None,
         max_tokens: int = 1024,
         temperature: float = 0.7,
+        preflight_results: Optional[Tuple[AuditFinding, AuditFinding]] = None,
     ) -> GatewayTransaction:
-        """
-        Process a prompt through the full airlock pipeline:
-          Ingress → Parallel Dispatch → Pre-flight → Egress
-        """
+        """Internal single-prompt processor. Used by both process() and process_batch()."""
         tx = GatewayTransaction(
             transaction_id=f"maia-{uuid.uuid4().hex[:12]}",
             prompt=prompt,
@@ -478,29 +550,26 @@ class AirlockGateway:
                 )
             )
 
-        # ── Step 3: Parallel pre-flight (Sheriff + Sentinel) ──
-        pre_start = time.perf_counter()
-        sheriff_task = asyncio.create_task(self.sheriff.audit(prompt))
-        sentinel_task = asyncio.create_task(self.sentinel.audit(prompt))
+        # ── Step 3: Pre-flight (if not already provided) ──
+        if preflight_results is None:
+            batch_results = await self._coordinator.audit_batch([prompt])
+            preflight_results = batch_results[0]
 
-        sheriff_result, sentinel_result = await asyncio.gather(sheriff_task, sentinel_task)
-        pre_latency = (time.perf_counter() - pre_start) * 1000
-
+        sheriff_result, sentinel_result = preflight_results
         findings = [sheriff_result, sentinel_result]
+        pre_latency = (time.perf_counter() - start) * 1000
 
-        # ── Step 4: Evaluate pre-flight results ──
+        # ── Step 4: Circuit breaker ──
         blocks = [f for f in findings if f.verdict == Verdict.BLOCK]
         escalates = [f for f in findings if f.verdict == Verdict.ESCALATE]
 
         if blocks:
-            # Cancel base model call if still running
             if base_task and not base_task.done():
                 base_task.cancel()
                 try:
                     await base_task
                 except asyncio.CancelledError:
                     pass
-
             tx.preflight = PreFlightReport(
                 result=PreFlightResult.VIOLATION,
                 findings=findings,
@@ -561,6 +630,164 @@ class AirlockGateway:
         self.transactions.append(tx)
         return tx
 
+    async def process(
+        self,
+        prompt: str,
+        messages: Optional[List[Dict]] = None,
+        max_tokens: int = 1024,
+        temperature: float = 0.7,
+    ) -> GatewayTransaction:
+        """Fast-path: single prompt, bypass micro-batcher entirely.
+
+        Policy fast-path first, then single-shot batched preflight call.
+        No micro-batch delay. Single prompt.
+        """
+        # Fast-path policy check (zero model cost)
+        policy_findings = self.policy.check_prompt(prompt)
+        if policy_findings:
+            tx = GatewayTransaction(
+                transaction_id=f"maia-{uuid.uuid4().hex[:12]}",
+                prompt=prompt,
+                sector=self.sector,
+                timestamp=datetime.now(timezone.utc).isoformat(),
+            )
+            tx.preflight = PreFlightReport(result=PreFlightResult.VIOLATION, findings=policy_findings)
+            tx.final_status = "BLOCKED_BY_POLICY"
+            tx.latency_ms = 0.0
+            self.transactions.append(tx)
+            return tx
+
+        # Single-shot batched preflight via coordinator with 3x retry
+        try:
+            batch_results = await self._coordinator.audit_batch([prompt])
+            sheriff_result, sentinel_result = batch_results[0]
+        except RuntimeError as e:
+            self.logger.error(f"Preflight failed after 3 retries: {e}")
+            tx = GatewayTransaction(
+                transaction_id=f"maia-{uuid.uuid4().hex[:12]}",
+                prompt=prompt,
+                sector=self.sector,
+                timestamp=datetime.now(timezone.utc).isoformat(),
+            )
+            tx.preflight = PreFlightReport(result=PreFlightResult.ERROR)
+            tx.final_status = "ERROR"
+            tx.latency_ms = 0.0
+            self.transactions.append(tx)
+            return tx
+
+        blocks = [f for f in [sheriff_result, sentinel_result] if f.verdict == Verdict.BLOCK]
+        if blocks:
+            tx = GatewayTransaction(
+                transaction_id=f"maia-{uuid.uuid4().hex[:12]}",
+                prompt=prompt,
+                sector=self.sector,
+                timestamp=datetime.now(timezone.utc).isoformat(),
+            )
+            tx.preflight = PreFlightReport(
+                result=PreFlightResult.VIOLATION,
+                findings=[sheriff_result, sentinel_result],
+                total_latency_ms=0.0,
+            )
+            tx.final_status = "BLOCKED_PRE_FLIGHT"
+            tx.latency_ms = 0.0
+            self.transactions.append(tx)
+            return tx
+
+        return await self._process_single(
+            prompt, messages, max_tokens, temperature,
+            preflight_results=(sheriff_result, sentinel_result),
+        )
+
+    async def process_batch(
+        self,
+        prompts: List[str],
+        sector: str = "finance",
+    ) -> List[GatewayTransaction]:
+        """Process N prompts with coalesced batched preflight.
+
+        All N prompts go through Sheriff and Sentinel in a single batched
+        GPU forward pass each (amortized prefill).
+        """
+        if not prompts:
+            return []
+
+        if sector != self.sector:
+            self.sector = sector
+            self.egress = EgressInterceptor(sector)
+            self.policy = PolicyManifest(sector)
+
+        # Step 1: Fast-path policy check per prompt (no model)
+        policy_blocked = {}
+        for prompt in prompts:
+            findings = self.policy.check_prompt(prompt)
+            if findings:
+                policy_blocked[prompt] = findings
+
+        # Step 2: Batched preflight with 3x retry
+        try:
+            batch_results = await self._coordinator.audit_batch(prompts)
+        except RuntimeError as e:
+            self.logger.error(f"Batch preflight failed after 3 retries: {e}")
+            return [
+                self._make_error_tx(p)
+                for p in prompts
+            ]
+
+        # Step 3: Per-prompt dispatch
+        txs = []
+        for i, prompt in enumerate(prompts):
+            if prompt in policy_blocked:
+                tx = GatewayTransaction(
+                    transaction_id=f"maia-{uuid.uuid4().hex[:12]}",
+                    prompt=prompt,
+                    sector=self.sector,
+                    timestamp=datetime.now(timezone.utc).isoformat(),
+                )
+                tx.preflight = PreFlightReport(result=PreFlightResult.VIOLATION, findings=policy_blocked[prompt])
+                tx.final_status = "BLOCKED_BY_POLICY"
+                txs.append(tx)
+                continue
+
+            sheriff_result, sentinel_result = batch_results[i]
+            blocks = [f for f in [sheriff_result, sentinel_result] if f.verdict == Verdict.BLOCK]
+
+            if blocks:
+                tx = GatewayTransaction(
+                    transaction_id=f"maia-{uuid.uuid4().hex[:12]}",
+                    prompt=prompt,
+                    sector=self.sector,
+                    timestamp=datetime.now(timezone.utc).isoformat(),
+                )
+                tx.preflight = PreFlightReport(
+                    result=PreFlightResult.VIOLATION,
+                    findings=[sheriff_result, sentinel_result],
+                    total_latency_ms=0.0,
+                )
+                tx.final_status = "BLOCKED_PRE_FLIGHT"
+                txs.append(tx)
+                continue
+
+            tx = await self._process_single(
+                prompt,
+                preflight_results=(sheriff_result, sentinel_result),
+            )
+            txs.append(tx)
+
+        return txs
+
+    def _make_error_tx(self, prompt: str) -> GatewayTransaction:
+        tx = GatewayTransaction(
+            transaction_id=f"maia-{uuid.uuid4().hex[:12]}",
+            prompt=prompt,
+            sector=self.sector,
+            timestamp=datetime.now(timezone.utc).isoformat(),
+            preflight=PreFlightReport(result=PreFlightResult.ERROR),
+            final_status="ERROR",
+            latency_ms=0.0,
+        )
+        self.transactions.append(tx)
+        return tx
+
     def get_stats(self) -> Dict:
         total = len(self.transactions)
         blocked = sum(1 for t in self.transactions if "BLOCKED" in t.final_status or "CANCELLED" in t.final_status)
@@ -573,6 +800,52 @@ class AirlockGateway:
             "escalated": escalated,
             "avg_latency_ms": sum(t.latency_ms for t in self.transactions) / max(total, 1),
         }
+
+
+# ─── Batched Auditor Coordinator ──────────────────────────────────────────
+
+class BatchedAuditorCoordinator:
+    """Runs Sheriff + Sentinel audits as concurrent batched calls.
+
+    Both auditors see all N prompts in a single batched forward pass each.
+    For real GPU models, the blocking model.generate() calls release the GIL
+    (PyTorch CUDA operations), allowing CUDA-stream interleaving on the GPU.
+
+    Each auditor failure retries 3x with 1s delay. Never silently skips a
+    failed auditor — safety first.
+    """
+
+    def __init__(self, sheriff: BaseAuditor, sentinel: BaseAuditor):
+        self._sheriff = sheriff
+        self._sentinel = sentinel
+
+    async def audit_batch(
+        self,
+        prompts: List[str],
+        retries: int = 3,
+        retry_delay: float = 1.0,
+    ) -> List[Tuple[AuditFinding, AuditFinding]]:
+        """Batched audit across both auditors with 3x retry."""
+
+        async def _retry_auditor(auditor: BaseAuditor, label: str):
+            for attempt in range(retries):
+                try:
+                    return await auditor.audit_batch(prompts)
+                except Exception as e:
+                    if attempt == retries - 1:
+                        raise RuntimeError(
+                            f"{label} failed all {retries} attempts: {e}"
+                        ) from e
+                    logger.warning(
+                        f"{label} attempt {attempt + 1}/{retries} failed: {e}, retrying..."
+                    )
+                    await asyncio.sleep(retry_delay)
+
+        sheriff_task = asyncio.create_task(_retry_auditor(self._sheriff, "Sheriff"))
+        sentinel_task = asyncio.create_task(_retry_auditor(self._sentinel, "Sentinel"))
+
+        sheriff_results, sentinel_results = await asyncio.gather(sheriff_task, sentinel_task)
+        return list(zip(sheriff_results, sentinel_results))
 
 
 # ─── Factory ───────────────────────────────────────────────────────────────
@@ -644,6 +917,29 @@ class _NemotronAdapter(BaseAuditor):
             latency_ms=latency,
         )
 
+    async def audit_batch(self, prompts: List[str]) -> List[AuditFinding]:
+        """Batched audit — dispatches N calls in parallel via asyncio.gather.
+
+        Nemotron3Safety does not support batched inputs, so this runs N
+        concurrent audit calls. Each releases the GIL on GPU ops, allowing
+        CUDA-stream interleaving.
+        """
+        start = time.perf_counter()
+        async def single(p: str):
+            return await self._inner.audit(prompt=p, response="", max_new_tokens=20)
+
+        results = await asyncio.gather(*[single(p) for p in prompts])
+        return [
+            AuditFinding(
+                auditor=self.name,
+                verdict=Verdict.BLOCK if r.tier == 1 else (Verdict.ESCALATE if r.tier == 2 else Verdict.PASS),
+                reason=f"tier={r.tier}",
+                categories=r.categories or [],
+                confidence=0.9,
+                latency_ms=(time.perf_counter() - start) * 1000,
+            )
+            for r in results
+        ]
 
 class _GraniteSentinel(BaseAuditor):
     """Granite Guardian sentinel loaded from local path."""
@@ -665,11 +961,22 @@ class _GraniteSentinel(BaseAuditor):
                 self.model_id,
                 torch_dtype=torch.bfloat16,
                 device_map="auto",
+                attn_implementation="flash_attention_2",
             )
             self.model.eval()
             logger.info(f"Granite Sentinel loaded from {self.model_id}")
         except Exception as e:
             logger.warning(f"Failed to load Granite Sentinel: {e}")
+
+    def _build_prompt(self, prompt: str) -> str:
+        return (
+            "<|system|>You are a policy compliance auditor. Determine if the following "
+            "request violates any governance policies.</s>\n"
+            f"<|user|>Request: {prompt}\n\n"
+            "Does this request contain any policy violations, unauthorized actions, or "
+            "compliance issues? Answer ONLY with 'SAFE' or 'UNSAFE'.</s>\n"
+            "<|assistant|>"
+        )
 
     async def audit(self, prompt: str) -> AuditFinding:
         import torch
@@ -682,12 +989,7 @@ class _GraniteSentinel(BaseAuditor):
                 reason="Model not loaded, bypassing",
             )
 
-        template = f"""<|system|>You are a policy compliance auditor. Determine if the following request violates any governance policies.</s>
-<|user|>Request: {prompt}
-
-Does this request contain any policy violations, unauthorized actions, or compliance issues? Answer ONLY with 'SAFE' or 'UNSAFE'.</s>
-<|assistant|>"""
-
+        template = self._build_prompt(prompt)
         inputs = self.tokenizer(template, return_tensors="pt", truncation=True, max_length=4096)
         inputs = {k: v.to(self.model.device) for k, v in inputs.items()}
 
@@ -711,3 +1013,50 @@ Does this request contain any policy violations, unauthorized actions, or compli
             reason="No policy violations",
             latency_ms=latency,
         )
+
+    async def audit_batch(self, prompts: List[str]) -> List[AuditFinding]:
+        """Batched audit — one GPU forward pass for N prompts.
+
+        Tokenizes all prompts with padding into a single tensor,
+        runs model.generate once, decodes all outputs.
+        Amortizes prefill cost across the batch.
+        """
+        import torch
+        start = time.perf_counter()
+
+        if self.model is None:
+            return [
+                AuditFinding(auditor=self.name, verdict=Verdict.PASS, reason="Model not loaded")
+                for _ in prompts
+            ]
+
+        templates = [self._build_prompt(p) for p in prompts]
+        inputs = self.tokenizer(
+            templates,
+            return_tensors="pt",
+            padding=True,
+            truncation=True,
+            max_length=512,
+        )
+        inputs = {k: v.to(self.model.device) for k, v in inputs.items()}
+
+        with torch.inference_mode():
+            outputs = self.model.generate(
+                **inputs,
+                max_new_tokens=10,
+                do_sample=False,
+                pad_token_id=self.tokenizer.pad_token_id,
+            )
+
+        results = []
+        for output in outputs:
+            raw = self.tokenizer.decode(output, skip_special_tokens=True)
+            verdict = Verdict.BLOCK if "unsafe" in raw.lower() else Verdict.PASS
+            results.append(AuditFinding(
+                auditor=self.name,
+                verdict=verdict,
+                reason=f"Granite Sentinel: {'UNSAFE' if verdict == Verdict.BLOCK else 'SAFE'}",
+                confidence=0.9,
+                latency_ms=(time.perf_counter() - start) * 1000,
+            ))
+        return results

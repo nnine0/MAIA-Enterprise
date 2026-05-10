@@ -18,7 +18,7 @@ import json
 import logging
 import uuid
 from pathlib import Path
-from typing import Generator, AsyncGenerator, Optional, Dict, Any
+from typing import Generator, AsyncGenerator, Optional, Dict, Any, List
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, HTTPException
@@ -279,6 +279,13 @@ class AirlockConfig(BaseModel):
     temperature: float = 0.7
 
 
+class AirlockBatchConfig(BaseModel):
+    prompts: List[str]
+    sector: str = "finance"
+    max_tokens: int = 1024
+    temperature: float = 0.7
+
+
 @app.post("/v1/airlock/gateway")
 async def airlock_gateway_endpoint(config: AirlockConfig):
     """
@@ -375,6 +382,46 @@ async def airlock_transactions(limit: int = 20):
         ],
         "total": len(airlock_gateway.transactions),
     }
+
+
+@app.post("/v1/airlock/gateway/batch")
+async def airlock_batch(config: AirlockBatchConfig):
+    """Batched airlock gateway — N prompts in one coalesced batched preflight.
+
+    All N prompts go through Sheriff + Sentinel in a single GPU forward pass
+    each. Amortizes prefill cost across the batch.
+    """
+    global airlock_gateway
+    if not airlock_gateway:
+        raise HTTPException(status_code=503, detail="Airlock Gateway not ready")
+
+    if not config.prompts:
+        raise HTTPException(status_code=400, detail="No prompts provided")
+
+    try:
+        txs = await airlock_gateway.process_batch(config.prompts, config.sector)
+    except Exception as e:
+        logger.error(f"Airlock batch error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+    errors = sum(1 for t in txs if t.final_status == "ERROR")
+    status_code = 207 if errors else 200
+
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "batch_size": len(txs),
+            "errors": errors,
+            "transactions": [
+                {
+                    "transaction_id": t.transaction_id,
+                    "final_status": t.final_status,
+                    "latency_ms": round(t.latency_ms, 2),
+                }
+                for t in txs
+            ],
+        }
+    )
 
 
 if __name__ == "__main__":
