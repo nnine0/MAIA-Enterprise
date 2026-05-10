@@ -59,6 +59,13 @@ warn_unused_configs = true
 disallow_untyped_defs = true
 ignore_missing_imports = true
 
+[tool.maia.lint]
+pass_env = ["PYTHONPATH"]
+
+[tool.maia.scripts]
+lint-bypass = "python3 scripts/check_bypass_imports.py --ci"
+lint-all = "python3 scripts/check_bypass_imports.py --ci && python3 -m pytest tests/"
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = "test_*.py"

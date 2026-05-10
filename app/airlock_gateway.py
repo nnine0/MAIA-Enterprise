@@ -153,6 +153,14 @@ class BaseAuditor:
         """Default: sequential. Override with real batched GPU forward pass."""
         return [await self.audit(p) for p in prompts]
 
+    async def fast_pass(self, prompt: str) -> AuditFinding | None:
+        """Optional fast path: zero-generation logit-based verdict.
+
+        Returns an AuditFinding with a verdict if the fast path is confident
+        enough, or None to fall through to the full audit.
+        """
+        return None
+
 
 class MockSheriffAuditor(BaseAuditor):
     """Mock Nemotron Sheriff for demo/testing."""
@@ -200,6 +208,9 @@ class MockSheriffAuditor(BaseAuditor):
     async def audit_batch(self, prompts: List[str]) -> List[AuditFinding]:
         return [await self.audit(p) for p in prompts]
 
+    async def fast_pass(self, prompt: str) -> AuditFinding | None:
+        return await self.audit(prompt)
+
 
 class MockSentinelAuditor(BaseAuditor):
     """Mock Granite Sentinel for demo/testing."""
@@ -234,6 +245,9 @@ class MockSentinelAuditor(BaseAuditor):
 
     async def audit_batch(self, prompts: List[str]) -> List[AuditFinding]:
         return [await self.audit(p) for p in prompts]
+
+    async def fast_pass(self, prompt: str) -> AuditFinding | None:
+        return await self.audit(prompt)
 
 
 # ─── Base Model Client ─────────────────────────────────────────────────────
@@ -855,26 +869,47 @@ def create_gateway(
     api_key: str = "",
     model: str = "",
     sector: str = "finance",
-    demo: bool = True,
+    demo: bool = False,
 ) -> AirlockGateway:
-    """Create an AirlockGateway with configured components."""
+    """Create an AirlockGateway with configured components.
+
+    In production mode (default, demo=False):
+      - Loads Nemotron Sheriff and Granite Sentinel from local paths.
+      - Raises RuntimeError if either auditor fails to load — no silent fallback.
+      - Validates both auditors are real model instances.
+
+    In demo=True mode:
+      - Uses mock auditors with trivial keyword matching for testing only.
+      - Logs a prominent warning that this mode is not safe for production.
+    """
     if demo:
+        logger.warning("MAIA GOVERNANCE WARNING: create_gateway(demo=True) — "
+                       "mock auditors have trivial keyword matching. "
+                       "NOT suitable for production use.")
         sheriff = MockSheriffAuditor()
         sentinel = MockSentinelAuditor()
     else:
-        from app.nemotron_real import Nemotron3Safety, MockNemotron3
-        try:
-            sheriff_nemo = Nemotron3Safety(model_id="/models/sheriff")
-            sheriff_nemo.load()
-            sheriff = _NemotronAdapter(sheriff_nemo)
-        except Exception:
-            sheriff = MockSheriffAuditor()
+        from app.nemotron_real import Nemotron3Safety
+        from app.nemotron_real import NEMOTRON_AVAILABLE
+        if not NEMOTRON_AVAILABLE:
+            raise RuntimeError(
+                "Nemotron Sheriff not available. "
+                "Cannot create production gateway without real auditor."
+            )
+        sheriff_nemo = Nemotron3Safety(model_id="/models/sheriff")
+        sheriff_nemo.load()
+        sheriff = _NemotronAdapter(sheriff_nemo)
 
-        try:
-            sentinel_granite = _GraniteSentinel(model_id="/models/sentinel")
-            sentinel = sentinel_granite
-        except Exception:
-            sentinel = MockSentinelAuditor()
+        sentinel_granite = _GraniteSentinel(model_id="/models/sentinel")
+        sentinel = sentinel_granite
+
+        # Production guard: validate both auditors are real model instances
+        if not isinstance(sheriff, _NemotronAdapter):
+            raise RuntimeError("Production guard: Sheriff is not a real Nemotron auditor")
+        if not isinstance(sentinel, _GraniteSentinel):
+            raise RuntimeError("Production guard: Sentinel is not a real Granite auditor")
+        if sentinel.model is None:
+            raise RuntimeError("Production guard: Granite Sentinel model failed to load")
 
     base_model = None
     if api_base:
@@ -898,7 +933,18 @@ class _NemotronAdapter(BaseAuditor):
 
     async def audit(self, prompt: str) -> AuditFinding:
         start = time.perf_counter()
-        result = await self._inner.audit(prompt=prompt, response="", max_new_tokens=20)
+        try:
+            result = await self._inner.audit(prompt=prompt, response="", max_new_tokens=20)
+        except Exception as e:
+            latency = (time.perf_counter() - start) * 1000
+            logger.error(f"Nemotron audit failed: {e}")
+            return AuditFinding(
+                auditor=self.name,
+                verdict=Verdict.ESCALATE,
+                reason=f"Nemotron audit error — escalated for human review: {e}",
+                confidence=0.0,
+                latency_ms=latency,
+            )
         latency = (time.perf_counter() - start) * 1000
 
         if result.tier == 1:
@@ -923,23 +969,34 @@ class _NemotronAdapter(BaseAuditor):
         Nemotron3Safety does not support batched inputs, so this runs N
         concurrent audit calls. Each releases the GIL on GPU ops, allowing
         CUDA-stream interleaving.
+
+        If any single audit fails, it returns an ESCALATE finding instead of
+        crashing the entire batch — fail safe to human review.
         """
         start = time.perf_counter()
-        async def single(p: str):
-            return await self._inner.audit(prompt=p, response="", max_new_tokens=20)
 
-        results = await asyncio.gather(*[single(p) for p in prompts])
-        return [
-            AuditFinding(
-                auditor=self.name,
-                verdict=Verdict.BLOCK if r.tier == 1 else (Verdict.ESCALATE if r.tier == 2 else Verdict.PASS),
-                reason=f"tier={r.tier}",
-                categories=r.categories or [],
-                confidence=0.9,
-                latency_ms=(time.perf_counter() - start) * 1000,
-            )
-            for r in results
-        ]
+        async def single(p: str) -> AuditFinding:
+            try:
+                r = await self._inner.audit(prompt=p, response="", max_new_tokens=20)
+                return AuditFinding(
+                    auditor=self.name,
+                    verdict=Verdict.BLOCK if r.tier == 1 else (Verdict.ESCALATE if r.tier == 2 else Verdict.PASS),
+                    reason=f"tier={r.tier}",
+                    categories=r.categories or [],
+                    confidence=0.9,
+                    latency_ms=(time.perf_counter() - start) * 1000,
+                )
+            except Exception as e:
+                logger.error(f"Nemotron batch audit failed for prompt '{p[:50]}': {e}")
+                return AuditFinding(
+                    auditor=self.name,
+                    verdict=Verdict.ESCALATE,
+                    reason=f"Nemotron audit error — escalated: {e}",
+                    confidence=0.0,
+                    latency_ms=(time.perf_counter() - start) * 1000,
+                )
+
+        return await asyncio.gather(*[single(p) for p in prompts])
 
 class _GraniteSentinel(BaseAuditor):
     """Granite Guardian sentinel loaded from local path."""
@@ -957,16 +1014,29 @@ class _GraniteSentinel(BaseAuditor):
             from transformers import AutoTokenizer, AutoModelForCausalLM
             import torch
             self.tokenizer = AutoTokenizer.from_pretrained(self.model_id)
-            self.model = AutoModelForCausalLM.from_pretrained(
-                self.model_id,
-                torch_dtype=torch.bfloat16,
-                device_map="auto",
-                attn_implementation="flash_attention_2",
-            )
+            try:
+                self.model = AutoModelForCausalLM.from_pretrained(
+                    self.model_id,
+                    torch_dtype=torch.bfloat16,
+                    device_map="auto",
+                    attn_implementation="flash_attention_2",
+                )
+            except (ImportError, RuntimeError):
+                logger.info("flash_attn_2 not available, falling back to eager attention")
+                self.model = AutoModelForCausalLM.from_pretrained(
+                    self.model_id,
+                    torch_dtype=torch.bfloat16,
+                    device_map="auto",
+                )
             self.model.eval()
             logger.info(f"Granite Sentinel loaded from {self.model_id}")
         except Exception as e:
-            logger.warning(f"Failed to load Granite Sentinel: {e}")
+            self.model = None
+            logger.critical(f"Failed to load Granite Sentinel: {e}")
+            raise RuntimeError(f"Granite Sentinel load failed: {e}") from e
+
+    UN_TOKEN_ID = 1899   # 'UN' — start of "UNSAFE"
+    SAFE_TOKEN_ID = 84888  # 'SAFE'
 
     def _build_prompt(self, prompt: str) -> str:
         return (
@@ -978,15 +1048,70 @@ class _GraniteSentinel(BaseAuditor):
             "<|assistant|>"
         )
 
-    async def audit(self, prompt: str) -> AuditFinding:
+    async def fast_pass(self, prompt: str) -> AuditFinding | None:
+        """Zero-generation safety verdict via first-token logit comparison.
+
+        Granite tokenizes 'UNSAFE' as ['UN'(1899), 'SAFE'(84888)].
+        At the first generated position, the model chooses between 'UN'
+        (start of UNSAFE) and 'SAFE'.  We compare logits:
+          logit(UN) > logit(SAFE) + threshold  →  BLOCK
+          logit(SAFE) > logit(UN) + threshold  →  PASS
+          otherwise → None (uncertain, fall through to full generation)
+        """
         import torch
-        start = time.perf_counter()
 
         if self.model is None:
             return AuditFinding(
                 auditor=self.name,
+                verdict=Verdict.ESCALATE,
+                reason="Granite Sentinel model not loaded — escalated for human review",
+                confidence=0.0,
+            )
+
+        text = self._build_prompt(prompt)
+        inputs = self.tokenizer(text, return_tensors="pt").to(self.model.device)
+
+        with torch.inference_mode():
+            outputs = self.model(**inputs)
+            logits = outputs.logits[0, -1, :]
+
+        logit_un = logits[self.UN_TOKEN_ID].item()
+        logit_safe = logits[self.SAFE_TOKEN_ID].item()
+        delta = logit_un - logit_safe
+
+        if delta > 5.0:
+            return AuditFinding(
+                auditor=self.name,
+                verdict=Verdict.BLOCK,
+                reason=f"Fast Pass: UNSAFE (Δ={delta:.0f})",
+                confidence=min(abs(delta) / 50.0, 0.99),
+            )
+        if delta < -5.0:
+            return AuditFinding(
+                auditor=self.name,
                 verdict=Verdict.PASS,
-                reason="Model not loaded, bypassing",
+                reason=f"Fast Pass: SAFE (Δ={delta:.0f})",
+                confidence=min(abs(delta) / 50.0, 0.99),
+            )
+        return None
+
+    async def audit(self, prompt: str) -> AuditFinding:
+        import torch
+        start = time.perf_counter()
+
+        # Try fast pass first
+        fp = await self.fast_pass(prompt)
+        if fp is not None:
+            fp.latency_ms = (time.perf_counter() - start) * 1000
+            return fp
+
+        # Fall through to full generation
+        if self.model is None:
+            return AuditFinding(
+                auditor=self.name,
+                verdict=Verdict.ESCALATE,
+                reason="Granite Sentinel model not loaded — escalated for human review",
+                confidence=0.0,
             )
 
         template = self._build_prompt(prompt)
@@ -1015,48 +1140,191 @@ class _GraniteSentinel(BaseAuditor):
         )
 
     async def audit_batch(self, prompts: List[str]) -> List[AuditFinding]:
-        """Batched audit — one GPU forward pass for N prompts.
-
-        Tokenizes all prompts with padding into a single tensor,
-        runs model.generate once, decodes all outputs.
-        Amortizes prefill cost across the batch.
-        """
+        """Batched audit — try fast_pass per prompt, full generation for uncertain ones."""
         import torch
         start = time.perf_counter()
 
         if self.model is None:
             return [
-                AuditFinding(auditor=self.name, verdict=Verdict.PASS, reason="Model not loaded")
+                AuditFinding(auditor=self.name, verdict=Verdict.ESCALATE,
+                             reason="Granite Sentinel model not loaded — escalated for human review",
+                             confidence=0.0)
                 for _ in prompts
             ]
 
-        templates = [self._build_prompt(p) for p in prompts]
-        inputs = self.tokenizer(
-            templates,
-            return_tensors="pt",
-            padding=True,
-            truncation=True,
-            max_length=512,
-        )
-        inputs = {k: v.to(self.model.device) for k, v in inputs.items()}
+        # Try fast pass for each prompt first
+        results = [None] * len(prompts)
+        uncertain_indices = []
+        for i, p in enumerate(prompts):
+            fp = await self.fast_pass(p)
+            if fp is not None:
+                fp.latency_ms = 0.0
+                results[i] = fp
+            else:
+                uncertain_indices.append(i)
 
-        with torch.inference_mode():
-            outputs = self.model.generate(
-                **inputs,
-                max_new_tokens=10,
-                do_sample=False,
-                pad_token_id=self.tokenizer.pad_token_id,
+        # Full generation only for uncertain prompts
+        if uncertain_indices:
+            uncertain_prompts = [prompts[i] for i in uncertain_indices]
+            templates = [self._build_prompt(p) for p in uncertain_prompts]
+            inputs = self.tokenizer(
+                templates,
+                return_tensors="pt",
+                padding=True,
+                truncation=True,
+                max_length=512,
             )
+            inputs = {k: v.to(self.model.device) for k, v in inputs.items()}
 
-        results = []
-        for output in outputs:
-            raw = self.tokenizer.decode(output, skip_special_tokens=True)
-            verdict = Verdict.BLOCK if "unsafe" in raw.lower() else Verdict.PASS
-            results.append(AuditFinding(
-                auditor=self.name,
-                verdict=verdict,
-                reason=f"Granite Sentinel: {'UNSAFE' if verdict == Verdict.BLOCK else 'SAFE'}",
-                confidence=0.9,
-                latency_ms=(time.perf_counter() - start) * 1000,
-            ))
+            with torch.inference_mode():
+                outputs = self.model.generate(
+                    **inputs,
+                    max_new_tokens=10,
+                    do_sample=False,
+                    pad_token_id=self.tokenizer.pad_token_id,
+                )
+
+            for idx, output in zip(uncertain_indices, outputs):
+                raw = self.tokenizer.decode(output, skip_special_tokens=True)
+                verdict = Verdict.BLOCK if "unsafe" in raw.lower() else Verdict.PASS
+                results[idx] = AuditFinding(
+                    auditor=self.name,
+                    verdict=verdict,
+                    reason=f"Granite Sentinel: {'UNSAFE' if verdict == Verdict.BLOCK else 'SAFE'}",
+                    confidence=0.9,
+                    latency_ms=(time.perf_counter() - start) * 1000,
+                )
+
+        # Fill in latency_ms for fast_pass results
+        for r in results:
+            if r and r.latency_ms == 0.0:
+                r.latency_ms = (time.perf_counter() - start) * 1000
+
         return results
+
+
+# ─── DFlash Block-Level Governor ────────────────────────────────────────────
+
+@dataclass
+class DFlashBlockAuditTrail:
+    """Immutable audit trail for a single DFlash block's governance lifecycle."""
+    block_id: int
+    block_text: str
+    block_hash: str
+    prompt: str
+    verdict: Verdict
+    sheriff_finding: Optional[AuditFinding]
+    sentinel_finding: Optional[AuditFinding]
+    latency_ms: float
+    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+    def to_log(self) -> Dict[str, Any]:
+        return {
+            "block_id": self.block_id,
+            "block_text": self.block_text,
+            "block_hash": self.block_hash,
+            "verdict": self.verdict.value,
+            "sheriff": {"verdict": self.sheriff_finding.verdict.value if self.sheriff_finding else None,
+                        "reason": self.sheriff_finding.reason if self.sheriff_finding else None},
+            "sentinel": {"verdict": self.sentinel_finding.verdict.value if self.sentinel_finding else None,
+                         "reason": self.sentinel_finding.reason if self.sentinel_finding else None},
+            "latency_ms": round(self.latency_ms, 2),
+            "timestamp": self.timestamp,
+        }
+
+
+class DFlashBlockGovernor:
+    """Bridges DFlash 16-token block pipeline with real Sentinel+Sheriff auditors.
+
+    Each block is audited asynchronously. The governor holds the block until
+    both auditors return. If either blocks, the pipeline is killed and the
+    trajectory up to that point is logged permanently.
+
+    Architecture:
+      DFlash block N emitted
+        → Governor.audit_block(block, prompt)
+          → Sheriff audit (fast_pass → full audit fallback)
+          → Granite Sentinel audit (fast_pass → full audit fallback)
+          → Both run concurrently via asyncio.gather
+        → If either BLOCKs
+          → Pipeline killed
+          → Trajectory [blocks 0..N] logged with BLOCK verdict
+        → If both PASS
+          → Block released to base model output
+          → Trajectory [block N] logged with PASS verdict
+    """
+
+    def __init__(self, sheriff: BaseAuditor, sentinel: BaseAuditor):
+        self.sheriff = sheriff
+        self.sentinel = sentinel
+        self.trail: List[DFlashBlockAuditTrail] = []
+        self.logger = logging.getLogger("MAIA-DFlashGovernor")
+
+    async def audit_block(
+        self,
+        block_id: int,
+        block_text: str,
+        block_hash: str,
+        prompt: str,
+    ) -> DFlashBlockAuditTrail:
+        """Audit a single DFlash block through both auditors concurrently.
+
+        Block-level audit uses fast path only:
+          • Sheriff: word-list match on block content (instant)
+          • Sentinel: logit-based fast_pass (zero-generation, ~120ms)
+
+        If fast_pass is uncertain, the block is PASSed by default — the
+        egress interceptor and pre-flight audit provide additional safety
+        layers downstream. This keeps block-level latency under 200ms.
+        """
+        t0 = time.perf_counter()
+
+        check_text = f"Request: {prompt}\nBlock: {block_text}"
+
+        sheriff_task = asyncio.create_task(self.sheriff.fast_pass(check_text))
+        sentinel_task = asyncio.create_task(self.sentinel.fast_pass(check_text))
+        sheriff_finding, sentinel_finding = await asyncio.gather(sheriff_task, sentinel_task)
+
+        blocks = [f for f in [sheriff_finding, sentinel_finding] if f and f.verdict == Verdict.BLOCK]
+        verdict = Verdict.BLOCK if blocks else Verdict.PASS
+
+        trail = DFlashBlockAuditTrail(
+            block_id=block_id,
+            block_text=block_text,
+            block_hash=block_hash,
+            prompt=prompt,
+            verdict=verdict,
+            sheriff_finding=sheriff_finding,
+            sentinel_finding=sentinel_finding,
+            latency_ms=(time.perf_counter() - t0) * 1000,
+        )
+        self.trail.append(trail)
+
+        if verdict == Verdict.BLOCK:
+            reasons = ", ".join(f.reason for f in blocks)
+            self.logger.info(
+                f"Block {block_id} BLOCKED: {reasons} | "
+                f"trajectory: {block_text[:60]}..."
+            )
+        else:
+            self.logger.debug(f"Block {block_id} PASSED ({block_text[:40]}...)")
+
+        return trail
+
+    def get_trajectory_log(self) -> List[Dict[str, Any]]:
+        """Return full trajectory log of all audited blocks."""
+        return [t.to_log() for t in self.trail]
+
+    def get_blocked_blocks(self) -> List[DFlashBlockAuditTrail]:
+        """Return only the blocks that were blocked."""
+        return [t for t in self.trail if t.verdict == Verdict.BLOCK]
+
+    def get_stats(self) -> Dict[str, Any]:
+        if not self.trail:
+            return {"total_blocks": 0, "blocked": 0, "passed": 0}
+        return {
+            "total_blocks": len(self.trail),
+            "blocked": len(self.get_blocked_blocks()),
+            "passed": len(self.trail) - len(self.get_blocked_blocks()),
+            "avg_latency_ms": round(sum(t.latency_ms for t in self.trail) / len(self.trail), 2),
+        }

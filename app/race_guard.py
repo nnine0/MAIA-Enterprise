@@ -321,6 +321,95 @@ class SentinelTimeoutTracker:
             self._thread_timers.clear()
 
 
+# ─── Tape-Replay Rollback (dflash-mlx pattern) ─────────────────────────────
+
+@dataclass
+class TapeReplayRecord:
+    """A single record on the governance tape — like dflash-mlx tape entries.
+
+    Each record captures the audit decision and block identity at one step
+    of the trajectory. Used by TapeReplayRollback to reconstruct state on
+    rollback without re-auditing previously accepted blocks.
+    """
+    block_id: int
+    seq_number: int
+    decision: str  # APPROVED or REJECTED
+    block_hash: str
+    latent_hash: str
+    violations: List[str] = field(default_factory=list)
+    confidence: float = 0.0
+
+
+class TapeReplayRollback:
+    """Governance tape recorder with checkpoint/rollback (dflash-mlx pattern).
+
+    Inspired by dflash-mlx RecurrentRollbackCache which records tape
+    activations during draft generation and replays the accepted prefix
+    through the recurrent state on rollback. Here we apply the same
+    pattern to governance state:
+
+      checkpoint()  → snapshot current synchronizer state
+      record_tape() → append a block decision to the tape
+      rollback(n)   → restore snapshot + replay first n tape entries
+
+    This ensures that when a block is rejected mid-trajectory, previously
+    accepted blocks' decisions are preserved without re-auditing.
+    """
+
+    def __init__(self):
+        self._snapshot: Optional[Dict[str, Any]] = None
+        self._tape: List[TapeReplayRecord] = []
+        self._checkpoint_seq: int = -1
+
+    def checkpoint(self, state: Dict[str, Any]):
+        """Snapshot current governance state for potential rollback."""
+        self._snapshot = dict(state)
+        self._checkpoint_seq = state.get("highest_approved", -1)
+        self._tape = []
+
+    def record_tape(self, record: TapeReplayRecord):
+        """Append a block decision to the tape."""
+        self._tape.append(record)
+
+    def rollback(self, n_accepted: int) -> Dict[str, Any]:
+        """Rollback governance state, replay accepted tape entries.
+
+        Args:
+            n_accepted: Number of accepted blocks to preserve (replay
+                        tape entries 0..n_accepted, drop the rest).
+
+        Returns:
+            Restored state dict with highest_approved etc. correctly set.
+        """
+        state = dict(self._snapshot) if self._snapshot else {}
+        if not self._tape:
+            return state
+
+        # Replay accepted entries up to n_accepted
+        replay = self._tape[:n_accepted]
+        for rec in replay:
+            state["highest_approved"] = max(
+                state.get("highest_approved", -1), rec.block_id
+            )
+            state["highest_decided"] = max(
+                state.get("highest_decided", -1), rec.block_id
+            )
+
+        # Purge tape entries beyond accepted
+        self._tape = replay
+
+        return state
+
+    @property
+    def tape_length(self) -> int:
+        return len(self._tape)
+
+    def clear(self):
+        self._snapshot = None
+        self._tape = []
+        self._checkpoint_seq = -1
+
+
 class BlockSynchronizer:
     """
     Primary synchronization layer between DFlash block stream and Sentinel decisions.
@@ -369,6 +458,7 @@ class BlockSynchronizer:
         self.block_buffer = BlockBuffer(max_size=max_buffered_blocks)
         self.sequence_monitor = SequenceMonitor(max_gap=max_seq_gap)
         self.timeout_tracker = SentinelTimeoutTracker(default_timeout=audit_timeout)
+        self.tape_replay = TapeReplayRollback()
 
         self._rollback_to_id: int = -1
         self._lock = threading.Lock()
@@ -391,6 +481,9 @@ class BlockSynchronizer:
         if not self.sequence_monitor.record_emission(block.block_id):
             logger.warning(f"Block emission out of sequence: {block.block_id}")
 
+        # Record tape-replay checkpoint on first block
+        self._take_checkpoint()
+
         self._total_blocks += 1
         self.timeout_tracker.start_timer(block.block_id, self.audit_timeout)
 
@@ -400,10 +493,22 @@ class BlockSynchronizer:
 
         return event
 
+    def _take_checkpoint(self):
+        """Snapshot governance state for tape-replay rollback."""
+        self.tape_replay.checkpoint(self._get_state_snapshot())
+
+    def _get_state_snapshot(self) -> Dict[str, Any]:
+        return {
+            "highest_emitted": self.sequence_monitor.highest_emitted,
+            "highest_approved": self.sequence_monitor.highest_approved,
+            "highest_decided": self.sequence_monitor.highest_decided,
+        }
+
     def record_decision(self, decision: SentinelDecision):
         """
         Record a Sentinel audit decision.
         Called by the governance layer when Sentinel completes audit.
+        Records tape entry for tape-replay rollback.
         """
         if not self.sequence_monitor.record_decision(decision.block_id):
             logger.warning(f"Stale decision for block {decision.block_id} "
@@ -411,6 +516,17 @@ class BlockSynchronizer:
             return
 
         self.timeout_tracker.cancel_timer(decision.block_id)
+
+        # Record on tape before resolving (for rollback replay)
+        self.tape_replay.record_tape(TapeReplayRecord(
+            block_id=decision.block_id,
+            seq_number=decision.seq_number,
+            decision=decision.decision,
+            block_hash="",
+            latent_hash=decision.latent_hash,
+            violations=decision.violations,
+            confidence=decision.confidence,
+        ))
 
         self.block_buffer.resolve(
             decision.block_id,
@@ -448,7 +564,12 @@ class BlockSynchronizer:
 
     def rollback_to(self, block_id: int):
         """
-        Rollback to a safe block ID.
+        Rollback to a safe block ID using tape-replay state reconstruction.
+
+        dflash-mlx pattern: restore checkpoint snapshot and replay accepted
+        tape entries up to block_id, avoiding full re-audit of previously
+        accepted blocks.
+
         Used when timeout or cascade failure requires recovery.
         """
         if not self.enable_rollback:
@@ -462,6 +583,13 @@ class BlockSynchronizer:
 
             self._rollback_to_id = block_id
             logger.warning(f"Rollback initiated to block {block_id}")
+
+            # Tape-replay: restore snapshot + replay accepted entries
+            n_accepted = max(0, block_id - self.tape_replay._checkpoint_seq)
+            restored = self.tape_replay.rollback(n_accepted)
+            self.sequence_monitor.highest_approved = restored.get("highest_approved", -1)
+            self.sequence_monitor.highest_decided = restored.get("highest_decided", -1)
+            self.sequence_monitor.highest_emitted = restored.get("highest_emitted", -1)
 
             safe_id = self.sequence_monitor.get_safe_block_id()
             if safe_id > block_id:
@@ -498,6 +626,7 @@ class BlockSynchronizer:
             "buffer": self.block_buffer.get_stats(),
             "rollback_to": self._rollback_to_id,
             "safe_output_point": self.get_safe_output_point(),
+            "tape_length": self.tape_replay.tape_length,
         }
 
 

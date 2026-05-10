@@ -42,12 +42,16 @@ airlock_gateway: Optional[AirlockGateway] = None
 async def lifespan(app):
     global kernel, airlock_gateway
     kernel = create_hybrid_kernel()
-    airlock_gateway = create_gateway(
-        api_base="",
-        sector="finance",
-        demo=True
-    )
-    logger.info("MAIA Hybrid Kernel + Airlock Gateway initialized")
+    try:
+        airlock_gateway = create_gateway(
+            api_base="",
+            sector="finance",
+        )
+        logger.info("MAIA Hybrid Kernel + Airlock Gateway initialized (production)")
+    except RuntimeError as e:
+        logger.critical(f"Airlock Gateway initialization failed: {e}")
+        logger.critical("Server cannot start without production auditors")
+        raise
     if kernel:
         logger.info(f"VRAM: {kernel.stratifier.get_vram_breakdown()}")
     yield
