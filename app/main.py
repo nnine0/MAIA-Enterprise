@@ -9,6 +9,7 @@ Zero-Trust Architecture:
 - Application Layer: Executes only signed trajectories
 """
 
+from typing import Optional
 from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, Header
 from pydantic import BaseModel
 import os
@@ -60,6 +61,8 @@ from kernel_manifest import create_kernel_manifest
 from tool_router import create_tool_router
 from core.adapter_loader import registry
 
+from app.airlock_gateway import AirlockGateway, Verdict, AuditFinding
+
 from config import (
     MAIA_API_KEY,
     LORAX_URL,
@@ -96,6 +99,35 @@ def init_dispatcher():
         tool_router = None
 
 init_dispatcher()
+
+# Global Airlock Gateway for Tier 2/3 pre-flight governance
+_airlock_gateway: Optional[AirlockGateway] = None
+
+def get_airlock_gateway() -> Optional[AirlockGateway]:
+    """Lazy-init Airlock Gateway for Tier 2/3 pre-flight checks.
+    
+    If real auditors are unavailable, returns None — the Tier 2/3 path
+    logs a bypass warning but still proceeds (backwards compatible).
+    """
+    global _airlock_gateway
+    if _airlock_gateway is not None:
+        return _airlock_gateway
+    try:
+        from app.airlock_gateway import _GraniteSentinel, _NemotronAdapter
+        from app.nemotron_real import Nemotron3Safety, NEMOTRON_AVAILABLE
+        if not NEMOTRON_AVAILABLE:
+            logger.error("Nemotron not available — Tier 2/3 bypass sentinel unavailable")
+            return None
+        sheriff_nemo = Nemotron3Safety(model_id="/models/sheriff")
+        sheriff_nemo.load()
+        sheriff = _NemotronAdapter(sheriff_nemo)
+        sentinel = _GraniteSentinel(model_id="/models/sentinel")
+        _airlock_gateway = AirlockGateway(sheriff=sheriff, sentinel=sentinel, base_model=None)
+        logger.info("Airlock Gateway initialized for Tier 2/3 pre-flight governance")
+        return _airlock_gateway
+    except Exception as e:
+        logger.error(f"Failed to init Airlock Gateway for Tier 2/3: {e}")
+        return None
 
 app = FastAPI(
     title="MAIA Governance Layer",
@@ -196,7 +228,43 @@ async def execute_maia_protocol(user_query: str, session_id: str = None) -> dict
             "status": "vetted" if audit_result['status'] == "PASS" else "blocked"
         }
     else:
-        # Tier 2/3: Direct expert execution with logging
+        # Tier 2/3: Pre-flight governance via Airlock Gateway
+        gateway = get_airlock_gateway()
+        if gateway is not None:
+            try:
+                batch_results = await gateway._coordinator.audit_batch([user_query])
+                sheriff_finding, sentinel_finding = batch_results[0]
+                findings = [sheriff_finding, sentinel_finding]
+                blocks = [f for f in findings if f.verdict == Verdict.BLOCK]
+                if blocks:
+                    reasons = [f.reason for f in blocks]
+                    logger.warning(f"Tier 2/3 pre-flight BLOCKED: {reasons}")
+                    await emit_signature(
+                        session_id, layer=2,
+                        adapter_id="airlock-gateway",
+                        reasoning=f"Blocked by governance: {reasons}",
+                        inputs=["user_query"],
+                        outputs=["block_reason"]
+                    )
+                    return {
+                        "session_id": session_id,
+                        "dispatch": dispatch_token,
+                        "materiality_tier": dispatch.materiality_tier,
+                        "status": "blocked",
+                        "reason": f"Governance pre-flight blocked: {reasons}"
+                    }
+                escalates = [f for f in findings if f.verdict == Verdict.ESCALATE]
+                if escalates:
+                    logger.warning(f"Tier 2/3 pre-flight ESCALATE: {[f.reason for f in escalates]}")
+            except Exception as e:
+                logger.error(f"Tier 2/3 pre-flight error (proceeding): {e}")
+        else:
+            logger.warning(
+                "TIER 2/3 BYPASS WARNING: No Airlock Gateway available. "
+                "Request proceeding without pre-flight governance."
+            )
+
+        # Direct expert execution with logging
         context = await get_rag_context(user_query)
         system_instruction = f"You are an expert in {dispatch.sub_domain}. Use this context: {context}"
         

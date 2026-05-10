@@ -11,6 +11,7 @@ Materiality Matrix Logic:
 """
 
 import os
+import httpx
 from typing import Optional, Dict, List
 from dataclasses import dataclass
 from enum import Enum
@@ -73,19 +74,11 @@ class MAIARouter:
         self,
         maia_base_url: str = "http://localhost:8000/v1",
         maia_api_key: str = "MAIA_LOCAL",
-        openai_api_key: Optional[str] = None,
+        sidecar_url: str = "http://localhost:8080/v1",
     ):
         self.maia_base_url = maia_base_url
         self.maia_api_key = maia_api_key
-        self.openai_api_key = openai_api_key or os.getenv("OPENAI_API_KEY", "")
-        
-        # Try importing openai, fallback to mock if not available
-        try:
-            import openai
-            self.openai = openai
-            self._has_openai = bool(self.openai_api_key)
-        except ImportError:
-            self._has_openai = False
+        self.sidecar_url = sidecar_url
     
     def classify_request(self, prompt: str) -> RequestType:
         """
@@ -165,33 +158,54 @@ class MAIARouter:
     
     async def execute(self, prompt: str, backend: Optional[TargetBackend] = None) -> Dict:
         """
-        Execute the routed request.
+        Execute the routed request through the Airlock sidecar proxy.
         
+        All requests — MAIA or external — go through the sidecar's governance layer.
         If backend not specified, uses router decision.
         """
         context = self.route(prompt)
         
         if backend and backend != context.target_backend:
-            # Override routing
             context.target_backend = backend
         
-        result = {
+        base = {
             "routed_to": context.target_backend.value,
             "request_type": context.request_type.value,
             "sector": context.sector,
             "lora_adapter": context.lora_adapter,
             "reason": context.reason,
-            # In real implementation, would call actual API here
-            "status": "mock_response",
         }
         
-        return result
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                resp = await client.post(
+                    f"{self.sidecar_url}/chat/completions",
+                    json={
+                        "model": "router-proxy",
+                        "messages": [{"role": "user", "content": prompt}],
+                        "metadata": {
+                            "routed_to": context.target_backend.value,
+                            "request_type": context.request_type.value,
+                            "sector": context.sector,
+                        },
+                    },
+                )
+                resp.raise_for_status()
+                data = resp.json()
+                base["status"] = "governed"
+                base["response"] = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                base["governance"] = data.get("governance", {})
+        except Exception as exc:
+            base["status"] = "error"
+            base["error"] = str(exc)
+        
+        return base
     
     def get_status(self) -> Dict:
         """Get router status"""
         return {
             "maia_url": self.maia_base_url,
-            "has_openai": self._has_openai,
+            "sidecar_url": self.sidecar_url,
             "material_keywords": sum(len(kw) for kw in MATERIAL_KEYWORDS.values()),
         }
 

@@ -16,6 +16,7 @@ Layer 7 (Application) → Executes only validated + signed trajectories
 
 import asyncio
 import uuid
+import httpx
 from typing import Optional, List, Dict, Any
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -75,17 +76,17 @@ class SaguaroScheduler:
         max_draft_tokens: int = 48,
         hypothesis_count: int = 3,
         temperature: float = 0.7,
+        sidecar_url: str = "http://localhost:8080/v1",
     ):
         self.max_draft_tokens = max_draft_tokens
         self.hypothesis_count = hypothesis_count
         self.temperature = temperature
-        
-        self.client = None
+        self.sidecar_url = sidecar_url
         self.model_name = "google/gemma-4-26b-a4b-it"
     
-    def set_client(self, client):
-        """Set async OpenAI client for generation"""
-        self.client = client
+    def set_sidecar_url(self, url: str):
+        """Set sidecar proxy URL for governed inference"""
+        self.sidecar_url = url
     
     async def generate_hypotheses(
         self,
@@ -104,17 +105,23 @@ class SaguaroScheduler:
         
         async def generate_single(index: int) -> Hypothesis:
             try:
-                completion = await self.client.chat.completions.create(
-                    model=self.model_name,
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": prompt}
-                    ],
-                    max_new_tokens=self.max_draft_tokens,
-                    temperature=self.temperature + (index * 0.1),
-                )
-                text = completion.choices[0].message.content
-                token_count = len(text.split())
+                async with httpx.AsyncClient(timeout=30.0) as client:
+                    resp = await client.post(
+                        f"{self.sidecar_url}/chat/completions",
+                        json={
+                            "model": self.model_name,
+                            "messages": [
+                                {"role": "system", "content": system_prompt},
+                                {"role": "user", "content": prompt}
+                            ],
+                            "max_tokens": self.max_draft_tokens,
+                            "temperature": self.temperature + (index * 0.1),
+                        },
+                    )
+                    resp.raise_for_status()
+                    data = resp.json()
+                    text = data["choices"][0]["message"]["content"]
+                    token_count = len(text.split())
                 
                 return Hypothesis(
                     hypothesis_id=f"hypo-{uuid.uuid4().hex[:8]}",
