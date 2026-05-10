@@ -934,7 +934,7 @@ class _NemotronAdapter(BaseAuditor):
     async def audit(self, prompt: str) -> AuditFinding:
         start = time.perf_counter()
         try:
-            result = await self._inner.audit(prompt=prompt, response="", max_new_tokens=20)
+            result = await self._inner.audit(prompt=prompt, response="")
         except Exception as e:
             latency = (time.perf_counter() - start) * 1000
             logger.error(f"Nemotron audit failed: {e}")
@@ -977,7 +977,7 @@ class _NemotronAdapter(BaseAuditor):
 
         async def single(p: str) -> AuditFinding:
             try:
-                r = await self._inner.audit(prompt=p, response="", max_new_tokens=20)
+                r = await self._inner.audit(prompt=p, response="")
                 return AuditFinding(
                     auditor=self.name,
                     verdict=Verdict.BLOCK if r.tier == 1 else (Verdict.ESCALATE if r.tier == 2 else Verdict.PASS),
