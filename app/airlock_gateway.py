@@ -162,6 +162,84 @@ class BaseAuditor:
         return None
 
 
+class SuperFastPass(BaseAuditor):
+    """Zero-cost safe-query bypass — skips Granite for clearly safe prompts.
+
+    Matches prompts against safe-text regex patterns. If matched AND no
+    unsafe keywords present, returns PASS instantly (~0ms) — bypassing the
+    122ms Granite fast_pass entirely.
+
+    Intended to catch ~80% of queries (greetings, factual lookups, simple
+    calculations) so Granite only runs on the ~20% that need it.
+    """
+
+    name = "super-fast-pass"
+
+    SAFE_PATTERNS = [
+        r"^(hello|hi|hey|good morning|good afternoon|good evening)",
+        r"^what('s| is) the (weather|time|date|day|temperature|forecast)",
+        r"^what (time|day|date) is it",
+        r"^who (is|was|are|were) ",
+        r"^explain (how|why|what|the|a|an) ",
+        r"^define ",
+        r"^summarize ",
+        r"^translate ",
+        r"^compare ",
+        r"^list ",
+        r"^calculate ",
+        r"^tell me about ",
+        r"^how (does|do|is|are|can|would|will|to) ",
+        r"^what is (a|an|the|your|my|our|this|that) ",
+        r"^what are ",
+        r"^what does ",
+        r"^what do ",
+        r"^can you (tell|explain|show|describe|list|give) ",
+        r"^is it (possible|true|safe|ok) ",
+        r"^why (is|are|does|do|would|did) ",
+    ]
+
+    UNSAFE_KEYWORDS = {
+        "bypass", "override", "circumvent",
+        "fake", "unauthorized", "conceal", "delete logs",
+        "sanction", "sanctions", "sanctioned",
+        "terrorist", "weapon", "explosive",
+        "fraud", "steal", "hack", "exploit", "vulnerability", "malware", "ransomware",
+        "patient", "diagnosis", "phi", "ssn", "attorney", "privileged",
+        "confidential", "insider trading", "money laundering", "wire",
+    }
+
+    def fast_pass(self, prompt: str) -> AuditFinding | None:
+        import re
+        prompt_lower = prompt.lower().strip()
+
+        # First check: no unsafe keywords
+        for kw in self.UNSAFE_KEYWORDS:
+            if kw in prompt_lower:
+                return None  # fall through to Granite
+
+        # Second check: matches a safe pattern
+        for pattern in self.SAFE_PATTERNS:
+            if re.search(pattern, prompt_lower):
+                return AuditFinding(
+                    auditor=self.name,
+                    verdict=Verdict.PASS,
+                    reason=f"SuperFastPass: safe pattern matched",
+                    confidence=0.95,
+                    latency_ms=0.0,
+                )
+        return None
+
+    async def audit(self, prompt: str) -> AuditFinding:
+        result = self.fast_pass(prompt)
+        return result or AuditFinding(
+            auditor=self.name,
+            verdict=Verdict.PASS,
+            reason="SuperFastPass: no match, falling through",
+            confidence=0.5,
+            latency_ms=0.0,
+        )
+
+
 class MockSheriffAuditor(BaseAuditor):
     """Mock Nemotron Sheriff for demo/testing."""
 
@@ -509,6 +587,7 @@ class AirlockGateway:
         sentinel: Optional[BaseAuditor] = None,
         base_model: Optional[BaseModelClient] = None,
         sector: str = "finance",
+        super_fast_pass: Optional[SuperFastPass] = None,
     ):
         self.sheriff = sheriff or MockSheriffAuditor()
         self.sentinel = sentinel or MockSentinelAuditor()
@@ -518,6 +597,7 @@ class AirlockGateway:
         self.policy = PolicyManifest(sector)
         self.logger = logging.getLogger("MAIA-AirlockGateway")
         self.transactions: List[GatewayTransaction] = []
+        self._super_fast_pass = super_fast_pass or SuperFastPass()
         self._coordinator = BatchedAuditorCoordinator(self.sheriff, self.sentinel)
 
     async def _process_single(
@@ -564,10 +644,14 @@ class AirlockGateway:
                 )
             )
 
-        # ── Step 3: Pre-flight (if not already provided) ──
+        # ── Step 3: Super-fast pass (skip Granite for clearly safe) ──
         if preflight_results is None:
-            batch_results = await self._coordinator.audit_batch([prompt])
-            preflight_results = batch_results[0]
+            super_pass = self._super_fast_pass.fast_pass(prompt)
+            if super_pass is not None and super_pass.verdict == Verdict.PASS:
+                preflight_results = (super_pass, super_pass)
+            else:
+                batch_results = await self._coordinator.audit_batch([prompt])
+                preflight_results = batch_results[0]
 
         sheriff_result, sentinel_result = preflight_results
         findings = [sheriff_result, sentinel_result]
@@ -671,6 +755,14 @@ class AirlockGateway:
             self.transactions.append(tx)
             return tx
 
+        # Super-fast pass: skip Granite for clearly safe queries (~0ms)
+        super_pass = self._super_fast_pass.fast_pass(prompt)
+        if super_pass is not None and super_pass.verdict == Verdict.PASS:
+            return await self._process_single(
+                prompt, messages, max_tokens, temperature,
+                preflight_results=(super_pass, super_pass),
+            )
+
         # Single-shot batched preflight via coordinator with 3x retry
         try:
             batch_results = await self._coordinator.audit_batch([prompt])
@@ -730,22 +822,35 @@ class AirlockGateway:
             self.egress = EgressInterceptor(sector)
             self.policy = PolicyManifest(sector)
 
-        # Step 1: Fast-path policy check per prompt (no model)
+        # Step 1: Fast-path policy check + super-fast pass per prompt
         policy_blocked = {}
-        for prompt in prompts:
+        super_fast_passed = {}
+        for i, prompt in enumerate(prompts):
             findings = self.policy.check_prompt(prompt)
             if findings:
                 policy_blocked[prompt] = findings
+                continue
+            sp = self._super_fast_pass.fast_pass(prompt)
+            if sp is not None and sp.verdict == Verdict.PASS:
+                super_fast_passed[i] = sp
 
-        # Step 2: Batched preflight with 3x retry
-        try:
-            batch_results = await self._coordinator.audit_batch(prompts)
-        except RuntimeError as e:
-            self.logger.error(f"Batch preflight failed after 3 retries: {e}")
-            return [
-                self._make_error_tx(p)
-                for p in prompts
-            ]
+        # Step 2: Batched preflight — only for prompts NOT super-passed
+        uncertain_indices = [i for i in range(len(prompts))
+                             if i not in super_fast_passed and prompts[i] not in policy_blocked]
+        uncertain_prompts = [prompts[i] for i in uncertain_indices]
+
+        batch_results_map = {}
+        if uncertain_prompts:
+            try:
+                batch_results = await self._coordinator.audit_batch(uncertain_prompts)
+                for idx, result in zip(uncertain_indices, batch_results):
+                    batch_results_map[idx] = result
+            except RuntimeError as e:
+                self.logger.error(f"Batch preflight failed after 3 retries: {e}")
+                return [
+                    self._make_error_tx(p)
+                    for p in prompts
+                ]
 
         # Step 3: Per-prompt dispatch
         txs = []
@@ -762,7 +867,15 @@ class AirlockGateway:
                 txs.append(tx)
                 continue
 
-            sheriff_result, sentinel_result = batch_results[i]
+            if i in super_fast_passed:
+                sp = super_fast_passed[i]
+                tx = await self._process_single(
+                    prompt, preflight_results=(sp, sp),
+                )
+                txs.append(tx)
+                continue
+
+            sheriff_result, sentinel_result = batch_results_map[i]
             blocks = [f for f in [sheriff_result, sentinel_result] if f.verdict == Verdict.BLOCK]
 
             if blocks:
@@ -870,6 +983,7 @@ def create_gateway(
     model: str = "",
     sector: str = "finance",
     demo: bool = False,
+    enable_super_fast_pass: bool = True,
 ) -> AirlockGateway:
     """Create an AirlockGateway with configured components.
 
@@ -920,6 +1034,46 @@ def create_gateway(
         sentinel=sentinel,
         base_model=base_model,
         sector=sector,
+        super_fast_pass=SuperFastPass() if enable_super_fast_pass else None,
+    )
+
+
+def create_gateway_from_engine(
+    sheriff: BaseAuditor,
+    sentinel: BaseAuditor,
+    api_base: str = "",
+    api_key: str = "",
+    model: str = "",
+    sector: str = "finance",
+    enable_super_fast_pass: bool = True,
+) -> AirlockGateway:
+    """Create an AirlockGateway with pre-loaded auditors from ModelEngine.
+
+    This is the bridge between ModelEngine and AirlockGateway.
+    Unlike create_gateway(), this does NOT load any models — it takes
+    already-loaded BaseAuditor instances. Use this when you have a
+    ModelEngine that has already loaded Granite Sentinel and/or
+    Nemotron Sheriff.
+
+    Usage:
+        engine = ModelEngine()
+        engine.load_all()
+        gateway = create_gateway_from_engine(
+            sheriff=engine.granite,    # or a Nemotron adapter
+            sentinel=engine.granite,   # Granite serves both roles
+            api_base="http://localhost:8080",
+        )
+    """
+    base_model = None
+    if api_base:
+        base_model = BaseModelClient(api_base=api_base, api_key=api_key, model=model)
+
+    return AirlockGateway(
+        sheriff=sheriff,
+        sentinel=sentinel,
+        base_model=base_model,
+        sector=sector,
+        super_fast_pass=SuperFastPass() if enable_super_fast_pass else None,
     )
 
 

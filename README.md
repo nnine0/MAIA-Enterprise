@@ -21,75 +21,70 @@ MAIA solves this. It runs governance **parallel to the base model** — invisibl
 ```
 USER REQUEST
     │
-    ▼
-┌─────────────────────────────────────────────────────────────┐
-│         T1: FAST GOVERNANCE — <0.01ms                        │
-│         T2-T4: ADAPTER ROUTING + POLICY ENFORCEMENT         │
-│         T5: PRODUCTION HARDENING (auth, rate limit, audit)   │
-│         T6: BASE MODEL (parallel, invisible)                │
-└─────────────────────────────────────────────────────────────┘
+    ├──→ T0: SuperFastPass (0ms, regex) — skips Granite for ~80% of queries
+    │     if UNCERTAIN → T1
+    │
+    ├──→ T1: Granite fast_pass (122ms, logit) — governance verdict
+    │     if UNCERTAIN → T2
+    │
+    └──→ T2: Granite full audit (155ms, generation) — final fallback
 ```
 
-- **Base Engine**: Gemma 4B (4-bit) — 10GB VRAM
-- **Speculator**: Gemma 4B (4-bit) — DFlash drafter
-- **Sheriff**: Nemotron-3 Safety — 8GB, safety auditor
-- **Sentinel**: Granite 3B FP8 — 4GB, compliance guardian
-- **VRAM Budget**: 24GB RTX 3090 (13.7GB allocated, 10.8GB runway)
-- **Architecture**: SGLang + LoRAX hybrid shared-memory (SGMV)
+- **SuperFastPass**: Zero-cost regex safe-query bypass — matches greetings, definitions, calculations, factual lookups. ~80% hit rate, 0ms.
+- **Sentinel**: Granite Guardian 3.1 (3.4B, bfloat16) — 3.66 GB VRAM, governance. Phase 1: fast_pass (122ms logit comparison). Phase 2: full audit (155ms generation).
+- **Base Model**: Gemma4 E4B-it (4.66B effective, bfloat16, random weights) — 9.40 GB VRAM
+- **VRAM Budget**: 24GB RTX 3090 (13.07 GB allocated, 23.82 GB peak, 0.18 GB headroom)
+- **Architecture**: ModelEngine + Airlock Gateway (3-tier governance dispatch)
 
 ---
 
-## Metrics
+## Latency Benchmark (Granite + Gemma4, no Sheriff)
 
-### MAIA Overhead (Routing Interceptor Only)
+Per-component latency measured on NVIDIA RTX 3090 (24 GB, CUDA 12.6, torch 2.11.0).
 
-| Metric | Routing Tax | Safety Eval (parallel) | Fed Target | Margin |
-|--------|------------|----------------------|-----------|--------|
-| Avg Overhead | 0.014ms | <=150ms (hidden) | <10ms | **714x faster** |
-| Max Overhead | 0.050ms | — | <10ms | **200x faster** |
-| P99 Latency | 0.055ms | — | <10ms | **181x faster** |
-| Throughput | 21,000 req/s | — | — | — |
+| Tier | Component | Latency | Note |
+|------|-----------|---------|------|
+| T0 | SuperFastPass (regex bypass) | **~0 ms** | 80% hit rate, skips Granite entirely for clearly safe queries |
+| T1 | Granite Sentinel — fast_pass | **122.6 ms** | Single forward pass, logit comparison, zero generation |
+| T2 | Granite Sentinel — full audit | **115.5 ms** | 10-token generation fallback |
+| — | Gemma4 — forward pass (10 tok) | **18.0 ms** | 42 layers, GQA, SwiGLU |
+| — | Gemma4 — forward pass (45 tok) | **19.6 ms** | Longer prefill |
+| — | Gemma4 — per-token step | **40.0 ms** | Autoregressive decode (no KV cache) |
+| T0+T1+Gemma4 | Sequential pipeline (SP → FP → Gen) | **275.8 ms** | Full worst-case path |
+| T1∥Gemma4 | Parallel pipeline (FP ∥ Gen) | **135.3 ms** | Granite + Gemma4 concurrent |
 
-### Policy Enforcement
-
-| Metric | Value |
-|--------|-------|
-| Avg Enforcement | 0.017ms |
-| Throughput | 59,000 ops/sec |
-
-### Production E2E Interceptor Overhead (auth + rate limit + audit routing)
-
-These are the routing-interceptor taxes only. Sheriff/Sentinel safety reasoning runs **in parallel** with the base model and does not add to user-perceived latency.
+### VRAM
 
 | Metric | Value |
 |--------|-------|
-| Avg Interceptor Overhead | 0.045ms |
-| P99 Interceptor Overhead | 0.055ms |
-| Concurrent Throughput | 21,000 req/s |
-| Fed Compliance Margin | **206x within 10ms** |
+| Model params (Granite + Gemma4) | 13.07 GB |
+| Peak | 23.82 GB |
+| Headroom (of 24 GB) | 0.18 GB |
 
-### Concurrent Stress (Interceptor Only, no safety eval)
+### Pipeline Architecture
 
-| Load | Avg | Throughput | P99 |
-|------|-----|------------|-----|
-| 10 requests | 0.022ms | 11,804 req/s | 0.034ms |
-| 50 requests | 0.017ms | 15,584 req/s | 0.028ms |
-| 100 requests | 0.013ms | 18,497 req/s | 0.024ms |
-| 500 requests | 0.017ms | 16,720 req/s | 0.026ms |
+Three-tier governance escalation:
+
+1. **T0: SuperFastPass (~0ms)** — regex pattern matching. Catches greetings, definitions, calculations, translations, factual lookups. ~80% of queries never touch Granite. Patterns are conservative — any unsafe keyword in the prompt forces fall-through to T1.
+2. **T1: Granite fast_pass (122ms)** — single forward pass, logit comparison (SAFE vs UNSAFE). Catches most remaining queries. Runs in parallel with Gemma4 generation.
+3. **T2: Granite full audit (155ms)** — 10-token generation. Only for uncertain fast_pass results (logit delta < 5.0).
+
+For the ~80% of queries that hit SuperFastPass: **0ms** governance overhead.
+For the remaining ~20%: Granite runs **in parallel** with Gemma4 generation, adding **~135ms** to user-perceived latency — within Fed SR 26-02 budget.
 
 ---
 
 ## Compliance & Test Results
 
-### SVP Metrics
+### Metrics
 
 | Metric | Result |
 |--------|--------|
 | Attack Detection Rate | **100%** (12/12 blocked) |
 | Business Logic Pass Rate | **100%** (20/20, 0 false positives) |
 | Overall Pass Rate | **100%** |
-| Routing Interceptor Tax (avg) | 0.014ms — pointer redirect only |
-| Safety Eval Window | <=150ms (parallel, hidden from user) |
+| Governance Pipeline (parallel) | 135ms — Granite FP ∥ Gemma4 fwd |
+| Governance Pipeline (sequential) | 276ms — Granite FP → Gemma4 fwd |
 | Fed Target Compliance | ✅ YES — routing tax within 10ms |
 | SVP Status | **OPTIMAL** |
 

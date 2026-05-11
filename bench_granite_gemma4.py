@@ -8,12 +8,14 @@ Measures per-component latency with:
 """
 
 import asyncio
-import gc
 import time
 import torch
 import statistics
 
 # ─── Helpers ────────────────────────────────────────────────────────────────
+
+def _device(m):
+    return next(m.parameters()).device
 
 def elapsed_ms(start: float) -> float:
     return (time.perf_counter() - start) * 1000
@@ -31,30 +33,19 @@ async def main():
     print("  Granite Sentinel + Gemma4 E4B-it — Per-Component Latency")
     print("=" * 75)
 
-    # ── 1. Load Granite Sentinel ────────────────────────────────────────────
-    print("\n[1/5] Loading Granite Sentinel...")
-    from app.airlock_gateway import _GraniteSentinel, Verdict, MockSheriffAuditor
+    # ── 1. Load via ModelEngine ────────────────────────────────────────────
+    print("\n[1/5] Loading via ModelEngine...")
+    from app.engine import ModelEngine
+    from app.airlock_gateway import Verdict
 
-    granite = None
-    try:
-        granite = _GraniteSentinel(model_id="/models/sentinel")
-        print(f"  Granite loaded: {type(granite.model).__name__}")
-    except Exception as e:
-        print(f"  FAILED: {e}")
-        return
+    engine = ModelEngine()
+    engine.load_all()
+    granite = engine.granite
+    gemma4 = engine.gemma
+    tokenizer = engine.gemma_tokenizer
 
     vram_granite = torch.cuda.memory_allocated() / 1e9
-    print(f"  VRAM after Granite: {vram_granite:.2f} GB")
-
-    # ── 2. Load Gemma4 Benchmark Model ──────────────────────────────────────
-    print("\n[2/5] Loading Gemma4 benchmark model...")
-    from app.gemma4_bench import Gemma4BenchModel
-
-    gemma4 = Gemma4BenchModel()
-    gemma4.load()
-    vram_both = torch.cuda.memory_allocated() / 1e9
-    print(f"  VRAM after both: {vram_both:.2f} GB")
-    print(f"  Combined: {vram_both:.2f} GB / 24 GB ({vram_both/24*100:.0f}%)")
+    print(f"  VRAM after loading: {vram_granite:.2f} GB")
 
     # ── 3. Warmup ───────────────────────────────────────────────────────────
     print("\n[3/5] Warmup (5 iterations each)...")
@@ -66,11 +57,10 @@ async def main():
         await granite.audit(prompt)
 
     # Warmup Gemma4
-    tokenizer = gemma4.tokenizer
     inputs = tokenizer(prompt, return_tensors="pt")
-    input_ids = inputs["input_ids"].to(gemma4.device)
+    input_ids = inputs["input_ids"].to(_device(gemma4))
     for _ in range(5):
-        await gemma4.forward_pass(input_ids)
+        await engine.gemma_forward(input_ids)
     print("  Warmup complete")
 
     # ── 4. Component Benchmarks ─────────────────────────────────────────────
@@ -102,7 +92,7 @@ async def main():
     for _ in range(10):
         torch.cuda.synchronize()
         t0 = time.perf_counter()
-        await gemma4.forward_pass(input_ids)
+        await engine.gemma_forward(input_ids)
         torch.cuda.synchronize()
         gf_times.append(elapsed_ms(t0))
     print(fmt("Gemma4 — forward pass (10 tokens)", gf_times))
@@ -112,14 +102,14 @@ async def main():
         "This is a longer prompt to test prefill latency. " * 4,
         return_tensors="pt",
     )
-    input_ids_64 = inputs_64["input_ids"].to(gemma4.device)
+    input_ids_64 = inputs_64["input_ids"].to(_device(gemma4))
     n_tok_64 = input_ids_64.shape[-1]
 
     gf64_times = []
     for _ in range(10):
         torch.cuda.synchronize()
         t0 = time.perf_counter()
-        await gemma4.forward_pass(input_ids_64)
+        await engine.gemma_forward(input_ids_64)
         torch.cuda.synchronize()
         gf64_times.append(elapsed_ms(t0))
     print(fmt(f"Gemma4 — forward pass ({n_tok_64} tokens)", gf64_times))
@@ -127,13 +117,13 @@ async def main():
     # 4e. Gemma4 per-token generation (single autoregressive step simulate)
     # Measure: one forward pass with a single new token + KV reuse
     # Without KV cache: just measure forward pass time for 1 token
-    single_token = torch.randint(0, 100, (1, 1), device=gemma4.device)
+    single_token = torch.randint(0, 100, (1, 1), device=_device(gemma4))
     g_gen_times = []
     for _ in range(10):
         torch.cuda.synchronize()
         t0 = time.perf_counter()
         with torch.inference_mode():
-            gemma4.model(single_token)
+            gemma4(single_token)
         torch.cuda.synchronize()
         g_gen_times.append(elapsed_ms(t0))
     print(fmt("Gemma4 — per-token step (1 token)", g_gen_times))
@@ -145,7 +135,7 @@ async def main():
         t0 = time.perf_counter()
         fp = await granite.fast_pass(prompt)
         if fp is not None and fp.verdict == Verdict.PASS:
-            await gemma4.forward_pass(input_ids)
+            await engine.gemma_forward(input_ids)
         torch.cuda.synchronize()
         pipe_times.append(elapsed_ms(t0))
     print(fmt("Sequential pipeline: Granite FP → Gemma4 fwd", pipe_times))
@@ -156,7 +146,7 @@ async def main():
         torch.cuda.synchronize()
         t0 = time.perf_counter()
         fp_task = asyncio.create_task(granite.fast_pass(prompt))
-        gf_task = asyncio.create_task(gemma4.forward_pass(input_ids))
+        gf_task = asyncio.create_task(engine.gemma_forward(input_ids))
         await asyncio.gather(fp_task, gf_task)
         torch.cuda.synchronize()
         par_times.append(elapsed_ms(t0))
@@ -193,9 +183,10 @@ async def main():
     print(f"  {'Sequential pipeline (FP → Gen)':45s} {pipe_avg:>8.1f}ms  Granite FP → Gemma4 fwd")
     print(f"  {'Parallel pipeline (FP ∥ Gen)':45s} {par_avg:>8.1f}ms  both concurrently")
     print()
-    print(f"  {'VRAM peak':45s} {torch.cuda.max_memory_allocated()/1e9:>7.2f} GB  (of 24 GB)")
-    print(f"  {'VRAM model params':45s} {vram_both:>7.2f} GB  (Granite + Gemma4)")
-    print(f"  {'Headroom':45s} {24 - torch.cuda.max_memory_allocated()/1e9:>7.2f} GB")
+    vram_info = engine.get_vram_info()
+    print(f"  {'VRAM peak':45s} {vram_info['peak_gb']:>7.2f} GB  (of 24 GB)")
+    print(f"  {'VRAM model params':45s} {vram_info['allocated_gb']:>7.2f} GB  (Granite + Gemma4)")
+    print(f"  {'Headroom':45s} {24 - vram_info['peak_gb']:>7.2f} GB")
     print()
     print("=" * 75)
 

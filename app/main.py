@@ -102,28 +102,30 @@ init_dispatcher()
 
 # Global Airlock Gateway for Tier 2/3 pre-flight governance
 _airlock_gateway: Optional[AirlockGateway] = None
+_engine = None
 
 def get_airlock_gateway() -> Optional[AirlockGateway]:
     """Lazy-init Airlock Gateway for Tier 2/3 pre-flight checks.
     
+    Uses ModelEngine to load Granite Sentinel for governance.
     If real auditors are unavailable, returns None — the Tier 2/3 path
     logs a bypass warning but still proceeds (backwards compatible).
     """
-    global _airlock_gateway
+    global _airlock_gateway, _engine
     if _airlock_gateway is not None:
         return _airlock_gateway
     try:
-        from app.airlock_gateway import _GraniteSentinel, _NemotronAdapter
-        from app.nemotron_real import Nemotron3Safety, NEMOTRON_AVAILABLE
-        if not NEMOTRON_AVAILABLE:
-            logger.error("Nemotron not available — Tier 2/3 bypass sentinel unavailable")
-            return None
-        sheriff_nemo = Nemotron3Safety(model_id="/models/sheriff")
-        sheriff_nemo.load()
-        sheriff = _NemotronAdapter(sheriff_nemo)
-        sentinel = _GraniteSentinel(model_id="/models/sentinel")
-        _airlock_gateway = AirlockGateway(sheriff=sheriff, sentinel=sentinel, base_model=None)
-        logger.info("Airlock Gateway initialized for Tier 2/3 pre-flight governance")
+        from app.engine import ModelEngine
+        from app.airlock_gateway import create_gateway_from_engine
+        _engine = ModelEngine()
+        _engine.load_granite()
+        sentinel = _engine.granite
+        _airlock_gateway = create_gateway_from_engine(
+            sheriff=sentinel,
+            sentinel=sentinel,
+            sector="finance",
+        )
+        logger.info("Airlock Gateway initialized for Tier 2/3 pre-flight governance (via ModelEngine)")
         return _airlock_gateway
     except Exception as e:
         logger.error(f"Failed to init Airlock Gateway for Tier 2/3: {e}")
