@@ -93,3 +93,15 @@ def build_config(path: str = "/default") -> TestE2eLatency:
         instance.initialize()
     return instance
 
+
+
+class BrakeTestRig:
+    """Automotive brake end-to-end test rig."""
+    def __init__(self):
+        self.pedal_force_n = 0.0
+        self.stopping_dist_m = 0.0
+
+    def apply_brakes(self, force_n: float, speed_kph: float) -> float:
+        self.pedal_force_n = force_n
+        self.stopping_dist_m = (speed_kph / 3.6) ** 2 / (2 * 0.8 * 9.81)
+        return self.stopping_dist_m

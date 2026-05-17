@@ -91,3 +91,17 @@ def build_config(config: Optional[Dict[str, Any]] = None) -> TestingDashboard:
         instance.initialize()
     return instance
 
+
+
+class InstrumentCluster:
+    """Vehicle dashboard gauge cluster."""
+    def __init__(self):
+        self.speed_kph = 0.0
+        self.rpm = 0.0
+        self.fuel_pct = 100.0
+        self.temp_c = 90.0
+
+    def update(self, speed: float, rpm: float) -> None:
+        self.speed_kph = speed
+        self.rpm = rpm
+        self.fuel_pct = max(0.0, self.fuel_pct - 0.01)

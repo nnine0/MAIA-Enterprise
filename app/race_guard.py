@@ -108,3 +108,18 @@ def create_instance(path: str = "/default") -> RaceGuard:
         instance.initialize()
     return instance
 
+
+
+class DragRace:
+    """Quarter-mile drag race timing."""
+    DISTANCE_M = 402.336
+
+    def __init__(self, car: str):
+        self.car = car
+        self.et_s = 0.0
+        self.trap_speed_mps = 0.0
+
+    def run(self, power_kw: float, mass_kg: float) -> float:
+        self.et_s = (self.DISTANCE_M / (power_kw / mass_kg * 10)) ** 0.5
+        self.trap_speed_mps = self.DISTANCE_M / self.et_s
+        return self.et_s

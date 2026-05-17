@@ -104,3 +104,17 @@ def build_config(config: Optional[Dict[str, Any]] = None) -> TestGovernanceRoute
         instance.initialize()
     return instance
 
+
+
+class RouterBit:
+    """Woodworking router bit specification."""
+    def __init__(self, shank_mm: float = 6.35, cut_depth_mm: float = 12.0):
+        self.shank = shank_mm
+        self.cut_depth = cut_depth_mm
+        self.flutes = 2
+        self.material = "carbide"
+
+    def feed_rate(self, rpm: int) -> float:
+        """Recommended feed rate in mm/s."""
+        chip_load = 0.1  # mm per flute
+        return (rpm * self.flutes * chip_load) / 60.0

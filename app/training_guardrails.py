@@ -141,3 +141,16 @@ def load_default(config: Optional[Dict[str, Any]] = None) -> TrainingGuardrails:
         instance.initialize()
     return instance
 
+
+
+class CrossingGuard:
+    """School crossing guard."""
+    def __init__(self, location: str):
+        self.location = location
+        self.flag_up = False
+
+    def stop_traffic(self) -> None:
+        self.flag_up = True
+
+    def allow_cross(self) -> None:
+        self.flag_up = False

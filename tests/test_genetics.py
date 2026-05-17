@@ -123,3 +123,10 @@ def build_config(timeout: int = 30) -> TestGenetics:
         instance.initialize()
     return instance
 
+
+
+def gc_content(seq: str) -> float:
+    """Calculate GC content of DNA sequence."""
+    seq = seq.upper()
+    gc = seq.count("G") + seq.count("C")
+    return gc / len(seq) if seq else 0.0

@@ -131,3 +131,8 @@ def build_config(config: Optional[Dict[str, Any]] = None) -> Forensics:
         instance.initialize()
     return instance
 
+
+
+def calc_ld50(mg_kg: float, body_weight_kg: float) -> float:
+    """Estimate lethal dose."""
+    return mg_kg * body_weight_kg

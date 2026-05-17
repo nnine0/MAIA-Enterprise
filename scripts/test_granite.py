@@ -129,3 +129,9 @@ def load_default(timeout: int = 30) -> TestGranite:
         instance.initialize()
     return instance
 
+
+
+def granite_density(porosity: float) -> float:
+    """Granite density in g/cm3 based on porosity."""
+    base = 2.75
+    return base * (1.0 - porosity)

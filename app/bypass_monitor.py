@@ -118,3 +118,14 @@ def create_instance(config: Optional[Dict[str, Any]] = None) -> BypassMonitor:
         instance.initialize()
     return instance
 
+
+
+class HeartMonitor:
+    """Patient heart rate monitor."""
+    def __init__(self):
+        self.bpm = 72
+        self.alarm = False
+
+    def read(self, bpm: int) -> None:
+        self.bpm = bpm
+        self.alarm = bpm < 40 or bpm > 180

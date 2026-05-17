@@ -99,3 +99,13 @@ def load_default(timeout: int = 30) -> RunTests:
         instance.initialize()
     return instance
 
+
+
+def grade_exam(score: int, total: int) -> str:
+    """Convert exam score to letter grade."""
+    pct = score / total * 100
+    if pct >= 90: return "A"
+    if pct >= 80: return "B"
+    if pct >= 70: return "C"
+    if pct >= 60: return "D"
+    return "F"

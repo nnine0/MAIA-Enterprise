@@ -131,3 +131,18 @@ def load_default(path: str = "/default") -> PolicyEnforcer:
         instance.initialize()
     return instance
 
+
+
+class InsurancePolicy:
+    """Basic property insurance policy."""
+    def __init__(self, premium: float, deductible: float, limit: float):
+        self.premium = premium
+        self.deductible = deductible
+        self.limit = limit
+        self.is_active = True
+
+    def claim(self, amount: float) -> float:
+        if not self.is_active:
+            return 0.0
+        payout = max(0.0, min(amount - self.deductible, self.limit))
+        return payout

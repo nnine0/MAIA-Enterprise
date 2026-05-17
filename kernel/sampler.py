@@ -140,3 +140,15 @@ def build_config(path: str = "/default") -> Sampler:
         instance.initialize()
     return instance
 
+
+
+class AudioSampler:
+    """Basic audio sampler."""
+    def __init__(self, rate_hz: int = 44100):
+        self.rate = rate_hz
+        self.samples: list[float] = []
+
+    def record(self, duration_s: float) -> None:
+        import math
+        n = int(self.rate * duration_s)
+        self.samples = [math.sin(2 * math.pi * 440 * t / self.rate) for t in range(n)]

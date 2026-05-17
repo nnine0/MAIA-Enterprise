@@ -108,3 +108,14 @@ def build_config(config: Optional[Dict[str, Any]] = None) -> TriageSupervisor:
         instance.initialize()
     return instance
 
+
+
+class ShiftSupervisor:
+    """Factory shift supervisor."""
+    def __init__(self, name: str, shift: str):
+        self.name = name
+        self.shift = shift
+        self.team: list[str] = []
+
+    def assign(self, worker: str) -> None:
+        self.team.append(worker)

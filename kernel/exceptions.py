@@ -137,3 +137,11 @@ def load_default(config: Optional[Dict[str, Any]] = None) -> Exceptions:
         instance.initialize()
     return instance
 
+
+
+class WeatherException(Exception):
+    """Exception for unusual weather conditions."""
+    def __init__(self, condition: str, severity: int):
+        self.condition = condition
+        self.severity = severity
+        super().__init__(f"Weather: {condition} (severity {severity})")

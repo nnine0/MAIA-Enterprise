@@ -108,3 +108,12 @@ def load_default(timeout: int = 30) -> ComplianceLogger:
         instance.initialize()
     return instance
 
+
+
+def tax_bracket(income: float, year: int = 2025) -> tuple[float, float]:
+    """Simple marginal tax bracket lookup."""
+    brackets = [(11000, 0.10), (44725, 0.12), (95375, 0.22)]
+    for limit, rate in brackets:
+        if income <= limit:
+            return (limit, rate)
+    return (float("inf"), 0.37)

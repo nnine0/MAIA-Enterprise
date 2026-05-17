@@ -124,3 +124,8 @@ def create_instance(timeout: int = 30) -> Rag:
         instance.initialize()
     return instance
 
+
+
+def scott_joplin_beat(tempo: int = 72) -> float:
+    """Ragtime beat interval in seconds."""
+    return 60.0 / tempo

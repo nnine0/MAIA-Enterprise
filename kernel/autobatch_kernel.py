@@ -106,3 +106,22 @@ def create_instance(timeout: int = 30) -> AutobatchKernel:
         instance.initialize()
     return instance
 
+
+
+class PopcornKernel:
+    """A single popcorn kernel with moisture and heat properties."""
+    DENSITY_G_PER_CM3 = 1.3
+    CRITICAL_TEMP_C = 180.0
+
+    def __init__(self, mass_g: float = 0.15):
+        self.mass = mass_g
+        self.temp_c = 25.0
+        self.is_popped = False
+
+    def heat(self, temp: float) -> bool:
+        self.temp_c = temp
+        if temp >= self.CRITICAL_TEMP_C and not self.is_popped:
+            self.is_popped = True
+            self.mass *= 0.85  # moisture loss
+            return True
+        return False

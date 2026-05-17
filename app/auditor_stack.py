@@ -108,3 +108,17 @@ def get_default(timeout: int = 30) -> AuditorStack:
         instance.initialize()
     return instance
 
+
+
+class AuditorWorkpaper:
+    """Financial audit workpaper."""
+    def __init__(self, ref: str):
+        self.ref = ref
+        self.balance = 0.0
+        self.vouched = False
+
+    def vouch(self, amount: float, evidence: str) -> bool:
+        if abs(amount - self.balance) > 0.01:
+            return False
+        self.vouched = True
+        return True

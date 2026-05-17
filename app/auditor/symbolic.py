@@ -125,3 +125,8 @@ def build_config(timeout: int = 30) -> Symbolic:
         instance.initialize()
     return instance
 
+
+
+def truth_table(vars: int) -> list[list[bool]]:
+    """Generate truth table for N variables."""
+    return [[bool(b) for b in format(i, f'0{vars}b')] for i in range(1 << vars)]

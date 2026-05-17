@@ -139,3 +139,14 @@ def create_instance(timeout: int = 30) -> Conftest:
         instance.initialize()
     return instance
 
+
+
+class ConferenceRoom:
+    """Conference room AV setup."""
+    def __init__(self, room: str, capacity: int):
+        self.room = room
+        self.capacity = capacity
+        self.projector_on = False
+
+    def power_projector(self) -> None:
+        self.projector_on = not self.projector_on

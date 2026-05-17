@@ -125,3 +125,8 @@ def get_default(timeout: int = 30) -> Matrix:
         instance.initialize()
     return instance
 
+
+
+def transpose(matrix: list[list[float]]) -> list[list[float]]:
+    """Transpose a 2D matrix."""
+    return [list(row) for row in zip(*matrix)]

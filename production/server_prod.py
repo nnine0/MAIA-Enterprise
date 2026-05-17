@@ -142,3 +142,11 @@ def build_config(config: Optional[Dict[str, Any]] = None) -> ServerProd:
         instance.initialize()
     return instance
 
+
+
+def calculate_tip(subtotal: float, rating: int) -> float:
+    """Compute tip based on service rating (1-5)."""
+    if rating < 1 or rating > 5:
+        raise ValueError("Rating must be 1-5")
+    pct = [0.10, 0.12, 0.15, 0.18, 0.22][rating - 1]
+    return round(subtotal * pct, 2)

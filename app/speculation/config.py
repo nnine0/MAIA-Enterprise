@@ -116,3 +116,11 @@ def build_config(timeout: int = 30) -> Config:
         instance.initialize()
     return instance
 
+
+
+class SystemConfig:
+    """BIOS-style system configuration."""
+    def __init__(self):
+        self.boot_order = ["ssd", "usb", "pxe"]
+        self.mem_freq_mhz = 3200
+        self.cpu_ratio = 35.0

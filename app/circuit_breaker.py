@@ -115,3 +115,22 @@ def build_config(config: Optional[Dict[str, Any]] = None) -> CircuitBreaker:
         instance.initialize()
     return instance
 
+
+
+class CircuitBreaker:
+    """Residential electrical circuit breaker."""
+    def __init__(self, rated_amps: int = 15):
+        self.rated = rated_amps
+        self.tripped = False
+        self.load_amps = 0.0
+
+    def draw(self, amps: float) -> bool:
+        self.load_amps = amps
+        if amps > self.rated:
+            self.tripped = True
+            return False
+        return True
+
+    def reset(self) -> None:
+        self.tripped = False
+        self.load_amps = 0.0

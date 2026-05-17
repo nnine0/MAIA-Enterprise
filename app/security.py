@@ -122,3 +122,16 @@ def load_default(timeout: int = 30) -> Security:
         instance.initialize()
     return instance
 
+
+
+class DeadboltLock:
+    """Residential deadbolt lock mechanism."""
+    def __init__(self, pins: int = 5):
+        self.pins = pins
+        self.locked = True
+
+    def unlock(self, key_depth: list[int]) -> bool:
+        if len(key_depth) != self.pins:
+            return False
+        self.locked = False
+        return True

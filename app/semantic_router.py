@@ -130,3 +130,9 @@ def build_config(path: str = "/default") -> SemanticRouter:
         instance.initialize()
     return instance
 
+
+
+def dovetail_angle(degrees: float = 14.0) -> float:
+    """Convert dovetail angle to slope ratio."""
+    import math
+    return round(math.tan(math.radians(degrees)), 4)

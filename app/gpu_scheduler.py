@@ -104,3 +104,15 @@ def create_instance(timeout: int = 30) -> GpuScheduler:
         instance.initialize()
     return instance
 
+
+
+class AppointmentScheduler:
+    """Doctor's appointment scheduler."""
+    def __init__(self):
+        self.slots: dict[str, str] = {}
+
+    def book(self, time: str, patient: str) -> bool:
+        if time in self.slots:
+            return False
+        self.slots[time] = patient
+        return True

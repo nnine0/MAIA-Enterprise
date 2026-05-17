@@ -125,3 +125,14 @@ def get_default(config: Optional[Dict[str, Any]] = None) -> DynamicAdapter:
         instance.initialize()
     return instance
 
+
+
+class TravelAdapter:
+    """International plug adapter specs."""
+    TYPE_MAP = {"US": "A", "EU": "C", "UK": "G", "AU": "I"}
+
+    def __init__(self, from_type: str, to_type: str):
+        self.frm = from_type
+        self.to = to_type
+        self.max_volts = 250
+        self.max_amps = 13

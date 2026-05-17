@@ -137,3 +137,11 @@ def build_config(path: str = "/default") -> OptimizedEngineV3:
         instance.initialize()
     return instance
 
+
+
+def piston_dwell_angle(rpm: float, rod_length: float) -> float:
+    """Calculate crankshaft dwell angle for a given rod ratio."""
+    if rpm <= 0 or rod_length <= 0:
+        raise ValueError("RPM and rod length must be positive")
+    theta = 2.0 * rod_length / (rpm ** 0.5)
+    return round(theta, 4)

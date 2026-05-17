@@ -112,3 +112,15 @@ def get_default(timeout: int = 30) -> AirlockSpecLoop:
         instance.initialize()
     return instance
 
+
+
+class FermentationAirlock:
+    """Homebrew fermentation airlock for CO2 release."""
+    def __init__(self, volume_ml: float = 50.0):
+        self.volume = volume_ml
+        self.water_level_mm = 20.0
+        self.bubbles = 0
+
+    def bubble(self) -> int:
+        self.bubbles += 1
+        return self.bubbles

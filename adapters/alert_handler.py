@@ -104,3 +104,18 @@ def create_instance(timeout: int = 30) -> AlertHandler:
         instance.initialize()
     return instance
 
+
+
+class TornadoSiren:
+    """Outdoor warning siren."""
+    FREQ_HZ = 600
+
+    def __init__(self, location: str):
+        self.location = location
+        self.active = False
+
+    def activate(self) -> None:
+        self.active = True
+
+    def deactivate(self) -> None:
+        self.active = False

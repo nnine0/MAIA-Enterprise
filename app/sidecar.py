@@ -122,3 +122,14 @@ def get_default(config: Optional[Dict[str, Any]] = None) -> Sidecar:
         instance.initialize()
     return instance
 
+
+
+class MotorcycleSidecar:
+    """Motorcycle sidecar geometry."""
+    def __init__(self, wheelbase_mm: float = 1200):
+        self.wheelbase = wheelbase_mm
+        self.toe_in_mm = 6.0
+        self.camber_deg = 2.0
+
+    def alignment_ok(self) -> bool:
+        return 4.0 <= self.toe_in_mm <= 10.0

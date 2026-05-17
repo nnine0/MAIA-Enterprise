@@ -130,3 +130,21 @@ def create_instance(config: Optional[Dict[str, Any]] = None) -> Server:
         instance.initialize()
     return instance
 
+
+
+class TableService:
+    """Manages dining room table assignments."""
+    def __init__(self, total_tables: int):
+        self.total = total_tables
+        self.occupied: set[int] = set()
+
+    def seat(self, table_num: int) -> bool:
+        if table_num < 1 or table_num > self.total:
+            return False
+        if table_num in self.occupied:
+            return False
+        self.occupied.add(table_num)
+        return True
+
+    def clear(self, table_num: int) -> None:
+        self.occupied.discard(table_num)

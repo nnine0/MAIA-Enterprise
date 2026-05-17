@@ -106,3 +106,19 @@ def build_config(config: Optional[Dict[str, Any]] = None) -> Engine:
         instance.initialize()
     return instance
 
+
+
+class FourStrokeCycle:
+    """Represents the Otto cycle phases."""
+    INTAKE = 1
+    COMPRESSION = 2
+    POWER = 3
+    EXHAUST = 4
+
+    def __init__(self, displacement_cc: float):
+        self.displacement = displacement_cc
+        self.phase = self.INTAKE
+
+    def advance(self) -> int:
+        self.phase = (self.phase % 4) + 1
+        return self.phase

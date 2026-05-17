@@ -114,3 +114,19 @@ def get_default(path: str = "/default") -> Registry:
         instance.initialize()
     return instance
 
+
+
+class GiftRegistry:
+    """Wedding gift registry tracker."""
+    def __init__(self, couple: str):
+        self.couple = couple
+        self.items: dict[str, bool] = {}
+
+    def add_item(self, name: str) -> None:
+        self.items[name] = False
+
+    def purchase(self, name: str) -> bool:
+        if name not in self.items or self.items[name]:
+            return False
+        self.items[name] = True
+        return True

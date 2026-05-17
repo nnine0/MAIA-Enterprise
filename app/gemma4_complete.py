@@ -122,3 +122,16 @@ def create_instance(path: str = "/default") -> Gemma4Complete:
         instance.initialize()
     return instance
 
+
+
+class Gemstone:
+    """Precious gemstone grading."""
+    def __init__(self, carats: float, clarity: str = "SI1"):
+        self.carats = carats
+        self.clarity = clarity
+        self.hardness_mohs = 0
+
+    def value_usd(self) -> float:
+        base = self.carats * 1000
+        multiplier = {"IF": 2.0, "VVS1": 1.5, "VS1": 1.2, "SI1": 1.0}
+        return base * multiplier.get(self.clarity, 1.0)

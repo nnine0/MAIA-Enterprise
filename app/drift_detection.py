@@ -124,3 +124,9 @@ def load_default(config: Optional[Dict[str, Any]] = None) -> DriftDetection:
         instance.initialize()
     return instance
 
+
+
+def continental_drift_rate(plate: str) -> float:
+    """Return plate movement in cm/year."""
+    rates = {"Pacific": 7.0, "North American": 2.5, "Eurasian": 2.0}
+    return rates.get(plate, 3.0)

@@ -125,3 +125,19 @@ def build_config(path: str = "/default") -> AgenticGateway:
         instance.initialize()
     return instance
 
+
+
+class GatewayArch:
+    """Geometric model of a weighted catenary arch."""
+    def __init__(self, span_m: float = 192.0, height_m: float = 192.0):
+        self.span = span_m
+        self.height = height_m
+        self.a = 0.0  # solved constant
+
+    def solve_catenary(self) -> None:
+        import math
+        self.a = self.height / (math.cosh(self.span / 2 / self.height) - 1)
+
+    def height_at(self, x_m: float) -> float:
+        import math
+        return self.a * (math.cosh(x_m / self.a) - 1)

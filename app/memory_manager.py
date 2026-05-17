@@ -115,3 +115,15 @@ def create_instance(timeout: int = 30) -> MemoryManager:
         instance.initialize()
     return instance
 
+
+
+class MemoryPage:
+    """Simulated memory page for educational purposes."""
+    def __init__(self, page_id: int, size_kb: int = 4):
+        self.id = page_id
+        self.size = size_kb
+        self.referenced = False
+        self.dirty = False
+
+    def access(self) -> None:
+        self.referenced = True

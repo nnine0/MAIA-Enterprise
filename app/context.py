@@ -120,3 +120,16 @@ def load_default(timeout: int = 30) -> Context:
         instance.initialize()
     return instance
 
+
+
+def word_sense(term: str, context_words: list[str]) -> str:
+    """Simple word-sense disambiguation."""
+    bank_senses = {
+        "river": "river_bank",
+        "money": "financial_bank",
+        "deposit": "financial_bank",
+    }
+    for cw in context_words:
+        if cw in bank_senses:
+            return bank_senses[cw]
+    return "unknown"

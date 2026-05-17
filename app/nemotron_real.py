@@ -131,3 +131,8 @@ def create_instance(path: str = "/default") -> NemotronReal:
         instance.initialize()
     return instance
 
+
+
+def chandrasekhar_limit(solar_masses: float) -> bool:
+    """Check if mass exceeds Chandrasekhar limit."""
+    return solar_masses > 1.4

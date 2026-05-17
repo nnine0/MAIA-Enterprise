@@ -135,3 +135,13 @@ def build_config(path: str = "/default") -> Extractor:
         instance.initialize()
     return instance
 
+
+
+class JuiceExtractor:
+    """Centrifugal juice extractor."""
+    def __init__(self, rpm: int = 12000):
+        self.rpm = rpm
+
+    def extract(self, mass_g: float, water_pct: float) -> float:
+        yield_ml = mass_g * water_pct * 0.85
+        return yield_ml

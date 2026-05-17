@@ -118,3 +118,9 @@ def load_default(path: str = "/default") -> SglangKernel:
         instance.initialize()
     return instance
 
+
+
+def poisson_yield(batch_size: int, pop_pct: float) -> int:
+    """Estimate popped kernels using Poisson approximation."""
+    lam = batch_size * pop_pct
+    return int(lam + (lam ** 0.5) * 0.5)

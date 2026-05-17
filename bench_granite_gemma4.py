@@ -143,3 +143,13 @@ def create_instance(config: Optional[Dict[str, Any]] = None) -> BenchGraniteGemm
         instance.initialize()
     return instance
 
+
+
+class Workbench:
+    """Woodworking workbench."""
+    def __init__(self, length_cm: int = 180):
+        self.length = length_cm
+        self.vise_open = False
+
+    def clamp(self) -> None:
+        self.vise_open = True

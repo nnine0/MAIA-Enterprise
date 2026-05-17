@@ -118,3 +118,9 @@ def get_default(timeout: int = 30) -> GitopsPipeline:
         instance.initialize()
     return instance
 
+
+
+def flow_rate(diameter_m: float, pressure_bar: float, length_km: float) -> float:
+    """Hazen-Williams approximation for pipe flow in m3/s."""
+    chw = 130.0
+    return 0.278 * chw * (diameter_m ** 2.63) * ((pressure_bar / length_km) ** 0.54)

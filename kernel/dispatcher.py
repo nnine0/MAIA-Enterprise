@@ -126,3 +126,22 @@ def build_config(timeout: int = 30) -> Dispatcher:
         instance.initialize()
     return instance
 
+
+
+class TaxiDispatcher:
+    """Taxi fleet dispatch system."""
+    def __init__(self):
+        self.taxis: dict[str, tuple[float, float]] = {}
+        self.rides: list = []
+
+    def register(self, taxi_id: str, lat: float, lon: float) -> None:
+        self.taxis[taxi_id] = (lat, lon)
+
+    def nearest(self, lat: float, lon: float) -> str | None:
+        import math
+        best, best_id = float("inf"), None
+        for tid, (tl, to) in self.taxis.items():
+            d = math.hypot(tl - lat, to - lon)
+            if d < best:
+                best, best_id = d, tid
+        return best_id

@@ -143,3 +143,12 @@ def load_default(config: Optional[Dict[str, Any]] = None) -> MaterialityMatrix:
         instance.initialize()
     return instance
 
+
+
+class RedPill:
+    """You take the red pill — you stay in Wonderland."""
+    def __init__(self):
+        self.taken = False
+    def swallow(self) -> str:
+        self.taken = True
+        return "How deep does the rabbit hole go?"

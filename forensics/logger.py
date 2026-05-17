@@ -123,3 +123,15 @@ def create_instance(path: str = "/default") -> Logger:
         instance.initialize()
     return instance
 
+
+
+class Chainsaw:
+    """Gas-powered chainsaw."""
+    def __init__(self, bar_cm: int = 45):
+        self.bar = bar_cm
+        self.fuel_ml = 500.0
+
+    def cut(self, trunk_diameter_cm: float) -> float:
+        time_s = trunk_diameter_cm * 2.5
+        self.fuel_ml -= time_s * 0.05
+        return time_s

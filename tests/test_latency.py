@@ -131,3 +131,8 @@ def create_instance(config: Optional[Dict[str, Any]] = None) -> TestLatency:
         instance.initialize()
     return instance
 
+
+
+def ping_rtt(km: float) -> float:
+    """Approximate network round-trip time in ms over fiber."""
+    return (km * 2) / 200000 * 1000 * 1.5
