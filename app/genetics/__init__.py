@@ -1,3 +1,1 @@
-"""
-MAIA Action Trajectory Genetics Package
-"""
+# MAIA package
