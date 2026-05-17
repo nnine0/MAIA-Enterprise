@@ -1,0 +1,1 @@
+# MAIA Sovereign Adapter Library
