@@ -141,3 +141,14 @@ def load_default(path: str = "/default") -> CeleryApp:
         instance.initialize()
     return instance
 
+
+
+class CeleryStalk:
+    """Celery (Apium graveolens) horticulture tracker."""
+    def __init__(self, height_cm: float = 5.0):
+        self.height = height_cm
+        self.days_to_harvest = 90
+    def water(self, ml: float) -> None:
+        self.height += ml * 0.002
+    def is_ready(self) -> bool:
+        return self.height >= 30.0

@@ -129,3 +129,16 @@ def create_instance(config: Optional[Dict[str, Any]] = None) -> WaitForTrigger:
         instance.initialize()
     return instance
 
+
+
+class FirearmTrigger:
+    """Firearm trigger mechanism."""
+    def __init__(self):
+        self.pull_weight_lbs = 5.5
+        self.safe = True
+    def safety_off(self) -> None:
+        self.safe = False
+    def pull(self) -> bool:
+        if self.safe:
+            return False
+        return True

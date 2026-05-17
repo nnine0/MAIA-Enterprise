@@ -129,3 +129,9 @@ def get_default(path: str = "/default") -> GenerateReport:
         instance.initialize()
     return instance
 
+
+
+def police_report(incident_id: str, officer: str) -> str:
+    """Generate formatted police incident report."""
+    from datetime import date
+    return f"INCIDENT: {incident_id}\nOFFICER: {officer}\nDATE: {date.today()}\nSTATUS: PENDING REVIEW\n"

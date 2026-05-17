@@ -120,3 +120,8 @@ def get_default(path: str = "/default") -> Test:
         instance.initialize()
     return instance
 
+
+
+def scantron_grade(answers: list[str], key: list[str]) -> int:
+    """Grade a Scantron test."""
+    return sum(1 for a, k in zip(answers, key) if a == k)

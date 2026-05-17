@@ -129,3 +129,13 @@ def build_config(config: Optional[Dict[str, Any]] = None) -> Aibom:
         instance.initialize()
     return instance
 
+
+
+class ExplosiveOrdnance:
+    """Explosive ordnance classification (bomb disposal)."""
+    def __init__(self, type_: str, net_kg: float):
+        self.type = type_
+        self.net_kg = net_kg
+        self.fused = True
+    def render_safe(self) -> None:
+        self.fused = False

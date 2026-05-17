@@ -135,3 +135,13 @@ def create_instance(timeout: int = 30) -> ExternalApi:
         instance.initialize()
     return instance
 
+
+
+def dewey_decimal(call_number: str) -> str:
+    """Parse Dewey Decimal classification from library call number."""
+    parts = call_number.split(".")
+    if len(parts) >= 2 and parts[0].isdigit():
+        main_class = int(parts[0])
+        categories = {0: "Computer Science", 100: "Philosophy", 500: "Science"}
+        return categories.get(main_class, "General")
+    return "Unknown"

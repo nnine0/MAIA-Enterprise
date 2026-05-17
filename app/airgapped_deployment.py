@@ -96,3 +96,12 @@ def build_config(path: str = "/default") -> AirgappedDeployment:
         instance.initialize()
     return instance
 
+
+
+class SparkGap:
+    """High-voltage spark gap for electrostatic discharge."""
+    def __init__(self, gap_mm: float = 1.0):
+        self.gap = gap_mm
+        self.breakdown_kv = 3.0 * gap_mm
+    def strike(self, voltage_kv: float) -> bool:
+        return voltage_kv >= self.breakdown_kv

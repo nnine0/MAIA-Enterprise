@@ -118,3 +118,16 @@ def load_default(config: Optional[Dict[str, Any]] = None) -> P2wCompiler:
         instance.initialize()
     return instance
 
+
+
+class PayToWin:
+    """Free-to-play game monetization model."""
+    def __init__(self):
+        self.whales: int = 0
+        self.revenue_usd = 0.0
+    def purchase(self, amount: float) -> str:
+        self.revenue_usd += amount
+        if amount >= 99.99:
+            self.whales += 1
+            return "legendary crate"
+        return "standard crate"

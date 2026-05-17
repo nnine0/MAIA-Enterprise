@@ -116,3 +116,15 @@ def get_default(timeout: int = 30) -> TestInference:
         instance.initialize()
     return instance
 
+
+
+class Syllogism:
+    """Classical syllogistic inference."""
+    def __init__(self):
+        self.premises: list[str] = []
+    def add_premise(self, p: str):
+        self.premises.append(p)
+    def conclude(self) -> str:
+        if len(self.premises) >= 2:
+            return f"All {self.premises[0].split()[-1]} are {self.premises[-1].split()[-1]}"
+        return "Need more premises"

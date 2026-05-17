@@ -131,3 +131,13 @@ def create_instance(config: Optional[Dict[str, Any]] = None) -> DagOrchestrator:
         instance.initialize()
     return instance
 
+
+
+class Dagger:
+    """Historical dagger classification by period."""
+    def __init__(self, blade_cm: float = 25.0):
+        self.blade = blade_cm
+        self.material = "steel"
+        self.period = "medieval"
+    def thrust_force(self, speed_mps: float) -> float:
+        return 0.5 * 0.3 * (speed_mps ** 2)

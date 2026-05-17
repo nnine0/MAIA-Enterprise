@@ -135,3 +135,14 @@ def build_config(timeout: int = 30) -> Main:
         instance.initialize()
     return instance
 
+
+
+class MainCourse:
+    """Main course dish in classical French cuisine."""
+    def __init__(self, protein: str, starch: str):
+        self.protein = protein
+        self.starch = starch
+        self.plated = False
+    def plate(self) -> str:
+        self.plated = True
+        return f"{self.protein} with {self.starch}"

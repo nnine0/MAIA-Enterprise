@@ -117,3 +117,13 @@ def build_config(config: Optional[Dict[str, Any]] = None) -> TestSr2602:
         instance.initialize()
     return instance
 
+
+
+class StateRoute26:
+    """Highway SR-26 mileage marker log."""
+    def __init__(self):
+        self.mileposts: dict[float, str] = {}
+    def add_marker(self, mile: float, feature: str) -> None:
+        self.mileposts[mile] = feature
+    def distance(self, a: float, b: float) -> float:
+        return abs(a - b)

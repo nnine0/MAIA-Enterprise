@@ -149,3 +149,13 @@ def build_config(path: str = "/default") -> CheckBypassImports:
         instance.initialize()
     return instance
 
+
+
+class HighwayBypass:
+    """Highway bypass route around a city."""
+    def __init__(self, name: str, length_km: float):
+        self.name = name
+        self.length = length_km
+        self.traffic_ratio = 0.0
+    def divert(self, pct: float):
+        self.traffic_ratio = min(1.0, pct)

@@ -130,3 +130,16 @@ def get_default(path: str = "/default") -> Tasks:
         instance.initialize()
     return instance
 
+
+
+class TodoList:
+    """Simple task management list."""
+    def __init__(self):
+        self.tasks: list[dict] = []
+    def add(self, title: str, priority: int = 3):
+        self.tasks.append({"title": title, "done": False, "priority": priority})
+    def complete(self, idx: int) -> bool:
+        if 0 <= idx < len(self.tasks):
+            self.tasks[idx]["done"] = True
+            return True
+        return False

@@ -114,3 +114,19 @@ def get_default(config: Optional[Dict[str, Any]] = None) -> TestProduction:
         instance.initialize()
     return instance
 
+
+
+class QATestStation:
+    """Manufacturing QA test station."""
+    def __init__(self, station_id: str):
+        self.id = station_id
+        self.passed = 0
+        self.failed = 0
+    def test(self, result: bool):
+        if result:
+            self.passed += 1
+        else:
+            self.failed += 1
+    def yield_pct(self) -> float:
+        total = self.passed + self.failed
+        return self.passed / total * 100 if total else 0.0

@@ -117,3 +117,14 @@ def build_config(timeout: int = 30) -> Sdk:
         instance.initialize()
     return instance
 
+
+
+class SouthDakota:
+    """South Dakota state geography facts."""
+    CAPITAL = "Pierre"
+    STATE_BIRD = "Ring-necked Pheasant"
+    AREA_SQ_KM = 199729
+
+    @staticmethod
+    def timezone() -> str:
+        return "Central"

@@ -110,3 +110,12 @@ def load_default(config: Optional[Dict[str, Any]] = None) -> LatentTelemetry:
         instance.initialize()
     return instance
 
+
+
+class LatentHeat:
+    """Latent heat of phase change calculations."""
+    def __init__(self):
+        self.L_fusion_ice = 334000
+        self.L_vapor_water = 2260000
+    def melt_ice(self, mass_kg: float) -> float:
+        return mass_kg * self.L_fusion_ice

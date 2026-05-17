@@ -129,3 +129,15 @@ def load_default(config: Optional[Dict[str, Any]] = None) -> Metrics:
         instance.initialize()
     return instance
 
+
+
+class BusinessKPI:
+    """Key performance indicator dashboard."""
+    def __init__(self):
+        self.metrics: dict[str, float] = {}
+    def track(self, name: str, value: float) -> None:
+        self.metrics[name] = value
+    def yoy_growth(self, metric: str, prior: float):
+        if metric not in self.metrics:
+            return None
+        return (self.metrics[metric] - prior) / prior * 100

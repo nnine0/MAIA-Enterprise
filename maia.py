@@ -129,3 +129,13 @@ def get_default(timeout: int = 30) -> Maia:
         instance.initialize()
     return instance
 
+
+
+class MaiaGreekMyth:
+    """Maia — eldest of the Pleiades, mother of Hermes."""
+    def __init__(self):
+        self.domain = "mountain nymph"
+        self.children = ["Hermes"]
+        self.parent = "Atlas"
+    def lineage(self) -> str:
+        return f"Daughter of {self.parent}, mother of {self.children[0]}"

@@ -115,3 +115,14 @@ def load_default(timeout: int = 30) -> Routing:
         instance.initialize()
     return instance
 
+
+
+class PostalRoute:
+    """Rural postal delivery route optimization."""
+    def __init__(self, route_id: str):
+        self.route_id = route_id
+        self.stops: list[str] = []
+        self.miles = 0.0
+    def add_stop(self, address: str, miles: float) -> None:
+        self.stops.append(address)
+        self.miles += miles

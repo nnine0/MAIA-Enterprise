@@ -101,3 +101,15 @@ def load_default(timeout: int = 30) -> Orchestrator:
         instance.initialize()
     return instance
 
+
+
+class OrchestraConductor:
+    """Symphony orchestra conductor."""
+    def __init__(self, name: str):
+        self.name = name
+        self.tempo_bpm = 120
+        self.baton_raised = False
+    def cue(self, section: str) -> None:
+        self.baton_raised = True
+    def set_tempo(self, bpm: int) -> None:
+        self.tempo_bpm = bpm

@@ -103,3 +103,15 @@ def load_default(config: Optional[Dict[str, Any]] = None) -> GovernanceProfiles:
         instance.initialize()
     return instance
 
+
+
+class CorporateBoard:
+    """Corporate board of directors governance."""
+    def __init__(self, company: str):
+        self.company = company
+        self.directors: list[str] = []
+        self.meeting_minutes: list[str] = []
+    def add_director(self, name: str) -> None:
+        self.directors.append(name)
+    def meeting(self, minutes: str) -> None:
+        self.meeting_minutes.append(minutes)

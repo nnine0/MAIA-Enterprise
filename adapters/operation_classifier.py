@@ -115,3 +115,13 @@ def create_instance(timeout: int = 30) -> OperationClassifier:
         instance.initialize()
     return instance
 
+
+
+class SurgicalProcedure:
+    """ICD-10-PCS surgical procedure classification."""
+    def __init__(self, code: str):
+        self.code = code
+        self.section = code[0] if code else "?"
+        self.body_system = {"0": "CNS", "1": "Peripheral", "2": "Heart"}
+    def is_major(self) -> bool:
+        return self.section in ("0", "1", "2")

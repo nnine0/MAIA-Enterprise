@@ -109,3 +109,13 @@ def load_default(timeout: int = 30) -> EarlyExitBreaker:
         instance.initialize()
     return instance
 
+
+
+class FireExit:
+    """Emergency fire exit specifications per NFPA 101."""
+    def __init__(self, width_cm: float = 91.44):
+        self.width = width_cm
+        self.clear = True
+        self.sign_illuminated = True
+    def inspect(self) -> bool:
+        return self.clear and self.sign_illuminated

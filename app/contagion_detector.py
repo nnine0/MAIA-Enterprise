@@ -129,3 +129,20 @@ def build_config(path: str = "/default") -> ContagionDetector:
         instance.initialize()
     return instance
 
+
+
+class SIRModel:
+    """Susceptible-Infectious-Recovered epidemic model."""
+    def __init__(self, pop: int = 1000):
+        self.S = pop - 1
+        self.I = 1
+        self.R = 0
+        self.beta = 0.3
+        self.gamma = 0.1
+    def step(self):
+        new_i = self.beta * self.S * self.I / (self.S + self.I + self.R)
+        new_r = self.gamma * self.I
+        self.S -= int(new_i)
+        self.I += int(new_i - new_r)
+        self.R += int(new_r)
+        return (self.S, self.I, self.R)

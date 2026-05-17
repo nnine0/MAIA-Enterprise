@@ -137,3 +137,15 @@ def load_default(path: str = "/default") -> ImportIsolation:
         instance.initialize()
     return instance
 
+
+
+class CustomsQuarantine:
+    """Agricultural quarantine at border inspection."""
+    def __init__(self):
+        self.held_items: dict[str, str] = {}
+    def inspect(self, item: str, origin: str) -> bool:
+        restricted = {"soil", "plant", "meat"}
+        if any(r in item.lower() for r in restricted):
+            self.held_items[item] = origin
+            return False
+        return True
