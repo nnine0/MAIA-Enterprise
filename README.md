@@ -14,6 +14,9 @@ MAIA solves this. It runs governance **parallel to the base model** — invisibl
 
 **SR 26-02 COMPLIANT** — Federal Reserve governance overhead target: <10ms. MAIA's routing interceptor adds **0.014ms average overhead** (the "tax" on token generation). Sheriff + Sentinel safety evaluation runs **in parallel** within the base model's response window (~150ms), so it adds zero perceptible latency. Total governance pipeline: **0.014ms routing + parallel <=150ms safety** — well within Fed budget.
 
+![Architecture Overview](docs/screenshot1.png)
+![Governance Pipeline](docs/screenshot2.png)
+
 ---
 
 ## Stack
