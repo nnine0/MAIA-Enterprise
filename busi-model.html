@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en" class="dark scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NTS Microservices — MAIA Pitch Deck</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eefcf6',
+                            100: '#d3f7e8',
+                            500: '#10b981', /* emerald */
+                            600: '#059669',
+                            950: '#022c22',
+                        },
+                        slate: {
+                            900: '#0f172a',
+                            950: '#020617',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen antialiased selection:bg-emerald-500 selection:text-slate-900">
+
+    <!-- Header Navigation -->
+    <header class="border-b border-slate-900 sticky top-0 bg-slate-950/80 backdrop-blur-md z-50">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <span class="bg-brand-500/10 text-brand-500 p-2 rounded border border-brand-500/20 font-bold mono text-sm">NTS</span>
+                <div>
+                    <h1 class="text-base font-extrabold tracking-tight">NTS Microservices</h1>
+                    <p class="text-xs text-slate-400 font-medium">Compliance-as-Code for Enterprise AI</p>
+                </div>
+            </div>
+            <nav class="hidden md:flex gap-6 text-sm font-semibold text-slate-400">
+                <a href="#problem" class="hover:text-slate-100 transition">The Challenge</a>
+                <a href="#product" class="hover:text-slate-100 transition">The Product</a>
+                <a href="#buyers" class="hover:text-slate-100 transition">Target Buyers</a>
+                <a href="#usecases" class="hover:text-slate-100 transition">Use Cases</a>
+                <a href="#compliance" class="hover:text-slate-100 transition">Compliance Mapping</a>
+                <a href="#business" class="hover:text-slate-100 transition">Business Model</a>
+            </nav>
+            <div>
+                <span class="mono text-xs px-3 py-1.5 rounded-full border border-slate-800 bg-slate-900/50 text-slate-400 flex items-center gap-2">
+                    <span class="h-2 w-2 rounded-full bg-brand-500 animate-pulse"></span>
+                    SR 26-02 Ready
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-6 py-12 space-y-24">
+
+        <!-- Hero Section -->
+        <section class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center py-6">
+            <div class="lg:col-span-7 space-y-6">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-brand-500/10 border border-brand-500/20 text-brand-500 text-xs font-semibold uppercase tracking-wider">
+                    The SSL Moment for Generative AI
+                </div>
+                <h2 class="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight">
+                    MAIA: The AI Governance <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-500">Operating System</span>
+                </h2>
+                <p class="text-lg text-slate-300 max-w-xl">
+                    A real-time, programmatic safety kernel designed to bridge the gap between rapid LLM innovation and stringent regulatory frameworks.
+                </p>
+                <div class="flex flex-wrap gap-4 pt-2">
+                    <a href="#product" class="px-5 py-3 rounded bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold text-sm tracking-wide transition shadow-lg shadow-brand-500/20">
+                        Explore the Architecture
+                    </a>
+                    <a href="https://github.com/nnine0/MAIA-Enterprise" target="_blank" class="px-5 py-3 rounded border border-slate-800 hover:border-slate-700 bg-slate-900/50 text-slate-300 hover:text-slate-100 font-bold text-sm transition flex items-center gap-2">
+                        <svg class="h-4 w-4 fill-current" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                        View Codebase
+                    </a>
+                </div>
+            </div>
+            <div class="lg:col-span-5 bg-slate-900/40 border border-slate-900 rounded-xl p-6 relative overflow-hidden">
+                <div class="absolute top-0 right-0 h-32 w-32 bg-brand-500/10 rounded-full blur-3xl"></div>
+                <!-- Inline Terminal Representation -->
+                <div class="flex items-center justify-between pb-4 border-b border-slate-900">
+                    <div class="flex items-center gap-1.5">
+                        <span class="h-3 w-3 rounded-full bg-red-500/80"></span>
+                        <span class="h-3 w-3 rounded-full bg-yellow-500/80"></span>
+                        <span class="h-3 w-3 rounded-full bg-green-500/80"></span>
+                    </div>
+                    <span class="text-xs text-slate-500 mono">pvi_airlock_active.log</span>
+                </div>
+                <div class="py-4 space-y-3 mono text-xs text-slate-300">
+                    <p class="text-slate-500">[2026-05-27T14:31:02.102Z] INGRESS SCAN COMPLETE.</p>
+                    <p class="text-slate-300"><span class="text-blue-400">INFO</span> Agent evaluated Action Trajectory: <span class="text-amber-300">initiate_wire_transfer(amount=120000)</span></p>
+                    <p class="text-yellow-400 font-semibold">[INTERCEPTED] Evaluation against Policy Manifest...</p>
+                    <p class="text-slate-400">&gt; Risk Score: 0.94 | ERP Threshold Constraint: &gt;$50,000</p>
+                    <p class="text-red-400 font-semibold">[BLOCKED] Rule: erp_materiality_guard triggered.</p>
+                    <div class="p-3 bg-red-950/20 rounded border border-red-500/20 text-red-300">
+                        STATUS: Safety Interrupt Issued. Routing payload to Distributed Human-in-the-Loop pathway.
+                    </div>
+                    <p class="text-slate-500">[ST&alpha;R Tracking] Telemetry state exported to Kafka. SHA-256 registered.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Problem vs Solution -->
+        <section id="problem" class="border-t border-slate-900 pt-16 grid grid-cols-1 md:grid-cols-2 gap-12">
+            <div>
+                <span class="text-xs text-brand-500 uppercase tracking-widest font-semibold block mb-2">The Strategic Friction</span>
+                <h3 class="text-3xl font-bold tracking-tight mb-4 text-slate-100">The Problem with Traditional Auditing</h3>
+                <p class="text-slate-300 leading-relaxed mb-6">
+                    In high-stakes enterprise sectors (banking, healthcare, logistics), current solutions rely heavily on retrospective "post-mortem" human audits or superficial model safety guidelines. 
+                </p>
+                <div class="space-y-4">
+                    <div class="flex items-start gap-3">
+                        <span class="p-1 rounded bg-red-500/10 text-red-400 border border-red-500/20 text-xs font-bold shrink-0 mt-1">✗</span>
+                        <div>
+                            <h4 class="font-bold text-sm text-slate-200">The Consultative Lag</h4>
+                            <p class="text-xs text-slate-400">Post-deployment consulting checks do not protect against real-time runtime violations.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <span class="p-1 rounded bg-red-500/10 text-red-400 border border-red-500/20 text-xs font-bold shrink-0 mt-1">✗</span>
+                        <div>
+                            <h4 class="font-bold text-sm text-slate-200">The VRAM/Compliance Paradox</h4>
+                            <p class="text-xs text-slate-400">Running separate massive governance models for every agent introduces unsustainable memory and compute overhead.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-slate-900/20 border border-slate-900 rounded-xl p-8 flex flex-col justify-between">
+                <div>
+                    <span class="text-xs text-brand-500 uppercase tracking-widest font-semibold block mb-2">The Real-Time Shield</span>
+                    <h3 class="text-3xl font-bold tracking-tight mb-4 text-slate-100">MAIA's Governance-by-Design</h3>
+                    <p class="text-slate-300 leading-relaxed mb-6">
+                        Instead of attempting to post-audit generative models, MAIA implements an inline software layer. By introducing a 150ms structural pause between the reasoning phase and the execution phase, it intercepts and validates action trajectories programmatically.
+                    </p>
+                </div>
+                <div class="grid grid-cols-3 gap-4 border-t border-slate-900 pt-6">
+                    <div>
+                        <span class="block text-2xl font-extrabold text-brand-500 mono">150ms</span>
+                        <span class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Max Intercept Latency</span>
+                    </div>
+                    <div>
+                        <span class="block text-2xl font-extrabold text-brand-500 mono">0%</span>
+                        <span class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Memory Leak / Egress</span>
+                    </div>
+                    <div>
+                        <span class="block text-2xl font-extrabold text-brand-500 mono">100%</span>
+                        <span class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Local Air-Gapped Path</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Product & Pipeline Architecture -->
+        <section id="product" class="space-y-12 border-t border-slate-900 pt-16">
+            <div class="text-center max-w-2xl mx-auto space-y-4">
+                <span class="text-xs text-brand-500 uppercase tracking-widest font-semibold">Technical Blueprint</span>
+                <h3 class="text-4xl font-extrabold tracking-tight">The Multi-Tier Safety Pipeline</h3>
+                <p class="text-slate-400 text-sm">
+                    Operating parallel evaluation pathways to prevent model slowdowns while enforcing strict governance parameters.
+                </p>
+            </div>
+
+            <!-- Pipeline Diagram Card -->
+            <div class="bg-slate-900/40 border border-slate-900 rounded-xl p-8 space-y-8">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 relative">
+                    <!-- T0 -->
+                    <div class="bg-slate-950 border border-slate-900 p-6 rounded-lg relative space-y-3">
+                        <div class="flex justify-between items-start">
+                            <span class="px-2.5 py-1 rounded bg-blue-500/10 border border-blue-500/20 text-blue-400 font-bold mono text-xs">Tier 0</span>
+                            <span class="text-xs text-slate-500 mono">0ms Overhead</span>
+                        </div>
+                        <h4 class="font-extrabold text-base text-slate-200">SuperFastPass</h4>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Deterministic regex patterns and system keyword filters bypass complex audit logic for routine commands. Achieves ~80% hit-rate under typical workflows.
+                        </p>
+                    </div>
+
+                    <!-- T1 -->
+                    <div class="bg-slate-950 border border-slate-900 p-6 rounded-lg relative space-y-3">
+                        <div class="flex justify-between items-start">
+                            <span class="px-2.5 py-1 rounded bg-brand-500/10 border border-brand-500/20 text-brand-500 font-bold mono text-xs">Tier 1</span>
+                            <span class="text-xs text-slate-500 mono">122.6ms Target</span>
+                        </div>
+                        <h4 class="font-extrabold text-base text-slate-200">Granite Fast Pass</h4>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Parallel evaluation via local Granite Guardian 3.1 model, parsing raw token logit differences (SAFE vs. UNSAFE) dynamically during the execution trajectory.
+                        </p>
+                    </div>
+
+                    <!-- T2 -->
+                    <div class="bg-slate-950 border border-slate-900 p-6 rounded-lg relative space-y-3">
+                        <div class="flex justify-between items-start">
+                            <span class="px-2.5 py-1 rounded bg-amber-500/10 border border-amber-500/20 text-amber-400 font-bold mono text-xs">Tier 2</span>
+                            <span class="text-xs text-slate-500 mono">155.5ms Fallback</span>
+                        </div>
+                        <h4 class="font-extrabold text-base text-slate-200">Granite Full Audit</h4>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            If T1 logit delta is tight (&lt; 5.0), the request falls back to a 10-token deep generative reasoning loop to confirm system compliance.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Core Technologies Sub-grid -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-slate-900">
+                    <div>
+                        <h5 class="font-bold text-sm text-slate-200 mb-1">PVI Airlock Interceptor</h5>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Validates parameter actions before database or tool execution. Cuts offending actions programmatically at the network interface layer.
+                        </p>
+                    </div>
+                    <div>
+                        <h5 class="font-bold text-sm text-slate-200 mb-1">LoRAX Neural Kernel</h5>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Hot-swaps multi-adapter rules without model replication, solving the VRAM paradox by retaining a shared single-node context.
+                        </p>
+                    </div>
+                    <div>
+                        <h5 class="font-bold text-sm text-slate-200 mb-1">Continuous Monitoring Loop</h5>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Employs a self-correcting alignment engine utilizing the Self-Taught Reasoner (ST&alpha;R) paradigm to retrain and optimize adapter performance.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Target Buyer Profiles -->
+        <section id="buyers" class="border-t border-slate-900 pt-16 space-y-12">
+            <div class="text-center max-w-2xl mx-auto space-y-4">
+                <span class="text-xs text-brand-500 uppercase tracking-widest font-semibold">User Personas</span>
+                <h3 class="text-4xl font-extrabold tracking-tight">Who We Serve in the Enterprise</h3>
+                <p class="text-slate-400 text-sm">
+                    Aligning three distinct corporate departments to safely enable high-risk agent workflows.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- CRO / Compliance -->
+                <div class="bg-slate-900/20 border border-slate-900 rounded-xl p-6 space-y-4">
+                    <div class="h-10 w-10 rounded bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-brand-500 font-bold">
+                        CRO
+                    </div>
+                    <div class="space-y-1">
+                        <h4 class="font-extrabold text-lg text-slate-200">Chief Risk & Compliance Officers</h4>
+                        <p class="text-xs text-slate-400">Ensuring regulatory compliance for automated actions.</p>
+                    </div>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        <strong>Pain Point:</strong> Risk of model hallucination triggering unapproved transfers, data leaks, or licensing violations that could attract regulator audits under SR 26-02.
+                    </p>
+                    <div class="pt-2">
+                        <span class="inline-block text-[10px] uppercase font-bold text-brand-500 tracking-wider bg-brand-500/10 px-2 py-1 rounded">
+                            Defensibility Shield
+                        </span>
+                    </div>
+                </div>
+
+                <!-- CISO -->
+                <div class="bg-slate-900/20 border border-slate-900 rounded-xl p-6 space-y-4">
+                    <div class="h-10 w-10 rounded bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 font-bold">
+                        SEC
+                    </div>
+                    <div class="space-y-1">
+                        <h4 class="font-extrabold text-lg text-slate-200">Chief Information Security Officers</h4>
+                        <p class="text-xs text-slate-400">Hardening endpoints against prompt injection.</p>
+                    </div>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        <strong>Pain Point:</strong> System prompts are inherently vulnerable to prompt injection, logic overrides, or credential stuffing through indirect input files.
+                    </p>
+                    <div class="pt-2">
+                        <span class="inline-block text-[10px] uppercase font-bold text-blue-400 tracking-wider bg-blue-500/10 px-2 py-1 rounded">
+                            InertiaGuard Rate-Limiting
+                        </span>
+                    </div>
+                </div>
+
+                <!-- AI / IT Architect -->
+                <div class="bg-slate-900/20 border border-slate-900 rounded-xl p-6 space-y-4">
+                    <div class="h-10 w-10 rounded bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 font-bold">
+                        DEV
+                    </div>
+                    <div class="space-y-1">
+                        <h4 class="font-extrabold text-lg text-slate-200">Heads of Enterprise AI / Platform Eng</h4>
+                        <p class="text-xs text-slate-400">Managing VRAM budgets and API latency constraints.</p>
+                    </div>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        <strong>Pain Point:</strong> Model fine-tuning and redundant safety nodes degrade inference latency, bloating hardware spend on cluster orchestration.
+                    </p>
+                    <div class="pt-2">
+                        <span class="inline-block text-[10px] uppercase font-bold text-amber-400 tracking-wider bg-amber-500/10 px-2 py-1 rounded">
+                            VRAM Optimization & LoRAX
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Enterprise Use Cases -->
+        <section id="usecases" class="border-t border-slate-900 pt-16 space-y-12">
+            <div class="text-center max-w-2xl mx-auto space-y-4">
+                <span class="text-xs text-brand-500 uppercase tracking-widest font-semibold">Real-world Deployment</span>
+                <h3 class="text-4xl font-extrabold tracking-tight">Enterprise Use Cases</h3>
+                <p class="text-slate-400 text-sm">
+                    How MAIA operationalizes safety rules across critical industries.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Case 1 -->
+                <div class="bg-slate-900/30 border border-slate-900 rounded-xl p-6 flex flex-col justify-between space-y-6">
+                    <div class="space-y-3">
+                        <div class="flex items-center gap-2">
+                            <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+                            <h4 class="font-extrabold text-lg text-slate-200">Financial Services & High-Value Payments</h4>
+                        </div>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            An AI agent automates wire routing based on incoming emails and ledger requests. If the generated payload requests an outbound transfer exceeding $50,000, the ERP Materiality Guard intercepts the payload at the pipeline level.
+                        </p>
+                    </div>
+                    <div class="bg-slate-950/60 rounded p-4 border border-slate-900 text-[11px] mono text-slate-400">
+                        <span class="text-brand-500 font-bold">Rule Triggered:</span> <code class="text-slate-200">Materiality Matrix Exception (Value &gt; 50k)</code> <br>
+                        <span class="text-brand-500 font-bold">Enforcement Action:</span> Halt execution, lock payload state, push to SME Mobile Auth, log SHA-256 in local ledger.
+                    </div>
+                </div>
+
+                <!-- Case 2 -->
+                <div class="bg-slate-900/30 border border-slate-900 rounded-xl p-6 flex flex-col justify-between space-y-6">
+                    <div class="space-y-3">
+                        <div class="flex items-center gap-2">
+                            <span class="h-2 w-2 rounded-full bg-blue-500"></span>
+                            <h4 class="font-extrabold text-lg text-slate-200">Defense Logistics & Supply Chain Procurement</h4>
+                        </div>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            A logistics agent coordinates material transfers for federal logistics. An adversarial actor attempts to manipulate routing protocols via indirect injection, prompting the system to bypass geographic export controls.
+                        </p>
+                    </div>
+                    <div class="bg-slate-950/60 rounded p-4 border border-slate-900 text-[11px] mono text-slate-400">
+                        <span class="text-blue-400 font-bold">Rule Triggered:</span> <code class="text-slate-200">ITAR Geographic Restriction Check (Route: Out-of-Zone)</code> <br>
+                        <span class="text-blue-400 font-bold">Enforcement Action:</span> Execute InertiaGuard (introduce 4.2s system latency), terminate subprocess, raise CISO Alert.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Regulatory & Compliance Mapping -->
+        <section id="compliance" class="border-t border-slate-900 pt-16 space-y-12">
+            <div class="text-center max-w-2xl mx-auto space-y-4">
+                <span class="text-xs text-brand-500 uppercase tracking-widest font-semibold">Defensible Frameworks</span>
+                <h3 class="text-4xl font-extrabold tracking-tight">Regulatory Compliance Mapping</h3>
+                <p class="text-slate-400 text-sm">
+                    Direct validation mapping against key regional and financial risk directives.
+                </p>
+            </div>
+
+            <!-- Interagency Mandate Focus -->
+            <div class="bg-brand-950/10 border border-brand-500/20 rounded-xl p-8 space-y-6">
+                <div class="flex flex-wrap justify-between items-start gap-4">
+                    <div class="space-y-2">
+                        <span class="text-xs text-brand-500 uppercase font-bold mono">Primary Regulatory Anchor</span>
+                        <h4 class="text-2xl font-extrabold text-slate-100">SR 26-02 Compliance (April 2026 Interagency Guidance)</h4>
+                        <p class="text-xs text-slate-300 max-w-2xl leading-relaxed">
+                            The Federal Reserve, FDIC, and OCC issued joint updated guidance replacing the 15-year-old SR 11-7 model framework. MAIA natively satisfies their mandates for "Effective Challenge", "Materiality Boundaries", and "Continuous Validation".
+                        </p>
+                    </div>
+                    <div class="bg-brand-500/10 border border-brand-500/30 text-brand-500 px-4 py-2 rounded-lg text-center">
+                        <span class="block text-2xl font-extrabold mono">89/89</span>
+                        <span class="text-[9px] uppercase font-bold tracking-wider">Test Cases Passed</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-brand-500/10">
+                    <div>
+                        <h5 class="text-xs uppercase font-bold text-slate-300 mb-1">Conceptual Soundness</h5>
+                        <p class="text-xs text-slate-400">Ensured through mathematical logging of intent and structural code execution layers rather than pure black-box inference.</p>
+                    </div>
+                    <div>
+                        <h5 class="text-xs uppercase font-bold text-slate-300 mb-1">Effective Challenge</h5>
+                        <p class="text-xs text-slate-400">Achieved via the non-blocking interceptor pattern, ensuring a localized baseline model evaluates agent actions before execution.</p>
+                    </div>
+                    <div>
+                        <h5 class="text-xs uppercase font-bold text-slate-300 mb-1">Continuous Monitoring</h5>
+                        <p class="text-xs text-slate-400">Integrated self-learning pipeline that captures failed trajectories as training data to retrain local adapters via ST&alpha;R.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Secondary Framework Matrix -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="bg-slate-900/20 border border-slate-900 p-6 rounded-lg space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="font-extrabold text-base text-slate-200">NIST AI RMF</span>
+                        <span class="text-xs font-bold mono text-brand-500">72%</span>
+                    </div>
+                    <p class="text-[11px] text-slate-400 leading-relaxed">
+                        Strong alignment with "Govern" and "Measure" criteria via system-level telemetry and localized parameter gates.
+                    </p>
+                </div>
+
+                <div class="bg-slate-900/20 border border-slate-900 p-6 rounded-lg space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="font-extrabold text-base text-slate-200">ISO 42001</span>
+                        <span class="text-xs font-bold mono text-brand-500">62%</span>
+                    </div>
+                    <p class="text-[11px] text-slate-400 leading-relaxed">
+                        Meets strict data lifecycle isolation rules. Scope enhancements focus on formalizing pre-deployment organizational artifacts.
+                    </p>
+                </div>
+
+                <div class="bg-slate-900/20 border border-slate-900 p-6 rounded-lg space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="font-extrabold text-base text-slate-200">EU AI Act</span>
+                        <span class="text-xs font-bold mono text-brand-500">48%</span>
+                    </div>
+                    <p class="text-[11px] text-slate-400 leading-relaxed">
+                        Supports high-risk system logging through the automated AIBOM forensic reporter. Future updates prioritize natural language user-facing explainability.
+                    </p>
+                </div>
+
+                <div class="bg-slate-900/20 border border-slate-900 p-6 rounded-lg space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="font-extrabold text-base text-slate-200">GRC COSO</span>
+                        <span class="text-xs font-bold mono text-brand-500">70%</span>
+                    </div>
+                    <p class="text-[11px] text-slate-400 leading-relaxed">
+                        Translates standard risk tolerance matrices directly into hardware thresholds using our material impact evaluator.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Business Model & Monetization -->
+        <section id="business" class="border-t border-slate-900 pt-16 space-y-12">
+            <div class="text-center max-w-2xl mx-auto space-y-4">
+                <span class="text-xs text-brand-500 uppercase tracking-widest font-semibold">Commercialization & Growth</span>
+                <h3 class="text-4xl font-extrabold tracking-tight">Business Model & Growth Vectors</h3>
+                <p class="text-slate-400 text-sm">
+                    How NTS Microservices scales the MAIA platform across global enterprises.
+                </p>
+            </div>
+
+            <!-- 3-Phase Monetization Strategy -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Phase 1 -->
+                <div class="bg-slate-900/40 border border-slate-900 rounded-xl p-6 space-y-4">
+                    <span class="text-xs text-brand-500 uppercase font-bold mono">Phase 1</span>
+                    <h4 class="font-extrabold text-xl text-slate-200">Enterprise SaaS Platform</h4>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        Selling tiered licensing contracts to the Global 2000, defense contractors, and healthcare organizations starting at standard seat-based monthly pricing.
+                    </p>
+                    <ul class="text-[11px] text-slate-300 space-y-2 pt-2 border-t border-slate-900">
+                        <li>• In-line Airlock deployments</li>
+                        <li>• Policy-as-Code database sync</li>
+                        <li>• Air-gapped on-prem network control</li>
+                    </ul>
+                </div>
+
+                <!-- Phase 2 -->
+                <div class="bg-slate-900/40 border border-slate-900 rounded-xl p-6 space-y-4">
+                    <span class="text-xs text-blue-400 uppercase font-bold mono">Phase 2</span>
+                    <h4 class="font-extrabold text-xl text-slate-200">The Certification Program</h4>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        Establishing a standardized technical training syllabus for "Airlock Administrators" to build an organic developer and operations ecosystem.
+                    </p>
+                    <ul class="text-[11px] text-slate-300 space-y-2 pt-2 border-t border-slate-900">
+                        <li>• Enterprise administration training</li>
+                        <li>• System alignment validation training</li>
+                        <li>• Global systems integrator ecosystem</li>
+                    </ul>
+                </div>
+
+                <!-- Phase 3 -->
+                <div class="bg-slate-900/40 border border-slate-900 rounded-xl p-6 space-y-4">
+                    <span class="text-xs text-amber-500 uppercase font-bold mono">Phase 3</span>
+                    <h4 class="font-extrabold text-xl text-slate-200">The National Oracle</h4>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        Deploying a specialized crowdsourced platform enabling certified domain experts to participate in edge-case evaluations via a Decentralized Human-in-the-Loop network.
+                    </p>
+                    <ul class="text-[11px] text-slate-300 space-y-2 pt-2 border-t border-slate-900">
+                        <li>• Gamified policy validation app</li>
+                        <li>• Mobile real-time query auditing</li>
+                        <li>• Human alignment feedback training loops</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-900 bg-slate-950 mt-24 py-12 text-center space-y-4">
+        <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="text-left">
+                <h4 class="font-extrabold text-lg">NTS Microservices</h4>
+                <p class="text-xs text-slate-400">Compliance-as-Code. Solving for AI Alignment.</p>
+            </div>
+            <div class="flex gap-6 text-xs text-slate-400">
+                <span>Founder: Systems Engineer &amp; Mathematician</span>
+                <span>Jacksonville, Florida</span>
+            </div>
+        </div>
+        <p class="text-[10px] text-slate-600 pt-6">
+            &copy; 2026 NTS Microservices. MAIA is an open-source enterprise safety kernel. Code and documentation are hosted on GitHub.
+        </p>
+    </footer>
+
+</body>
+</html>
