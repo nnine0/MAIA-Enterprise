@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MAIA Governance Compliance Comparison</title>
+<style>
+:root {
+  --bg: #ffffff;
+  --bg-card: #ffffff;
+  --bg-secondary: #f6f8fa;
+  --bg-tertiary: #eef1f5;
+  --text-primary: #1f2328;
+  --text-secondary: #656d76;
+  --text-tertiary: #8b949e;
+  --border: #d0d7de;
+  --border-light: #e8ecf0;
+  --shadow: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+  --shadow-hover: 0 4px 12px rgba(0,0,0,.08);
+  --radius: 8px;
+  --radius-sm: 6px;
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+  --pill-green-bg: #dafbe1;
+  --pill-green-text: #116329;
+  --pill-amber-bg: #fff8c5;
+  --pill-amber-text: #7a5d00;
+  --pill-red-bg: #ffebe9;
+  --pill-red-text: #8d1b1b;
+  --pill-blue-bg: #ddf4ff;
+  --pill-blue-text: #0969da;
+  --bar-sr26: #1f883d;
+  --bar-nist: #8250df;
+  --bar-grc: #0969da;
+  --bar-iso: #9a6700;
+  --bar-eu: #cf222e;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1117;
+    --bg-card: #161b22;
+    --bg-secondary: #21262d;
+    --bg-tertiary: #30363d;
+    --text-primary: #e6edf3;
+    --text-secondary: #8b949e;
+    --text-tertiary: #6e7681;
+    --border: #30363d;
+    --border-light: #21262d;
+    --shadow: 0 1px 3px rgba(0,0,0,.3), 0 1px 2px rgba(0,0,0,.2);
+    --shadow-hover: 0 4px 12px rgba(0,0,0,.4);
+    --pill-green-bg: #1a3a2a;
+    --pill-green-text: #7ee787;
+    --pill-amber-bg: #3d2e00;
+    --pill-amber-text: #e3b341;
+    --pill-red-bg: #3d1a1a;
+    --pill-red-text: #ffa198;
+    --pill-blue-bg: #0a2a4a;
+    --pill-blue-text: #79c0ff;
+    --bar-sr26: #3fb950;
+    --bar-nist: #d2a8ff;
+    --bar-grc: #58a6ff;
+    --bar-iso: #d29922;
+    --bar-eu: #f85149;
+  }
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:var(--font);
+  background:var(--bg);
+  color:var(--text-primary);
+  line-height:1.6;
+  padding:2rem 1rem;
+  -webkit-font-smoothing:antialiased;
+}
+.container{max-width:1200px;margin:0 auto}
+h1{font-size:1.5rem;font-weight:600;letter-spacing:-.02em;margin-bottom:.25rem}
+.subtitle{font-size:.875rem;color:var(--text-secondary);margin-bottom:2rem}
+.card{
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:1.5rem;
+  margin-bottom:1.5rem;
+}
+.card-title{
+  font-size:.75rem;
+  font-weight:600;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:var(--text-secondary);
+  margin-bottom:1rem;
+  padding-bottom:.5rem;
+  border-bottom:1px solid var(--border-light);
+}
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:.8125rem}
+thead{position:sticky;top:0;z-index:1}
+th{
+  background:var(--bg-secondary);
+  color:var(--text-secondary);
+  font-weight:600;
+  text-align:left;
+  padding:.625rem .75rem;
+  white-space:nowrap;
+  border-bottom:2px solid var(--border);
+}
+td{
+  padding:.625rem .75rem;
+  vertical-align:top;
+  border-bottom:1px solid var(--border-light);
+  line-height:1.5;
+}
+tbody tr{transition:background .15s}
+tbody tr:hover{background:var(--bg-secondary)}
+td:first-child{
+  font-weight:600;
+  color:var(--text-primary);
+  white-space:nowrap;
+  width:150px;
+  min-width:130px;
+}
+.pill{
+  display:inline-block;
+  padding:2px 8px;
+  border-radius:10px;
+  font-size:.6875rem;
+  font-weight:600;
+  white-space:nowrap;
+  letter-spacing:.01em;
+}
+.p-g{background:var(--pill-green-bg);color:var(--pill-green-text)}
+.p-a{background:var(--pill-amber-bg);color:var(--pill-amber-text)}
+.p-r{background:var(--pill-red-bg);color:var(--pill-red-text)}
+.p-b{background:var(--pill-blue-bg);color:var(--pill-blue-text)}
+.note{
+  font-size:.75rem;
+  color:var(--text-secondary);
+  margin-top:4px;
+  line-height:1.45;
+}
+.bar-list{display:flex;flex-direction:column;gap:.625rem}
+.bar-row{display:flex;align-items:center;gap:.75rem}
+.bar-label{font-size:.8125rem;color:var(--text-primary);min-width:170px;font-weight:500}
+.bar-track{flex:1;height:8px;background:var(--bg-tertiary);border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;transition:width .6s ease}
+.bar-val{font-size:.8125rem;font-weight:600;color:var(--text-primary);min-width:2.5rem;text-align:right}
+.source-note{font-size:.75rem;color:var(--text-tertiary);margin-top:.75rem;line-height:1.5;padding:.5rem .75rem;background:var(--bg-secondary);border-radius:var(--radius-sm);border-left:3px solid var(--border)}
+.gap-table th:first-child{width:180px}
+.gap-table code{font-size:.75rem;padding:1px 4px;border-radius:3px;background:var(--bg-tertiary);color:var(--text-primary)}
+.divider{border:none;border-top:1px solid var(--border-light);margin:0}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>MAIA Governance Compliance Comparison</h1>
+  <p class="subtitle">ISO 42001 · NIST AI RMF · EU AI Act · GRC (COSO / ISO 31000) · SR 26-02 — grounded in live repo</p>
+
+  <div class="card">
+    <div class="card-title">What each framework asks for · vs · what MAIA's code delivers</div>
+    <div class="table-wrap">
+      <table>
+        <colgroup><col style="width:150px"><col><col><col><col><col></colgroup>
+        <thead>
+          <tr>
+            <th>Requirement</th>
+            <th>ISO 42001</th>
+            <th>NIST AI RMF</th>
+            <th>EU AI Act</th>
+            <th>GRC (COSO / ISO 31000)</th>
+            <th>SR 26-02</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Model inventory (AIBOM)</td>
+            <td><span class="pill p-g">✓ Met</span><div class="note">Clause 7 — adapter_metadata.json + /adapters volume; 51 registered adapters</div></td>
+            <td><span class="pill p-g">✓ Met</span><div class="note">Map fn — KernelManifest registry with JSON-RPC</div></td>
+            <td><span class="pill p-g">✓ Met</span><div class="note">Technical doc req — AIBOM forensic reporter adapter</div></td>
+            <td><span class="pill p-g">✓ Met</span><div class="note">Asset register — adapter registry + versioned rollbacks</div></td>
+            <td><span class="pill p-g">✓ Met</span><div class="note">22/22 passed in test suite</div></td>
+          </tr>
+          <tr>
+            <td>Runtime enforcement</td>
+            <td><span class="pill p-g">✓ Met</span><div class="note">Clause 8 — Circuit Breaker (circuit_breaker.py) + PVI Airlock intercepts tool calls pre-execution</div></td>
+            <td><span class="pill p-g">✓ Met</span><div class="note">Manage fn — Layer 8 signs/blocks trajectories; zero-trust between layers</div></td>
+            <td><span class="pill p-g">✓ Met</span><div class="note">Art. 9 risk controls — deterministic policy enforcement, not probabilistic</div></td>
+            <td><span class="pill p-g">✓ Met</span><div class="note">Control execution — DME L1→L4 escalation hierarchy</div></td>
+            <td><span class="pill p-g">✓ Met</span><div class="note">Hard enforcement 9/9 passed</div></td>
+          </tr>
+          <tr>
+            <td>Human oversight / escalation</td>
+            <td><span class="pill p-g">✓ Met</span><div class="note">Clause 8.4 — DHITL: 3-SME vote required for Tier 1; votes logged as RLHF data</div></td>
+            <td><span class="pill p-g">✓ Met</span><div class="note">Govern fn — SMEs as "Supreme Court"; erp_materiality_guard triggers &gt;$50k</div></td>
+            <td><span class="pill p-g">✓ Met</span><div class="note">Art. 14 human oversight — formalized DHITL mobile review path for critical transactions</div></td>
+            <td><span class="pill p-g">✓ Met</span><div class="note">Three-lines model — SME council is explicit 2nd-line challenge</div></td>
+            <td><span class="pill p-g">✓ Met</span><div class="note">Effective challenge 19/19 passed</div></td>
+          </tr>
+          <tr>
+            <td>Immutable audit trail</td>
+            <td><span class="pill p-g">✓ Met</span><div class="note">Clause 7.5 — latent_telemetry.py; SHA-256 forensic hashes at decision nodes → Kafka → Fed-verifiable</div></td>
+            <td><span class="pill p-g">✓ Met</span><div class="note">Measure fn — activation hooks + residual stream captures "glass box" evidence</div></td>
+            <td><span class="pill p-g">✓ Met</span><div class="note">Art. 12 logging — transaction log with tool, tier, status, latency, reason</div></td>
+            <td><span class="pill p-g">✓ Met</span><div class="note">Forensic trail — maia_certification.json; Jaccard distance + policy trigger</div></td>
+            <td><span class="pill p-g">✓ Met</span><div class="note">Forensic audit trail 4/4 passed</div></td>
+          </tr>
+          <tr>
+            <td>Bias / fairness evaluation</td>
+            <td><span class="pill p-a">Partial</span><div class="note">Clause 6.1.2 — sector-specific: fair_lending_bias_v4 (ECOA), eeoc_bias_detector, anti_bias_actuarial. No cross-domain bias benchmarking suite documented</div></td>
+            <td><span class="pill p-a">Partial</span><div class="note">Measure fn — adapters cover lending/HR/actuarial bias. No general-purpose fairness metrics (equalized odds, demographic parity) in codebase</div></td>
+            <td><span class="pill p-a">Partial</span><div class="note">Art. 10 data governance — covered for financial/HR high-risk. No AISIA bias section documented for all 51 adapters</div></td>
+            <td><span class="pill p-a">Partial</span><div class="note">Risk register — bias controls exist per sector but no org-wide bias audit cadence described</div></td>
+            <td><span class="pill p-g">✓ Met</span><div class="note">SR 26-02 Annex — fair_lending_bias_v4 directly maps to SR 11-7 bias requirements for banking</div></td>
+          </tr>
+          <tr>
+            <td>Continual improvement / drift</td>
+            <td><span class="pill p-a">Partial</span><div class="note">Clause 10 — STaR self-evolution loop + Celery trainer worker re-trains adapters on feedback. No documented drift-detection thresholds or retraining triggers</div></td>
+            <td><span class="pill p-a">Partial</span><div class="note">Govern fn — DHITL votes → RLHF pipeline is a feedback loop. Measure fn requires explicit drift metrics (PSI, KS-stat) — not documented</div></td>
+            <td><span class="pill p-a">Partial</span><div class="note">Art. 9(7) post-market — training pipeline exists (trainer service in docker-compose). Post-market surveillance report cadence not specified</div></td>
+            <td><span class="pill p-a">Partial</span><div class="note">PDCA — Do and Act phases covered by trainer worker. Check phase (performance monitoring KPIs, thresholds) not exposed in config or API</div></td>
+            <td><span class="pill p-g">✓ Met</span><div class="note">SR 26-02 ongoing monitoring — STaR loop + latent EKG satisfies continuous monitoring requirement</div></td>
+          </tr>
+          <tr>
+            <td>Explainability / transparency</td>
+            <td><span class="pill p-a">Partial</span><div class="note">Clause 6.2 — latent hashes + policy trigger logged. Why the model reasoned a certain way (not just what was blocked) is not exposed to end users</div></td>
+            <td><span class="pill p-a">Partial</span><div class="note">Map fn TEVV — forensic hash proves what happened. TEVV also expects human-readable model cards per adapter — not found in repo</div></td>
+            <td><span class="pill p-r">Gap</span><div class="note">Art. 13 transparency — users must be informed they're interacting with AI and understand system logic. No user-facing explainability layer documented</div></td>
+            <td><span class="pill p-a">Partial</span><div class="note">Control rationale logged. Business user cannot interrogate why a decision was made without reading raw forensic JSON</div></td>
+            <td><span class="pill p-g">✓ Met</span><div class="note">Conceptual soundness 18/18 — latent hash provides forensic proof for Fed auditors</div></td>
+          </tr>
+          <tr>
+            <td>Pre-deploy impact assessment</td>
+            <td><span class="pill p-r">Gap</span><div class="note">Clause 6.1.4 AISIA — no documented per-adapter impact assessment artifact before deployment. The biggest ISO 42001 certification gap</div></td>
+            <td><span class="pill p-a">Partial</span><div class="note">Map fn — GDPVal materiality matrix approximates impact scoping. Formal TEVV documentation per adapter not present</div></td>
+            <td><span class="pill p-r">Gap</span><div class="note">Art. 9 conformity assessment — high-risk systems require documented conformity assessment before market placement. Not present</div></td>
+            <td><span class="pill p-a">Partial</span><div class="note">Risk assessment — DME materiality matrix covers operational risk scoring. Formal pre-deploy sign-off process not described</div></td>
+            <td><span class="pill p-g">✓ Met</span><div class="note">Conceptual soundness + governance controls cover SR 26-02 pre-deployment validation</div></td>
+          </tr>
+          <tr>
+            <td>Data sovereignty / privacy</td>
+            <td><span class="pill p-g">✓ Met</span><div class="note">Clause 8 — insular RAG with air-gapped Qdrant + Ollama. No external data egress. hipaa_privacy_airlock PII de-identification</div></td>
+            <td><span class="pill p-g">✓ Met</span><div class="note">Govern fn — air-gapped deployment, local-only inference (Nanbeige model, no external API calls in config.py)</div></td>
+            <td><span class="pill p-g">✓ Met</span><div class="note">Art. 10 data governance — local vector DB (Qdrant), no cloud dependency in docker-compose</div></td>
+            <td><span class="pill p-g">✓ Met</span><div class="note">Data governance — Redis task queue + Qdrant all on maia-net private bridge network</div></td>
+            <td><span class="pill p-g">✓ Met</span><div class="note">Data sovereignty requirement — air-gapped Ollama/ChromaDB per SR 26-02 mapping</div></td>
+          </tr>
+          <tr>
+            <td>Org-level AIMS / policy docs</td>
+            <td><span class="pill p-r">Gap</span><div class="note">Clause 4–5 — no AI policy document, AIMS scope statement, or Statement of Applicability (SoA) in repo. These are org artifacts, not code — but required for certification</div></td>
+            <td><span class="pill p-b">N/A</span><div class="note">NIST AI RMF is voluntary — no certification audit requires org policy docs</div></td>
+            <td><span class="pill p-a">Partial</span><div class="note">Art. 9 requires technical documentation package. README is detailed but not a conformity assessment document</div></td>
+            <td><span class="pill p-a">Partial</span><div class="note">GRC expects board-approved AI risk appetite statement, policy register. Not in repo scope (org layer, not system layer)</div></td>
+            <td><span class="pill p-g">✓ Met</span><div class="note">SR 26-02 model documentation — README + compliance suite output serves as model documentation</div></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Coverage score by framework — grounded in live code</div>
+    <div class="bar-list">
+      <div class="bar-row">
+        <span class="bar-label">SR 26-02 (Fed / banking)</span>
+        <div class="bar-track"><div class="bar-fill" style="width:89%;background:var(--bar-sr26)"></div></div>
+        <span class="bar-val">89%</span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">NIST AI RMF</span>
+        <div class="bar-track"><div class="bar-fill" style="width:72%;background:var(--bar-nist)"></div></div>
+        <span class="bar-val">72%</span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">GRC (COSO / ISO 31000)</span>
+        <div class="bar-track"><div class="bar-fill" style="width:70%;background:var(--bar-grc)"></div></div>
+        <span class="bar-val">70%</span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">ISO 42001</span>
+        <div class="bar-track"><div class="bar-fill" style="width:62%;background:var(--bar-iso)"></div></div>
+        <span class="bar-val">62%</span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">EU AI Act (high-risk)</span>
+        <div class="bar-track"><div class="bar-fill" style="width:48%;background:var(--bar-eu)"></div></div>
+        <span class="bar-val">48%</span>
+      </div>
+    </div>
+    <p class="source-note">SR 26-02 score from MAIA's own test suite (89/89). All others are analytical estimates based on direct inspection of README, config.py, council_inference.py, and docker-compose.yml vs. published framework requirements. Previous evaluation was based on an incomplete document — scores revised upward after reading the live repo.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Three remaining gaps — what would close them</div>
+    <div class="table-wrap">
+      <table class="gap-table">
+        <thead>
+          <tr>
+            <th style="width:180px">Gap</th>
+            <th>What's missing</th>
+            <th>Fix</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Pre-deploy impact assessment</td>
+            <td>No per-adapter AISIA artifact (ISO 42001 Cl. 6.1.4) or EU AI Act conformity assessment doc</td>
+            <td>Add <code>aisia_template.json</code> per adapter; automate via <code>aibom_forensic_reporter</code></td>
+          </tr>
+          <tr>
+            <td>User-facing explainability</td>
+            <td>Forensic hashes exist for auditors but no human-readable "why was this blocked" for end users (EU AI Act Art. 13)</td>
+            <td>Surface policy trigger + plain-language reason in API response body</td>
+          </tr>
+          <tr>
+            <td>Drift / retraining thresholds</td>
+            <td>Trainer worker exists but no documented KPIs, PSI/KS thresholds, or retraining trigger config</td>
+            <td>Expose <code>DRIFT_THRESHOLD</code> and <code>RETRAIN_TRIGGER</code> in config.py; log to latent telemetry</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</body>
+</html>
