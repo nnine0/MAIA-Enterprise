@@ -1,4 +1,4 @@
-[# MAIA: Enterprise AI Governance OS](https://nnine0.github.io/MAIA-Enterprise/)
+# [MAIA: Enterprise AI Governance OS](https://nnine0.github.io/MAIA-Enterprise/)
 
 > The Industrial Neural Operating System for Regulated Industries
 >
