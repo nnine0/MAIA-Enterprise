@@ -94,9 +94,9 @@ Because the threat score spiked, the request doesn't fail immediately (which wou
 - Instead, InertiaGuard kicks in, adding a calculated 4.2 seconds of latency to the connection.
 - If the request is safe (e.g., "What is the hold period?"), it hits the T0 SuperFastPass and routes in 0ms.
 
-### Step 3: The Base Model (Arc Orchestration)
+### Step 3: The Base Model
 
-The prompt survives the Kernel and is passed to the Base LLM (e.g., Llama 3 or Gemini within Citi Arc).
+The prompt survives the Kernel and is passed to the Base LLM (e.g., Llama 3, Gemma, or Gemini).
 
 - The model "thinks" and generates an Action Plan: `tool_call: initiate_wire(amount: 5000000, target: Vendor X, bypass_hold: True)`.
 
@@ -110,7 +110,7 @@ This is where the magic happens. The model is trying to execute code, but it is 
 
 ### Step 5: The Forensic Egress
 
-The Airlock returns a hard failure to the Arc Orchestrator.
+The Airlock returns a hard failure to the Orchestrator.
 
 - The system generates a `maia_certification.json` receipt. It logs the exact Jaccard distance, the syntax pressure, the exact policy manifest that was triggered, and the specific tool call that was blocked.
 - This immutable log is shipped directly to the Bank's Risk Dashboard.
